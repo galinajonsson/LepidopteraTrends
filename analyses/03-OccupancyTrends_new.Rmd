@@ -1,0 +1,475 @@
+---
+title: "03-OccupancyTrends_new"
+author: "Galina M. Jönsson"
+date: "16/11/2020"
+output: html_document
+---
+## Set up
+
+#### Load required packages
+```{r load-packages, cache=TRUE, message=FALSE}
+# Packages for modeling
+library(devtools)
+list.of.packages <- c("minqa", "lme4", "gtools", "gtable", "scales",
+                      "assertthat", "magrittr", "tibble", "stringr")
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+#install_github(repo = 'biologicalrecordscentre/BRCindicators')
+#install_github('biologicalrecordscentre/sparta')
+library("BRCindicators")
+
+```
+
+
+
+
+# Inspect output
+
+### Convergance
+I run the analyses on a computer cluster and must fist test whether all annual estimates have converged. 
+
+```{r test-Rhat, }
+# Source the function that loops through all model outputs and checks convergence, i.e. is Rhat >1.1?
+source("./function-summarise_Rhat.R")
+
+# Run function
+RhatSummary <- summarise_Rhat("../outputs/mixLL-outputs/", verbose=FALSE)
+# Find the species which need more iterations (converged-column == "N")
+require(dplyr)
+NotConvergedSpp <- subset(RhatSummary, grepl("N", converged))
+NotConvergedSpp
+```
+Aglais.io, Apatura.iris, Ochlodes.sylvanus and Pyronia.tithonus have all not converged at 50k iterations
+Pyronia.tithonus does not converge at 80k iterations and will not be considered here
+
+
+
+### Plot
+```{r plot-species, }
+require(sparta)
+
+# Create empty list
+list <- list() 
+
+# Input directory
+input_dir <- "../outputs/mixLL-outputs/"
+files <- list.files(path = paste(input_dir), ignore.case = TRUE, pattern = '\\.rds$') # list of the files to loop through
+
+for(i in 1:length(files)){
+  # read the rds file
+  out <- readRDS(file.path(input_dir, files[i])) 
+  list[[i]] <- plot(out)
+}
+
+list
+``` 
+
+### BMA
+```{r BMA, cache=TRUE, message=FALSE}
+# Load my arrayBuilder function
+source("./function-arrayBuilder.R")
+
+
+############## All 52 species
+# Use function to build a three-dimensional matrix. The dimensions of this array represent species, years, and iterations.
+lambdaArray_all <- arrayBuilder(input_dir = "../outputs/mixLL-outputs/", nsp=54, startyr=1, stopyr=110, iter=9999)
+
+# Ensure values are bounded by 0 and 1
+lambdaArray_all[lambdaArray_all == 1] <- 0.99999999999999999
+lambdaArray_all[lambdaArray_all == 0] <- 0.00000000000000001
+
+spp <- names(lambdaArray_all[,1,1])
+trends_BMA_all <- data.frame(species = as.factor(rep(names(lambdaArray_all[,1,1]), each = 110)),
+                             year = as.numeric(rep(1:110, 54)),
+                             index = as.numeric(NA),
+                             se = as.numeric(NA))
+
+# Loop through an elog values (required by indicator function)
+count <- 0
+for(i in 1:length(spp)){
+
+  for(j in 1:110){
+      count <- count + 1
+      trends_BMA_all[count,"index"] <- mean(log((lambdaArray_all[i,j,]), base = exp(1)))
+      trends_BMA_all[count,"se"] <- sd(log((lambdaArray_all[i,j,]), base = exp(1)))/sqrt(length((lambdaArray_all[i,j,])))
+  }
+}
+
+# Run indicator function
+bma_indicator_all2k <- bma(trends_BMA_all,
+                         model = "smooth_det2",
+                         parallel = TRUE,
+                     incl.model = TRUE,
+                     n.iter = 20000, 
+                     m.scale = 'loge',
+                     num.knots = 50,
+                     rescaleYr = 76, 
+                     n.thin = 5)
+
+
+
+############## Habitat specialists (29 species)
+
+# Use function to build a three-dimensional matrix. The dimensions of this array represent species, years, and iterations.
+lambdaArray_HS <- arrayBuilder(input_dir = "../outputs/CtagWatsonCrick_results_HS/", nsp=29, startyr=1, stopyr=110, iter=9999)
+
+# Ensure values are bounded by 0 and 1
+lambdaArray_WCS[lambdaArray_WCS == 1] <- 0.99999999999999999
+lambdaArray_WCS[lambdaArray_WCS == 0] <- 0.00000000000000001
+
+
+trends_BMA_WCS <- data.frame(species = as.factor(rep(names(lambdaArray_WCS[,1,1]), each = 110)),
+                             year = as.numeric(rep(1:110, 23)),
+                             index = as.numeric(NA),
+                             se = as.numeric(NA))
+
+# Loop through an elog values (required by indicator function)
+spp <- names(lambdaArray_WCS[,1,1])
+count <- 0
+for(i in 1:length(spp)){
+
+  for(j in 1:110){
+      count <- count + 1
+      trends_BMA_WCS[count,"index"] <- mean(log((lambdaArray_WCS[i,j,]), base = exp(1)))
+      trends_BMA_WCS[count,"se"] <- sd(log((lambdaArray_WCS[i,j,]), base = exp(1)))/sqrt(length((lambdaArray_WCS[i,j,])))
+  }
+}
+
+
+# Run indicator function
+bma_indicator_1yrHS <- bma(trends_BMA_HS,
+                     parallel = TRUE,
+                     model = "smooth_det",
+                     n.iter = 20000, 
+                     num.knots = 50, 
+                     rescaleYr = 1,
+                     n.thin = 5,
+                     m.scale = 'loge')
+
+
+
+
+
+############## Habitat generalists (23 species)
+
+# Use function to build a three-dimensional matrix. The dimensions of this array represent species, years, and iterations.
+lambdaArray_WCS <- arrayBuilder(input_dir = "../outputs/CtagWatsonCrick_results_WCS/", nsp=23, startyr=1, stopyr=110, iter=9999)
+
+# Ensure values are bounded by 0 and 1
+lambdaArray_HS[lambdaArray_HS == 1] <- 0.99999999999999999
+lambdaArray_HS[lambdaArray_HS == 0] <- 0.00000000000000001
+
+spp <- names(lambdaArray_HS[,1,1])
+trends_BMA_HS <- data.frame(species = as.factor(rep(names(lambdaArray_HS[,1,1]), each = 110)),
+                             year = as.numeric(rep(1:110, 29)),
+                             index = as.numeric(NA),
+                             se = as.numeric(NA))
+
+# Loop through an elog values (required by indicator function)
+count <- 0
+for(i in 1:length(spp)){
+
+  for(j in 1:110){
+      count <- count + 1
+      trends_BMA_HS[count,"index"] <- mean(log((lambdaArray_HS[i,j,]), base = exp(1)))
+      trends_BMA_HS[count,"se"] <- sd(log((lambdaArray_HS[i,j,]), base = exp(1)))/sqrt(length((lambdaArray_HS[i,j,])))
+  }
+}
+
+# Run indicator function
+bma_indicator_1yrWCS <- bma(trends_BMA_WCS,
+                     parallel = TRUE,
+                     model = "smooth_det",
+                     n.iter = 20000, 
+                     num.knots = 50, 
+                     rescaleYr = 1,
+                     n.thin = 5,
+                     m.scale = 'loge')
+
+
+
+####### Plot
+
+
+plot_indicator(indicator = bma_indicator_all2k[,'Index'],
+               CIs = bma_indicator_all2k[,c(3,4)])
+
+plot_indicator(indicator = bma_indicator_1yrHS[,'Index'],
+               CIs = bma_indicator_1yrHS[,c(3,4)])
+
+plot_indicator(indicator = bma_indicator_1yrWCS[,'Index'],
+               CIs = bma_indicator_1yrWCS[,c(3,4)])
+
+source("./fig-plot_LMSI.R")
+require(ggplot2)
+plot_LMSIgal(indicator1 = (indicator = bma_indicator_all2k[,'Index']),
+               CIs1 = (bma_indicator_all2k[,c(3,4)]),
+             indicator2 = (indicator = bma_indicator_1yrHS[,'Index']),
+               CIs2 = (bma_indicator_1yrHS[,c(3,4)]),
+             indicator3 = (indicator = bma_indicator_1yrWCS[,'Index']),
+               CIs3 = (bma_indicator_1yrWCS[,c(3,4)]))
+
+```
+
+
+
+# Monte Carlo Multi-Species Indicator
+Statistics Neatherlands' method to account for sampling error of species indices in the calculation of multi-species indicators based on Monte Carlo simulation of annual species indices (Soldaat et al., 2017; https://doi.org/10.1016/j.ecolind.2017.05.033).
+
+### Monte Carlo MSI: Habitat specialists vs. Wider countryside species
+```{r MSI, cache=TRUE, message=FALSE}
+# Load summarise_Rhat function
+source("./function-summarise_occDetRds_BMA.R")
+
+
+# Run function to get data in appropriate format (53 species)
+MSI_data <- summarise_occDetRdsBMA("../outputs/mixLL-outputs/")
+# Year starts with 1 to 110 so add 1899
+MSI_data$year <- MSI_data$year + 1899
+
+
+############# Specialist vs. generalist species 
+CatLookUp <- read.csv("../data/auxiliaryData/MSI_lookup.csv")
+CatLookUp$Species <- gsub(" ", ".", CatLookUp$Species)
+CatLookUp$HS_WCS <- as.factor(CatLookUp$HS_WCS)
+
+# Habitat specialists (HS) # 29 species
+require(dplyr)
+names.use <- unique(MSI_data$species[MSI_data$species %in% ((subset(CatLookUp, HS_WCS == "HS"))$Species)])
+#trends_summary_HS <- trends_summary[, (append("year", names.use))]
+MSI_data_HS <- MSI_data[MSI_data$species %in% names.use,]
+
+# Wider countryside species (WCS) # 24 species
+names.use <- unique(MSI_data$species[MSI_data$species %in% ((subset(CatLookUp, HS_WCS == "WCS"))$Species)])
+#trends_summary_WCS <- trends_summary[, (append("year", names.use))]
+MSI_data_WCS <- MSI_data[MSI_data$species %in% names.use,]
+
+
+# Species index values need to be 100 in the base year. Here I use
+# the first year as my base year and rescale to 100. The standard error
+# in the base year should be 0.
+min_year <- min(MSI_data$year)
+
+for(sp in unique(MSI_data$species)){
+  subset_data <- MSI_data[MSI_data$species == sp, ]
+  multi_factor <- 100 / subset_data$index[subset_data$year == min_year]
+  MSI_data$index[MSI_data$species == sp] <- MSI_data$index[MSI_data$species == sp] * multi_factor
+  MSI_data$se[MSI_data$species == sp] <- MSI_data$se[MSI_data$species == sp] * multi_factor
+  MSI_data$se[MSI_data$species == sp][1] <- 0
+}
+
+###### HS
+min_year <- min(MSI_data_HS$year)
+
+for(sp in unique(MSI_data_HS$species)){
+  subset_data <- MSI_data_HS[MSI_data_HS$species == sp, ]
+  multi_factor <- 100 / subset_data$index[subset_data$year == min_year]
+  MSI_data_HS$index[MSI_data_HS$species == sp] <- MSI_data_HS$index[MSI_data_HS$species == sp] * multi_factor
+  MSI_data_HS$se[MSI_data_HS$species == sp] <- MSI_data_HS$se[MSI_data_HS$species == sp] * multi_factor
+  MSI_data_HS$se[MSI_data_HS$species == sp][1] <- 0
+}
+
+###### WCS
+min_year <- min(MSI_data_WCS$year)
+
+for(sp in unique(MSI_data_WCS$species)){
+  subset_data <- MSI_data_WCS[MSI_data_WCS$species == sp, ]
+  multi_factor <- 100 / subset_data$index[subset_data$year == min_year]
+  MSI_data_WCS$index[MSI_data_WCS$species == sp] <- MSI_data_WCS$index[MSI_data_WCS$species == sp] * multi_factor
+  MSI_data_WCS$se[MSI_data_WCS$species == sp] <- MSI_data_WCS$se[MSI_data_WCS$species == sp] * multi_factor
+  MSI_data_WCS$se[MSI_data_WCS$species == sp][1] <- 0
+}
+# Our first year is now indexed at 100
+
+
+###### ALL species
+min_year <- min(MSI_data$year)
+
+for(sp in unique(MSI_data$species)){
+  subset_data <- MSI_data[MSI_data$species == sp, ]
+  multi_factor <- 100 / subset_data$index[subset_data$year == min_year]
+  MSI_data$index[MSI_data$species == sp] <- MSI_data$index[MSI_data$species == sp] * multi_factor
+  MSI_data$se[MSI_data$species == sp] <- MSI_data$se[MSI_data$species == sp] * multi_factor
+  MSI_data$se[MSI_data$species == sp][1] <- 0
+}
+# Our first year is now indexed at 100
+
+
+
+#msi_out <- msi(data,
+#               nsim = 500, # The number of Mote Carlo simulations
+#               SEbaseyear = 1950, # The year to index on
+#               plotbaseyear = 1970, # The year to set as 100 in plots
+#               index_smoot = 'INDEX', # plotbaseyear uses MSI not trend
+#               span = 0.7, # 'wigglyness' of line, between 0 and 1
+#               lastyears = 1910, # last X years of time series for short-term trends
+#               maxCV = 10, # maximum allowed Coefficient of Variation 
+#               changepoint = 1970, # compare trends before and after this year
+#               truncfac = 8, # max year-to-year index ratio
+#               TRUNC = 5, #set all indices below TRUNC to this
+#               plot = FALSE # should the plots be returned?)
+#               )
+
+require(BRCindicators)
+msi_out_all <- msi(MSI_data,
+                   nsim = 10000, # The number of Mote Carlo simulations
+                   changepoint = 1976, # compare trends before and after this year
+                   index_smooth = 'INDEX', # plotbaseyear uses MSI not trend
+                   lastyears = 34,
+                   span = 0.5,
+                   plot = FALSE # should the plots be returned?)
+                   )
+
+### HS
+msi_out_HS <- msi(MSI_data_HS,
+                   nsim = 10000, # The number of Mote Carlo simulations
+                   changepoint = 1976, # compare trends before and after this year
+                   index_smooth = 'INDEX', # plotbaseyear uses MSI not trend
+                   lastyears = 34,
+                   span = 0.5,
+                   plot = FALSE # should the plots be returned?)
+                   )
+
+### WSC
+msi_out_WCS <- msi(MSI_data_WCS,
+                   nsim = 10000, # The number of Mote Carlo simulations
+                   changepoint = 1976, # compare trends before and after this year
+                   index_smooth = 'INDEX', # plotbaseyear uses MSI not trend
+                   lastyears = 34,
+                   span = 0.5,
+                   plot = FALSE # should the plots be returned?)
+                   )
+
+
+# Source the plotting function
+source("./fig-plot_MSI.R")
+
+plot.MSIgal(msi_out_all, msi_out_HS, msi_out_WCS)
+plot.MSIgalOne(msi_out_all, msi_out_HS, msi_out_WCS)
+
+
+
+
+msi_out_all$results$Trend<- msi_out_all$results$Trend+4.53
+msi_out_all$results$lower_CL_trend<-msi_out_all$results$lower_CL_trend+4.53
+msi_out_all$results$upper_CL_trend<- msi_out_all$results$upper_CL_trend+4.53
+plot.MSIgal_Linnean(msi_out_all)
+
+msi_out_HS$results$Trend<- msi_out_HS$results$Trend-9.15 
+msi_out_HS$results$lower_CL_trend<-msi_out_HS$results$lower_CL_trend-9.15 
+msi_out_HS$results$upper_CL_trend<- msi_out_HS$results$upper_CL_trend-9.15 
+plot.MSIgal2_Linnean(msi_out_HS, msi_out_WCS)
+```
+
+
+# Lamda Multi-Species Indicator
+From DEFRA/CEH. Calculates an indicator using growth rates from one year to the next. Advantages over the conventional approach to constructing indicators is that the categorisation of species as ‘increasing’ or ‘decreasing’ can be made from the same set of data (the growth rates) as the construction of the indicator. ALSO uses the actual iterations for each species specific estimate as opposed to mean+se. 
+
+```{r lambdaIndicator, cache=TRUE, message=FALSE}
+# Load my arrayBuilder function
+source("./function-arrayBuilder.R")
+
+# Use function to build a three-dimensional matrix. The dimensions of this array represent species, years, and iterations.
+lambdaArray_all <- arrayBuilder(input_dir = "../outputs/mixLL-outputs/", nsp=53, startyr=1, stopyr=110, iter=9999)
+
+lambdaArray_HS <- arrayBuilder(input_dir = "../outputs/mixLL-outputs_HS/", nsp=29, startyr=1, stopyr=110, iter=9999)
+
+lambdaArray_WCS <- arrayBuilder(input_dir = "../outputs/mixLL-outputs_WCS/", nsp=24, startyr=1, stopyr=110, iter=9999)
+
+# Ensure values are bounded by 0 and 1
+# summary(lambdaArray_all > 1)
+# summary(lambdaArray_all < 0)
+
+# Run the lambda_interpolation method on this data
+lambdaIndicator_all <- lambda_indicator(lambdaArray_all)
+
+# Run the lambda_interpolation method on this data
+lambdaIndicator_HS <- lambda_indicator(lambdaArray_HS)
+
+# Run the lambda_interpolation method on this data
+lambdaIndicator_WCS <- lambda_indicator(lambdaArray_WCS)
+
+# Plot the indicator
+source("./fig-plot_LMSI.R")
+plot_LMSIgal(indicator1 = (lambdaIndicator_all$summary[,'indicator']),
+               CIs1 = (lambdaIndicator_all$summary[,c('lower' ,'upper')]),
+             indicator2 = (lambdaIndicator_HS$summary[,'indicator']),
+               CIs2 = (lambdaIndicator_HS$summary[,c('lower' ,'upper')]),
+             indicator3 = (lambdaIndicator_WCS$summary[,'indicator']),
+               CIs3 = (lambdaIndicator_WCS$summary[,c('lower' ,'upper')]))
+```
+
+
+# Growth rate between time periods
+
+```{r percentdif, cache=TRUE, message=FALSE}
+# Load my function summarising percent differences between all successive years and giving the average 
+source("./function-summarise_percentdif.R")
+out <- summarise_percentdif("../outputs/mixLL-outputs/", cutoff = 77)
+
+# Use function to build a three-dimensional matrix. The dimensions of this array represent species, years, and iterations.
+lambdaArray_all_1TP <- arrayBuilder(input_dir = "../outputs/mixLL-outputs/", nsp=52, startyr=1, stopyr=77, iter=9999)
+# Run the lambda_interpolation method on this data
+lambdaIndicator_all_1TP <- lambda_indicator(lambdaArray_all_1TP)
+#write.csv(lambdaIndicator_all_1TP$species_change, "../outputs/growthRatesTP1.csv")
+
+
+# Use function to build a three-dimensional matrix. The dimensions of this array represent species, years, and iterations.
+lambdaArray_all_2TP <- arrayBuilder(input_dir = "../outputs/mixLL-outputs/", nsp=52, startyr=77, stopyr=110, iter=9999)
+# Run the lambda_interpolation method on this data
+lambdaIndicator_all_2TP <- lambda_indicator(lambdaArray_all_2TP)
+#write.csv(lambdaIndicator_all_2TP$species_change, "../outputs/growthRatesTP2.csv")
+```
+
+
+Argynnis adippe and Boloria euphrosyne have not converged, lets take a closer look:
+
+```{r non-converged-models, }
+# 
+require(sparta)
+
+
+source("./function-summarise_growthRate.R")
+growthRates <- summarise_growthRate("../outputs/mixLL-outputs/", 1, 77, 77,110)
+View(growthRates)
+write.csv(growthRates, "../outputs/growthRates.csv")
+test <- read.csv("../outputs/growthRates1.csv")
+
+
+############## Habitat specialists
+source("./function-plot.Occdet_G.R")
+input_dir <- "../outputs/CtagWatsonCrick_results_HS/"
+files <- list.files(path = paste(input_dir), ignore.case = TRUE, pattern = '\\.rds$') # list of the files to loop through
+
+# Create empty list
+p_HS <- list() 
+
+for(i in 1:length(files)){
+  # read the rds file
+  out <- readRDS(file.path(input_dir, files[i])) 
+  p_HS[[i]] <- plot.occDet_G(out)
+}
+
+
+############## Wider countryside species
+source("./function-plot.Occdet_G.R")
+input_dir <- "../outputs/CtagWatsonCrick_results_WCS/"
+files <- list.files(path = paste(input_dir), ignore.case = TRUE, pattern = '\\.rds$') # list of the files to loop through
+
+# Create empty list
+p_WCS <- list() 
+
+for(i in 1:length(files)){
+  # read the rds file
+  out <- readRDS(file.path(input_dir, files[i])) 
+  p_WCS[[i]] <- plot.occDet_G(out)
+}
+
+p_HS
+
+p_WCS
+
+plot.occDet_Gtwo(results_Boloria_euphrosyne_ctag, results_Boloria_euphrosyne_mixLL)
+plot.occDet_Gtwo(results_Pyrgus_malvae_crick, results_Pyrgus_malvae_mixLL)
+```
+

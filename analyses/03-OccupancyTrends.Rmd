@@ -1,0 +1,793 @@
+---
+title: "03-OccupancyTrends"
+author: "Galina M. Jönsson"
+date: "27/07/2020"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+---
+
+# Model
+Here, I summarize the outputs from the models estimating occupancy trends for 54 British resident butterflies. 
+
+
+
+
+## Set up
+
+#### Load required packages
+```{r load-packages, cache=TRUE, message=FALSE}
+# Packages for modeling
+library(devtools)
+list.of.packages <- c("minqa", "lme4", "gtools", "gtable", "scales",
+                      "assertthat", "magrittr", "tibble", "stringr")
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+#install_github(repo = 'biologicalrecordscentre/BRCindicators')
+#install_github('biologicalrecordscentre/sparta')
+library("BRCindicators")
+
+```
+
+
+
+
+# Inspect output
+
+### Convergance
+I run the analyses on a computer cluster and must fist test whether all annual estimates have converged. 
+
+```{r test-Rhat, }
+# Source the function that loops through all model outputs and checks convergence, i.e. is Rhat >1.1?
+source("./function-summarise_Rhat.R")
+
+# Run function
+RhatSummary <- summarise_Rhat("../outputs/mixLL-outputs/", verbose=FALSE)
+# Find the species which need more iterations (converged-column == "N")
+require(dplyr)
+NotConvergedSpp <- subset(RhatSummary, grepl("N", converged))
+NotConvergedSpp
+```
+Aglais.io, Apatura.iris, Ochlodes.sylvanus and Pyronia.tithonus have all not converged at 50k iterations
+
+### Plot
+```{r plot-species, }
+require(sparta)
+
+# Create empty list
+list <- list() 
+
+# Input directory
+input_dir <- "../outputs/mixLL-outputs/"
+files <- list.files(path = paste(input_dir), ignore.case = TRUE, pattern = '\\.rds$') # list of the files to loop through
+
+for(i in 1:length(files)){
+  # read the rds file
+  out <- readRDS(file.path(input_dir, files[i])) 
+  list[[i]] <- plot(out)
+}
+
+list
+``` 
+
+
+
+#### Prepare the data
+```{r prep-data, cache=TRUE, message=FALSE}
+# Load summarise_Rhat function
+source("./function-summarise_occDetRds_BMA.R")
+
+############# Specialist vs. generalist species 
+CatLookUp <- read.csv("../data/auxiliaryData/MSI_lookup.csv")
+CatLookUp$Species <- gsub(" ", ".", CatLookUp$Species)
+CatLookUp$HS_WCS <- as.factor(CatLookUp$HS_WCS)
+CatLookUp$C_S_R <- as.factor(CatLookUp$C_S_R)
+
+
+
+trends_summary <- summarise_occDetRdsBMA(input_dir = "../outputs/mixLL-outputs/")
+
+# The start year is 1 by defailut, change it to 1900
+trends_summary[, "year"] <- trends_summary[, "year"] + 1899
+
+
+# competitors (C: low stress, low disturbance)
+names.use <- colnames(trends_summary)[colnames(trends_summary) %in% (subset(CatLookUp, C_S_R == "C"))$Species]
+#trends_summary_C <- trends_summary[, (append("year", names.use))]
+trends_summary_BMA_C <- trends_summary_BMA[trends_summary_BMA$species %in% names.use,]
+
+# stress‐tolerators (S: high stress, low disturbance)
+names.use <- colnames(trends_summary)[colnames(trends_summary) %in% (subset(CatLookUp, C_S_R == "S"))$Species]
+#trends_summary_C <- trends_summary[, (append("year", names.use))]
+trends_summary_BMA_S <- trends_summary_BMA[trends_summary_BMA$species %in% names.use,]
+
+# ruderals (R: high disturbance, low stress)
+names.use <- colnames(trends_summary)[colnames(trends_summary) %in% (subset(CatLookUp, C_S_R == "R"))$Species]
+#trends_summary_C <- trends_summary[, (append("year", names.use))]
+trends_summary_BMA_R <- trends_summary_BMA[trends_summary_BMA$species %in% names.use,]
+
+# competitors/stress‐tolerators (CS)
+names.use <- colnames(trends_summary)[colnames(trends_summary) %in% (subset(CatLookUp, C_S_R == "CS"))$Species]
+#trends_summary_C <- trends_summary[, (append("year", names.use))]
+trends_summary_BMA_CS <- trends_summary_BMA[trends_summary_BMA$species %in% names.use,]
+
+# stress‐tolerators/ruderals (SR)
+names.use <- colnames(trends_summary)[colnames(trends_summary) %in% (subset(CatLookUp, C_S_R == "SR"))$Species]
+#trends_summary_C <- trends_summary[, (append("year", names.use))]
+trends_summary_BMA_SR <- trends_summary_BMA[trends_summary_BMA$species %in% names.use,]
+
+# competitors/stress‐tolerators/ruderals (CSR)
+names.use <- colnames(trends_summary)[colnames(trends_summary) %in% (subset(CatLookUp, C_S_R == "CSR"))$Species]
+#trends_summary_C <- trends_summary[, (append("year", names.use))]
+trends_summary_BMA_CSR <- trends_summary_BMA[trends_summary_BMA$species %in% names.use,]
+```
+
+
+
+
+```{r geometric-mean-all, cache=TRUE, message=FALSE}
+# Let's run this data through our scaling function (all defaults used)
+rescaled_trends <- rescale_species(Data = trends_summary)
+
+# This function takes just the species columns
+scaled_species <- rescaled_trends[,!colnames(rescaled_trends) %in% c('year', 'indicator')]
+# Returned are the CIs for our indicator
+indicator_CIs <- bootstrap_indicator(Data = scaled_species)
+
+# The smoothing function takes the indicator values
+smoothed_indicator <- GAM_smoothing(rescaled_trends[,'indicator'])
+
+# In this example there is little support for a non-linear trend and 
+# so the line almost linear
+plot(x = rescaled_trends[,'year'], y = rescaled_trends[,'indicator'])
+lines(x = rescaled_trends[,'year'], y = smoothed_indicator, col = 'red')
+
+# Plot our indicator.
+plot_indicator(indicator = rescaled_trends[,'indicator'],
+               smoothed_line = smoothed_indicator,
+               CIs = indicator_CIs)
+```
+
+
+
+
+```{r geometric-mean-HS, cache=TRUE, message=FALSE}
+# Let's run this data through our scaling function (all defaults used)
+rescaled_trends <- rescale_species(Data = trends_summary_HS)
+
+# This function takes just the species columns
+scaled_species <- rescaled_trends[,!colnames(rescaled_trends) %in% c('year', 'indicator')]
+# Returned are the CIs for our indicator
+indicator_CIs <- bootstrap_indicator(Data = scaled_species)
+
+# The smoothing function takes the indicator values
+smoothed_indicator <- GAM_smoothing(rescaled_trends[,'indicator'])
+
+# In this example there is little support for a non-linear trend and 
+# so the line almost linear
+plot(x = rescaled_trends[,'year'], y = rescaled_trends[,'indicator'])
+lines(x = rescaled_trends[,'year'], y = smoothed_indicator, col = 'red')
+
+# Plot our indicator.
+plot_indicator(indicator = rescaled_trends[,'indicator'],
+               smoothed_line = smoothed_indicator,
+               CIs = indicator_CIs)
+```
+
+
+
+```{r geometric-mean-wcs, cache=TRUE, message=FALSE}
+# Let's run this data through our scaling function (all defaults used)
+rescaled_trends <- rescale_species(Data = trends_summary_WCS)
+
+# This function takes just the species columns
+scaled_species <- rescaled_trends[,!colnames(rescaled_trends) %in% c('year', 'indicator')]
+# Returned are the CIs for our indicator
+indicator_CIs <- bootstrap_indicator(Data = scaled_species)
+
+# The smoothing function takes the indicator values
+smoothed_indicator <- GAM_smoothing(rescaled_trends[,'indicator'])
+
+# In this example there is little support for a non-linear trend and 
+# so the line almost linear
+plot(x = rescaled_trends[,'year'], y = rescaled_trends[,'indicator'])
+lines(x = rescaled_trends[,'year'], y = smoothed_indicator, col = 'red')
+
+# Plot our indicator.
+plot_indicator(indicator = rescaled_trends[,'indicator'],
+               smoothed_line = smoothed_indicator,
+               CIs = indicator_CIs)
+```
+
+
+
+
+
+```{r BMA-HSvsWCS, cache=TRUE, message=FALSE}
+# Bayesian Meta-Analysis (BMA)
+# Load summarise_Rhat function
+source("/Users/galinajonsson/OneDrive - Imperial College London/backup/MacBookPro/Desktop/waspPaper/spartaGit/BRCindicator_myFuncs/summarise_occDetRds_BMA.R")
+
+
+trends_summary_BMA <- summarise_occDetRdsBMA("modelResults/CtagWatsonCrick_results")
+# Year starts with 1 to 110 so add 1899
+trends_summary_BMA$year <- trends_summary_BMA$year + 1899
+
+############# Specialist vs. generalist species 
+CatLookUp <- read.csv("suppData/MSIs.csv")
+CatLookUp$Species <- gsub(" ", ".", CatLookUp$Species)
+CatLookUp$HS_WCS <- as.factor(CatLookUp$HS_WCS)
+CatLookUp$C_S_R <- as.factor(CatLookUp$C_S_R)
+
+# Habitat specialists (HS)
+names.use <- colnames(trends_summary)[colnames(trends_summary) %in% (subset(CatLookUp, HS_WCS == "HS"))$Species]
+#trends_summary_HS <- trends_summary[, (append("year", names.use))]
+trends_summary_BMA_HS <- trends_summary_BMA[trends_summary_BMA$species %in% names.use,]
+
+# Wider countryside species (WCS)
+names.use <- colnames(trends_summary)[colnames(trends_summary) %in% (subset(CatLookUp, HS_WCS == "WCS"))$Species]
+#trends_summary_WCS <- trends_summary[, (append("year", names.use))]
+trends_summary_BMA_WCS <- trends_summary_BMA[trends_summary_BMA$species %in% names.use,]
+
+
+##################### Habitat specialists vs. Wider countryside species
+# All species
+bma_indicator_all <- bma(trends_summary_BMA,
+                     parallel = TRUE,
+                     n.iter = 10000, 
+                     num.knots = 50, 
+                     n.thin = 5,
+                     m.scale = 'logit')
+
+
+# Habitat specialists (HS)
+bma_indicator_HS <- bma(trends_summary_BMA_HS,
+                     parallel = TRUE,
+                     n.iter = 10000, 
+                     num.knots = 50, 
+                     n.thin = 5,
+                     m.scale = 'logit')
+
+bma_indicator_HS_loge <- bma(trends_summary_BMA_HS,
+                     parallel = TRUE,
+                     n.iter = 10000, 
+                     num.knots = 50, 
+                     n.thin = 5,
+                     m.scale = 'loge')
+
+
+# Wider countryside species (WCS)
+bma_indicator_WCS <- bma(trends_summary_BMA_WCS,
+                     #parallel = TRUE,
+                     n.iter = 10000, 
+                     num.knots = 50, 
+                     n.thin = 5,
+                     m.scale = 'logit')
+
+
+plot_indicator(indicator = bma_indicator_all[,'Index'],
+               CIs = bma_indicator_all[,c(3,4)])
+
+plot_indicator(indicator = bma_indicator_HS_loge[,'Index'],
+               CIs = bma_indicator_HS_loge[,c(3,4)])
+
+
+plot_indicator(indicator = bma_indicator_WCS[,'Index'],
+               CIs = bma_indicator_WCS[,c(3,4)])
+```
+
+
+```{r BMA-CSR, cache=TRUE, message=FALSE}
+##################### C-S-R species
+# competitors (C: low stress, low disturbance)
+bma_indicator_C <- bma(trends_summary_BMA_C,
+                     #parallel = TRUE,
+                     n.iter = 10000, 
+                     num.knots = 50, 
+                     n.thin = 5,
+                     m.scale = 'logit')
+
+plot_indicator(indicator = bma_indicator_C[,'Index'],
+               CIs = bma_indicator_C[,c(3,4)])
+
+# stress‐tolerators (S: high stress, low disturbance)
+bma_indicator_S <- bma(trends_summary_BMA_S,
+                     #parallel = TRUE,
+                     n.iter = 10000, 
+                     num.knots = 50, 
+                     n.thin = 5,
+                     m.scale = 'logit')
+
+plot_indicator(indicator = bma_indicator_S[,'Index'],
+               CIs = bma_indicator_S[,c(3,4)])
+
+# ruderals (R: high disturbance, low stress)
+bma_indicator_R <- bma(trends_summary_BMA_R,
+                     #parallel = TRUE,
+                     n.iter = 10000, 
+                     num.knots = 50, 
+                     n.thin = 5,
+                     m.scale = 'logit')
+
+plot_indicator(indicator = bma_indicator_R[,'Index'],
+               CIs = bma_indicator_R[,c(3,4)])
+
+# competitors/stress‐tolerators (CS)
+bma_indicator_CS <- bma(trends_summary_BMA_CS,
+                     #parallel = TRUE,
+                     n.iter = 10000, 
+                     num.knots = 50, 
+                     n.thin = 5,
+                     m.scale = 'logit')
+
+plot_indicator(indicator = bma_indicator_CS[,'Index'],
+               CIs = bma_indicator_CS[,c(3,4)])
+
+# stress‐tolerators/ruderals (SR)
+bma_indicator_SR <- bma(trends_summary_BMA_SR,
+                     #parallel = TRUE,
+                     n.iter = 10000, 
+                     num.knots = 50, 
+                     n.thin = 5,
+                     m.scale = 'logit')
+
+plot_indicator(indicator = bma_indicator_SR[,'Index'],
+               CIs = bma_indicator_SR[,c(3,4)])
+
+# competitors/stress‐tolerators/ruderals (CSR)
+bma_indicator_CSR <- bma(trends_summary_BMA_CSR,
+                     #parallel = TRUE,
+                     n.iter = 10000, 
+                     num.knots = 50, 
+                     n.thin = 5,
+                     m.scale = 'logit')
+
+plot_indicator(indicator = bma_indicator_CSR[,'Index'],
+               CIs = bma_indicator_CSR[,c(3,4)])
+```
+
+
+# Monte Carlo Multi-Species Indicator
+Statistics Neatherlands' method to account for sampling error of species indices in the calculation of multi-species indicators based on Monte Carlo simulation of annual species indices (Soldaat et al., 2017; https://doi.org/10.1016/j.ecolind.2017.05.033).
+
+### Monte Carlo MSI: Habitat specialists vs. Wider countryside species
+```{r MSI-HSvsWCS, cache=TRUE, message=FALSE}
+# Species index values need to be 100 in the base year. Here I use
+# the first year as my base year and rescale to 100. The standard error
+# in the base year should be 0.
+data <- trends_summary_BMA
+min_year <- min(data$year)
+
+for(sp in unique(data$species)){
+  subset_data <- data[data$species == sp, ]
+  multi_factor <- 100 / subset_data$index[subset_data$year == min_year]
+  data$index[data$species == sp] <- data$index[data$species == sp] * multi_factor
+  data$se[data$species == sp] <- data$se[data$species == sp] * multi_factor
+  data$se[data$species == sp][1] <- 0
+}
+data_all <- data
+# Our first year is now indexed at 100
+
+#msi_out <- msi(data,
+#               nsim = 500, # The number of Mote Carlo simulations
+#               SEbaseyear = 1950, # The year to index on
+#               plotbaseyear = 1970, # The year to set as 100 in plots
+#               index_smoot = 'INDEX', # plotbaseyear uses MSI not trend
+#               span = 0.7, # 'wigglyness' of line, between 0 and 1
+#               lastyears = 1910, # last X years of time series for short-term trends
+#               maxCV = 10, # maximum allowed Coefficient of Variation 
+#               changepoint = 1970, # compare trends before and after this year
+#               truncfac = 8, # max year-to-year index ratio
+#               TRUNC = 5, #set all indices below TRUNC to this
+#               plot = FALSE # should the plots be returned?)
+#               )
+
+
+msi_out_all <- msi(data_all,
+                   nsim = 5000, # The number of Mote Carlo simulations
+                   changepoint = 1970, # compare trends before and after this year
+                   index_smooth = 'INDEX', # plotbaseyear uses MSI not trend
+                   lastyears = 34,
+                   span = 0.5,
+                   plot = FALSE # should the plots be returned?)
+                   )
+
+
+msi_out_all_BES <- msi(data_all,
+                   nsim = 10000, # The number of Mote Carlo simulations
+                   span = 0.5,
+                   plot = FALSE # should the plots be returned?)
+                   )
+
+
+
+
+##################### Habitat specialists vs. Wider countryside species
+# Habitat specialists (HS)
+data <- trends_summary_BMA_HS
+min_year <- min(data$year)
+
+for(sp in unique(data$species)){
+  subset_data <- data[data$species == sp, ]
+  multi_factor <- 100 / subset_data$index[subset_data$year == min_year]
+  data$index[data$species == sp] <- data$index[data$species == sp] * multi_factor
+  data$se[data$species == sp] <- data$se[data$species == sp] * multi_factor
+  data$se[data$species == sp][1] <- 0
+}
+data_HS <- data
+
+msi_out_HS <- msi(data_HS,
+                   nsim = 5000, # The number of Mote Carlo simulations
+                   changepoint = 1970, # compare trends before and after this year
+                   index_smooth = 'INDEX', # plotbaseyear uses MSI not trend
+                   lastyears = 34,
+                   span = 0.5,
+                   plot = FALSE # should the plots be returned?)
+                   )
+
+
+msi_out_HS_BES <- msi(data_HS,
+                   nsim = 10000, # The number of Mote Carlo simulations
+                   span = 0.5,
+                   plot = FALSE # should the plots be returned?)
+                   )
+
+
+# Wider countryside species (WCS)
+data <- trends_summary_BMA_WCS
+min_year <- min(data$year)
+
+for(sp in unique(data$species)){
+  subset_data <- data[data$species == sp, ]
+  multi_factor <- 100 / subset_data$index[subset_data$year == min_year]
+  data$index[data$species == sp] <- data$index[data$species == sp] * multi_factor
+  data$se[data$species == sp] <- data$se[data$species == sp] * multi_factor
+  data$se[data$species == sp][1] <- 0
+}
+data_WCS <- data
+
+msi_out_WCS <- msi(data_WCS,
+                   nsim = 5000, # The number of Mote Carlo simulations
+                   changepoint = 1970, # compare trends before and after this year
+                   index_smooth = 'INDEX', # plotbaseyear uses MSI not trend
+                   lastyears = 34,
+                   span = 0.5,
+                   plot = FALSE # should the plots be returned?)
+                   )
+
+msi_out_WCS_BES <- msi(data_WCS,
+                   nsim = 10000, # The number of Mote Carlo simulations
+                   span = 0.5,
+                   plot = FALSE # should the plots be returned?)
+                   )
+
+
+
+
+plot(msi_out_all$CV)
+plot.MSIgal(msi_out_all_BES)
+plot(msi_out_HS$CV)
+plot(msi_out_HS_BES)
+plot(msi_out_WCS$CV)
+plot(msi_out_WCS)
+
+
+plot(msi_out_WCS_BES)
+
+
+plot(msi_out_all_BES)
+plot.MSIgal2(msi_out_HS_BES,msi_out_WCS_BES)
+
+z <- msi_out_WCS_BES
+
+plot.MSIgal2(msi_out_HS_BES,msi_out_all_BES, msi_out_WCS_BES)
+
+```
+
+### Monte Carlo MSI: competitors, stress‐tolerators and ruderals
+```{r MSI-CSR, cache=TRUE, message=FALSE}
+# competitors (C: low stress, low disturbance)
+data <- trends_summary_BMA_C
+min_year <- min(data$year)
+
+for(sp in unique(data$species)){
+  subset_data <- data[data$species == sp, ]
+  multi_factor <- 100 / subset_data$index[subset_data$year == min_year]
+  data$index[data$species == sp] <- data$index[data$species == sp] * multi_factor
+  data$se[data$species == sp] <- data$se[data$species == sp] * multi_factor
+  data$se[data$species == sp][1] <- 0
+}
+data_C <- data
+
+msi_out_C <- msi(data_C,
+                   nsim = 5000, # The number of Mote Carlo simulations
+                   changepoint = 1970, # compare trends before and after this year
+                   index_smooth = 'INDEX', # plotbaseyear uses MSI not trend
+                   lastyears = 34,
+                   span = 0.5,
+                   plot = FALSE # should the plots be returned?)
+                   )
+
+
+# stress‐tolerators (S: high stress, low disturbance)
+data <- trends_summary_BMA_S
+min_year <- min(data$year)
+
+for(sp in unique(data$species)){
+  subset_data <- data[data$species == sp, ]
+  multi_factor <- 100 / subset_data$index[subset_data$year == min_year]
+  data$index[data$species == sp] <- data$index[data$species == sp] * multi_factor
+  data$se[data$species == sp] <- data$se[data$species == sp] * multi_factor
+  data$se[data$species == sp][1] <- 0
+}
+data_S <- data
+
+msi_out_S <- msi(data_S,
+                   nsim = 5000, # The number of Mote Carlo simulations
+                   changepoint = 1970, # compare trends before and after this year
+                   index_smooth = 'INDEX', # plotbaseyear uses MSI not trend
+                   lastyears = 34,
+                   span = 0.5,
+                   plot = FALSE # should the plots be returned?)
+                   )
+
+# ruderals (R: high disturbance, low stress)
+data <- trends_summary_BMA_R
+min_year <- min(data$year)
+
+for(sp in unique(data$species)){
+  subset_data <- data[data$species == sp, ]
+  multi_factor <- 100 / subset_data$index[subset_data$year == min_year]
+  data$index[data$species == sp] <- data$index[data$species == sp] * multi_factor
+  data$se[data$species == sp] <- data$se[data$species == sp] * multi_factor
+  data$se[data$species == sp][1] <- 0
+}
+data_R <- data
+
+msi_out_R <- msi(data_R,
+                   nsim = 5000, # The number of Mote Carlo simulations
+                   changepoint = 1970, # compare trends before and after this year
+                   index_smooth = 'INDEX', # plotbaseyear uses MSI not trend
+                   lastyears = 34,
+                   span = 0.5,
+                   plot = FALSE # should the plots be returned?)
+                   )
+
+# competitors/stress‐tolerators (CS)
+data <- trends_summary_BMA_CS
+min_year <- min(data$year)
+
+for(sp in unique(data$species)){
+  subset_data <- data[data$species == sp, ]
+  multi_factor <- 100 / subset_data$index[subset_data$year == min_year]
+  data$index[data$species == sp] <- data$index[data$species == sp] * multi_factor
+  data$se[data$species == sp] <- data$se[data$species == sp] * multi_factor
+  data$se[data$species == sp][1] <- 0
+}
+data_CS <- data
+
+msi_out_CS <- msi(data_CS,
+                   nsim = 5000, # The number of Mote Carlo simulations
+                   changepoint = 1970, # compare trends before and after this year
+                   index_smooth = 'INDEX', # plotbaseyear uses MSI not trend
+                   lastyears = 34,
+                   span = 0.5,
+                   plot = FALSE # should the plots be returned?)
+                   )
+
+# stress‐tolerators/ruderals (SR)
+data <- trends_summary_BMA_SR
+min_year <- min(data$year)
+
+for(sp in unique(data$species)){
+  subset_data <- data[data$species == sp, ]
+  multi_factor <- 100 / subset_data$index[subset_data$year == min_year]
+  data$index[data$species == sp] <- data$index[data$species == sp] * multi_factor
+  data$se[data$species == sp] <- data$se[data$species == sp] * multi_factor
+  data$se[data$species == sp][1] <- 0
+}
+data_SR <- data
+
+msi_out_SR <- msi(data_SR,
+                   nsim = 5000, # The number of Mote Carlo simulations
+                   changepoint = 1970, # compare trends before and after this year
+                   index_smooth = 'INDEX', # plotbaseyear uses MSI not trend
+                   lastyears = 34,
+                   span = 0.5,
+                   plot = FALSE # should the plots be returned?)
+                   )
+
+# competitors/stress‐tolerators/ruderals (CSR)
+data <- trends_summary_BMA_CSR
+min_year <- min(data$year)
+
+for(sp in unique(data$species)){
+  subset_data <- data[data$species == sp, ]
+  multi_factor <- 100 / subset_data$index[subset_data$year == min_year]
+  data$index[data$species == sp] <- data$index[data$species == sp] * multi_factor
+  data$se[data$species == sp] <- data$se[data$species == sp] * multi_factor
+  data$se[data$species == sp][1] <- 0
+}
+data_CSR <- data
+
+msi_out_CSR <- msi(data_CSR,
+                   nsim = 5000, # The number of Mote Carlo simulations
+                   changepoint = 1970, # compare trends before and after this year
+                   index_smooth = 'INDEX', # plotbaseyear uses MSI not trend
+                   lastyears = 34,
+                   span = 0.5,
+                   plot = FALSE # should the plots be returned?)
+                   )
+
+
+
+
+plot(msi_out_all$CV)
+plot(msi_out_all)
+
+plot(msi_out_C$CV)
+plot(msi_out_C) # Moderate increase
+
+plot(msi_out_S$CV)
+plot(msi_out_S) # decline
+
+plot(msi_out_R$CV)
+plot(msi_out_R) # HUGE increase
+
+plot(msi_out_CS$CV)
+plot(msi_out_CS) # Moderate decline
+
+plot(msi_out_SR$CV)
+plot(msi_out_SR) # Moderate increase
+
+plot(msi_out_CSR$CV)
+plot(msi_out_CSR) # Moderate decline
+```
+From Dennis et al. 2004
+Increasingly high host‐plant C and R strategy scores bias butterflies to rapid development, short early stages, multivoltinism, long flight periods, early seasonal emergence, higher mobility, polyphagy, wide resource availability and biotope occupancy, open, areally expansive, patchy population structures, denser distributions, wider geographical ranges, resistance to range retractions as well as to increasing rarity in the face of environmental changes. 
+
+Increasing host‐plant S strategy scores have reversed tendencies, biasing those butterfly species to extended development times, fewer broods, short flight periods, smaller wing expanse and lower mobility, monophagy, restricted resource exploitation and biotope occupancy, closed, areally limited populations with typical metapopulation structures, sparse distributions, and limited geographical ranges, range retractions, and increased rarity.
+
+Species with S strategy host plants are species vulnerable to current environmental changes and species of conservation concern.
+
+
+
+
+
+# Lamda Multi-Species Indicator
+From DEFRA/CEH. Calculates an indicator using growth rates from one year to the next. Advantages over the conventional approach to constructing indicators is that the categorisation of species as ‘increasing’ or ‘decreasing’ can be made from the same set of data (the growth rates) as the construction of the indicator. ALSO uses the actual iterations for each species specific estimate as opposed to mean+se. 
+
+```{r lambdaIndicator, cache=TRUE, message=FALSE}
+# Load my arrayBuilder function
+source("/Users/galinajonsson/OneDrive - Imperial College London/backup/MacBookPro/Desktop/waspPaper/spartaGit/BRCindicator_myFuncs/arrayBuilder.R")
+
+# Use function to build a three-dimensional matrix. The dimensions of this array represent species, years, and iterations.
+lambdaArray_all <- arrayBuilder(input_dir = "modelResults/CtagWatsonCrick_results", nsp=54, nyr=110, iter=5000)
+
+# Run the lambda_interpolation method on this data
+lambdaIndicator_all <- lambda_indicator(lambdaArray_all)
+
+#### Note that I chnaged the default arrayBuilder function for these 
+
+# Habitat specialists (HS)
+lambdaArray_HS <- arrayBuilder(input_dir = "modelResults/CtagWatsonCrick_results", nsp=29, nyr=110, iter=5000)
+
+# Run the lambda_interpolation method on this data
+lambdaIndicator_HS <- lambda_indicator(lambdaArray_HS)
+
+# Run the lambda_interpolation method on this data
+lambdaIndicator_WCS <- lambda_indicator(lambdaArray_WCS)
+
+# Wider countryside species (WCS)
+lambdaArray_WCS <- arrayBuilder(input_dir = "modelResults/CtagWatsonCrick_results", nsp=25, nyr=110, iter=5000)
+
+# Plot the indicators
+plot_indicator(lambdaIndicator_all$summary[,'indicator'],
+               lambdaIndicator_all$summary[,c('lower' ,'upper')])
+plot_indicator(lambdaIndicator_HS$summary[,'indicator'],
+               lambdaIndicator_HS$summary[,c('lower' ,'upper')])
+plot_indicator(lambdaIndicator_WCS$summary[,'indicator'],
+               lambdaIndicator_WCS$summary[,c('lower' ,'upper')])
+
+```
+
+
+
+
+```{r IntegratedModellingSem, cache=TRUE, message=FALSE}
+plot.occDet2 <- function(x, y = NULL, main = x$SPP_NAME, reg_agg = '', ...){
+    
+  # gets summary output from the BUGS files 
+  spp_data <- as.data.frame(x$BUGSoutput$summary)
+  
+  if(reg_agg != '') reg_agg <- paste0('.r_', reg_agg)
+  
+  # get rows we are interested in
+  ### take psi.fs rows - these are the yearly proportion of occupied cells ###
+  spp_data$X <- row.names(spp_data)
+  new_data <- spp_data[grepl(paste0("^psi.fs", reg_agg, "\\["),spp_data$X),]
+  new_data$year <- (Year = (x$min_year + 1899) + as.numeric(gsub(paste0("psi.fs", reg_agg), "", gsub("\\[|\\]","", row.names(new_data)))))
+  
+  # rename columns, otherwise ggplot doesn't work properly    
+  names(new_data) <- gsub("2.5%","quant_025", names(new_data))
+  names(new_data) <- gsub("97.5%","quant_975", names(new_data))
+  
+  # Add rhat T/F column
+  new_data$rhat_threshold[new_data$Rhat < 1.1] <- 'Good (<1.1)'
+  new_data$rhat_threshold[new_data$Rhat > 1.1] <- 'Bad (>1.1)'
+  
+  ### plot the yearly predicted proportion of occupied sites ###
+  # plot with error bars based on 95CI
+  ggplot(new_data, aes_string(x = "year", y = "mean"), ...) + 
+    theme_bw() +
+    geom_ribbon(data = new_data,
+                aes_string(group = 1, ymin = "quant_025", ymax = "quant_975"),
+                alpha = 0.2) +
+    geom_line(size = 1, col = "black") +
+    geom_point(size = 4, aes(col = rhat_threshold)) +
+    scale_color_manual(name = 'Rhat', values = c('Bad (>1.1)' = 'red','Good (<1.1)' = 'blue')) +
+    ylab("Occupancy") +
+    xlab("Year") +
+    scale_y_continuous(limits = c(0, 1)) +
+    ggtitle(main) + 
+    theme(plot.title = element_text(lineheight = .8, face = "bold"),
+          legend.position = 'bottom', axis.text=element_text(size=14),
+          axis.title=element_text(size=18,face="bold"))
+}
+
+
+
+results_Callophrys_rubi <- readRDS("modelResults/CtagWatsonCrick_results/results_Callophrys_rubi_crick.rds")
+plot.occDet2(results_Melitaea_cinxia)
+
+
+results_Melitaea_cinxia <- readRDS("modelResults/CtagWatsonCrick_results/results_Melitaea_cinxia_watson.rds")
+plot.occDet2(results_Melitaea_cinxia)
+
+results_Satyrium_pruni <- readRDS("modelResults/CtagWatsonCrick_results/results_Satyrium_pruni_watson.rds")
+plot.occDet2(results_Satyrium_pruni)
+
+results_Satyrium_w.album <- readRDS("modelResults/CtagWatsonCrick_results/results_Satyrium_w.album_watson.rds")
+plot(results_Satyrium_w.album)
+
+
+plot(results_Carterocephalus_palaemon)
+
+plot.occDet2(results_Favonius_quercus)
+
+
+
+spp_vis_Satyrium_w.album <- spp_vis[,c(24, 14, 56:65)] # 51 Satyrium.w.album # 24 Favonius.quercus € 14 green haistrek
+spp_vis_Satyrium_w.album <-spp_vis_Satyrium_w.album [!(spp_vis_Satyrium_w.album$Callophrys.rubi=="FALSE"),]
+
+spp_vis_Satyrium_w.album$L <- as.factor(spp_vis_Satyrium_w.album$L)
+require(plyr)
+spp_vis_Satyrium_w.album$L <- revalue(spp_vis_Satyrium_w.album$L, c("1"="BC", "2"="BC", "10"="NHM"))
+colnames(spp_vis_Satyrium_w.album)[colnames(spp_vis_Satyrium_w.album)=="L"] <- "Source"
+spp_vis_Satyrium_w.album<-spp_vis_Satyrium_w.album[!(spp_vis_Satyrium_w.album$year < 1940 & spp_vis_Satyrium_w.album$Source == "BC"),]
+
+#spp_vis_Satyrium_w.album <- spp_vis_Satyrium_w.album %>%
+  
+#df[ave(ave(df$count, df$id, FUN = min), df$group, FUN = max) == 1,]
+
+# Plot records by source on sqrt scale (plot2)
+ggplot(spp_vis_Satyrium_w.album, aes(x=year, fill=Source, color=Source)) + 
+  scale_fill_manual(values = c("#999999", "#D55E00")) +
+  scale_color_manual(values = c("#999999", "#D55E00")) +
+  geom_bar(position="identity", alpha=0.5) + 
+  labs(y="sqrt ( Records)", x = "Year") +
+  theme_bw() +
+  scale_y_sqrt() +
+  theme(text = element_text(size=18), axis.text.x = element_text(angle=90, hjust=1))
+
+
+```
+
+
+
+
+
+
+
