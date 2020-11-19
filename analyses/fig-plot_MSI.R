@@ -1,6 +1,7 @@
 plot.MSIgal <- function(x, y, z,  
                         MSI = TRUE, # Change to method = MSI or Trends
                         pointEstimates = FALSE) { 
+  require(ggplot2)
   if(isTRUE(MSI)){
   x$results$Source <- "All Species (53)"
   x$results$MSI <- x$results$MSI-(x$results$MSI[1])
