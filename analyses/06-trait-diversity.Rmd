@@ -1,0 +1,588 @@
+---
+title: "06-trait-diversity"
+author: "Galina M. Jönsson"
+date: "27/02/2020"
+output: html_document
+---
+
+
+### Standardise functional traits
+
+### Load functions and data
+```{r clean-spp-names, eval=FALSE}
+# Load trait data
+traits <- read.csv("../data/cleanData/CleanTraitData.csv")
+
+
+# Reclassify functional traits. Traits can be numeric, ordered, or factor. Binary traits should be numeric and only contain 0 and 1. character traits will be converted to factor. For a given trait, species with NA are excluded.
+traits$species <- as.factor(traits$species)
+traits$Fsp <- as.numeric(traits$Fsp) # Adult feeding specialisation: not based on any other traits used here
+traits$ProboscisL <- as.numeric(traits$ProboscisL) # Proboscis length
+traits$EggSize <- as.numeric(traits$EggSize) # Egg size
+traits$Symbiosis <- as.ordered(traits$Symbiosis) # Symbiosis in early stadia
+traits$Overwintering.stage <- as.ordered(traits$Overwintering.stage) # Hibernation stage (1 to 4)
+traits$POPSTR1 <- as.ordered(traits$POPSTR1) # Population structure
+traits$PopStr1t <- as.ordered(traits$PopStr1t) # Breeding population structure
+traits$METApop <- as.ordered(traits$METApop) # Metapopulation structure
+traits$VoltScore <- as.ordered(traits$VoltScore) 
+traits$PhagyAll <- as.ordered(traits$PhagyAll) 
+traits$AH <- as.ordered(traits$AH) 
+traits$Wingspan.average <- as.numeric(traits$Wingspan.average)
+traits$HPphenRange <- as.numeric(traits$HPphenRange)
+traits$mobilityscore <- as.numeric(traits$mobilityscore)
+traits$ELC <- as.numeric(traits$ELC)
+
+
+# Rename Polygonia c-album in traits dataset to match the occu data
+levels(traits$species)[levels(traits$species)=="Polygonia.c-album"] <- "Polygonia.c.album"
+
+# Make the species column in trait the row names and get rid of the column
+row.names(traits) <- traits$species
+traits <- traits[,1:15]
+
+# Remove Pieris brassicae as I've lost that data file
+traits <- traits[row.names(traits) != "Pieris.brassicae", , drop = FALSE]
+
+# Remove Pyronia tithonus as it has not converged
+traits <- traits[row.names(traits) != "Pyronia.tithonus", , drop = FALSE]
+
+
+################ In November 2020 as third level was lost
+traits$METApop <- as.numeric(traits$METApop) # Metapopulation structure
+
+
+traits <- traits[,c(15,1,9,10,6,3,2,4:5,8,14,7,11:13)]
+```
+
+
+Once the species-species distance matrix is obtained, dbFD checks whether it is Euclidean. This
+is done via is.euclid. PCoA axes corresponding to negative eigenvalues are imaginary axes that
+cannot be represented in a Euclidean space, but simply ignoring these axes would lead to biased
+estimations of FD. Hence in dbFD one of four correction methods are used, following argument
+corr. "sqrt" simply takes the square root of the distances. However, this approach does not always
+work for all coefficients, in which case dbFD will stop and tell the user to select another correction
+method. "cailliez" refers to the approach described by Cailliez (1983) and is implemented via
+cailliez. "lingoes" refers to the approach described by Lingoes (1971) and is implemented via
+lingoes. "none" creates a distance matrix with only the positive eigenvalues of the Euclidean
+representation via quasieuclid. See Legendre and Legendre (1998) and Legendre and Anderson
+(1999) for more details on these corrections.
+```{r setup, include=FALSE}
+# Load the function that extracts a selected number of estimates from the posterior distribution
+source("../analyses/function-extractPosterior.R")
+
+# Use the function to extract the data
+occu <- summarise_posterior('../outputs/mixLL-outputs_ConvergedFD/', iterations = 1000, years = 116, verbose = TRUE)
+
+#saveRDS(occu, "../outputs/FDoutputs/occu1000mixLL.rds")
+
+# Create an empty list to populate with FD outputs for each iteration
+FD_list = vector(mode = "list", length = 1000)
+
+# Trait weights
+w <- c(3,3,
+       2,2,2,
+       3,3,
+       3,3,
+       2,2,2,
+       2,2,2)
+
+
+# Loop through all occu matrices in occu (each representing an iteration) and fill FD_list
+require(FD)
+for(i in 1:1000){
+  FD_list[[i]] <- dbFD(traits, occu[[i]], w,
+                     w.abun = TRUE, calc.CWM = TRUE, 
+                     corr="cailliez") # 'cailliez' correction because 'sqrt' does not work
+}
+
+# Name each list (i.e. iteration) "Iter" followed by number
+nameList <- paste("Iter", 1:1000, sep = "")
+names(FD_list) <- nameList
+
+# Save the file
+#saveRDS(FD_list, "../outputs/FDoutputs/FDlist_2020-11-19.rds")
+```
+
+
+
+### Summarise and visualise matrices
+```{r summarise-visualise}
+# Read the data
+FD_list <- readRDS("../outputs/FDoutputs/FDlist_2020-11-19.rds")
+
+# Source a function that summarizes the matrices list
+source("../analyses/function-summarise_FDmatrics.R")
+
+# Run the function
+FDmatrics <- summarise_FDmatrics(FD_list, 1000, 116)
+
+
+
+# Plot functional divergence from posterior samples
+require(ggplot2)
+ggplot(FDmatrics$FDivSum, aes(x=(year+1899), y=mean)) + 
+  xlab("Year") + ylab(" \n Functional Divergence") + 
+geom_vline(xintercept = 1976, linetype = "dashed") +
+    geom_ribbon(aes(ymin=mean-sd, ymax=mean+sd), 
+                colour = "grey", fill = "grey", alpha = 0.4) + 
+  geom_line(aes(y = mean)) +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+          panel.background = element_blank(), axis.line = element_line(colour = "black")) +
+    theme(text = element_text(size=26))
+
+# Plot Functional evenness from posterior samples
+ggplot(FDmatrics$FEveSum, aes(x=(year+1899), y=mean)) + 
+  xlab("Year") + ylab(" \n Functional Evenness") + 
+  geom_vline(xintercept = 1976, linetype = "dashed") +
+    geom_ribbon(aes(ymin=mean-sd, ymax=mean+sd), 
+                colour = "grey", fill = "grey", alpha = 0.4) + 
+  geom_line(aes(y = mean)) +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+          panel.background = element_blank(), axis.line = element_line(colour = "black")) +
+    theme(text = element_text(size=26))
+```
+
+
+
+### Make null model
+
+```{r null-model}
+require(vegan)
+
+# Read original occu
+occu <- readRDS("../outputs/FDoutputs/occu1000.rds")
+
+# Create an empty list to populate with null outputs for each iteration
+null_occu = vector(mode = "list", length = 1000)
+
+require(FD)
+# Loop through all occu matrices in occu (each representing an iteration) and fill null_list
+for(i in 1:1000){
+  (nm <- nullmodel((occu[[i]]), "abuswap_r"))
+  (null_occu[[i]] <- (simulate(nm, burnin=1000, nsim=1000, thin=1000))[,,1000])
+}
+
+# Save
+#saveRDS(null_occu, "../outputs/FDoutputs/null_occu1000.rds")
+
+# Create an empty list to populate with null FD outputs for each iteration
+nullFD_list = vector(mode = "list", length = 1000)
+
+# Trait weights
+w <- c(3,3,
+       2,2,2,
+       3,3,
+       3,3,
+       2,2,2,
+       2,2,2)
+
+# Loop through all occu matrices in null_list (each representing an iteration) and fill nullFD_list
+for(i in 1:1000){
+  nullFD_list[[i]] <- dbFD(traits, null_list[[i]], w,
+                     w.abun = TRUE, calc.CWM = TRUE, 
+                     corr="cailliez") # 'cailliez' correction because 'sqrt' does not work
+}
+
+# Name each list (i.e. iteration) "Iter" followed by number
+nameList <- paste("Iter", 1:1000, sep = "")
+names(nullFD_list) <- nameList
+
+# Save the file
+#saveRDS(nullFD_list, "../outputs/FDoutputs/null_FD_list.rds")
+```
+
+### Summarise null model metrics
+```{r summarise-null-model}
+# Read nullFD_list
+nullFD_list <- readRDS("../outputs/FDoutputs/null_FD_list.rds")
+
+# Source a function that summarises the matrics list
+source("../analyses/function-summarise_FDmatrics.R")
+
+# Run the functrion
+nullFDmatrics <- summarise_FDmatrics(nullFD_list, 1000, 110)
+```
+
+
+
+
+
+### Find Index of variance - Functional evenness
+
+```{r FEve-IV}
+ 
+
+require(plotrix)
+FEveIV$mean <- apply(FEveIV[,1:1000], 1, mean)
+FEveIV$sd <- apply(FEveIV[,1:1000], 1, sd)
+FEveIV$sem <- apply(FEveIV[,1:1000], 1, std.error)
+FEveIV$year <- 1:110
+
+
+# Plot both functional evenness for both estimates from posterior samples and null samples
+require(ggplot2)
+ggplot(FDmatrics$FEveSum, aes(x=(year+1899), y=mean)) + 
+geom_pointrange(aes(ymin=mean-sd, ymax=mean+sd)) + 
+  geom_ribbon(aes(ymin = ((nullFDmatrics$FEveSum$mean)-(nullFDmatrics$FEveSum$sd)), 
+                    ymax = ((nullFDmatrics$FEveSum$mean)+(nullFDmatrics$FEveSum$sd))), 
+                colour = "grey", fill = "grey", alpha = 0.4) +
+  xlab("Year") + ylab(" \n Functional evenness") + 
+  theme_bw() + theme(text = element_text(size=20))
+
+
+require(ggplot2)
+ggplot(FDmatrics$FDivSum, aes(x=(year+1899), y=mean)) + 
+geom_pointrange(aes(ymin=mean-sd, ymax=mean+sd)) + 
+  xlab("Year") + ylab(" \n Functional divergence") + 
+  theme_bw() + theme(text = element_text(size=20))
+
+
+ggplot(FEveIV, aes(x=(year+1899), y=mean)) + 
+geom_pointrange(aes(ymin=mean-sd, ymax=mean+sd)) + 
+  xlab("Year") + ylab("Index of Variance \n (Functional evenness)") +
+    theme_bw() + theme(text = element_text(size=20))
+```
+
+
+
+### Index of variance - Functional divergence
+
+```{r FDiv-IV}
+FDivIV <- FDmatrics$FDivSum[,1:101]
+
+# Loop through all FEveSum iterations in FDmatrics and find the Index of variance
+for(j in 1:110){
+  for(i in 1:1000){
+    FDivIV[j,i] <- (2*((FDmatrics$FDivSum[j,i])/((nullFDmatrics$FDivSum[j,1002])+(FDmatrics$FDivSum[j,i]))))-1
+    }
+}
+
+require(plotrix)
+FDivIV$mean <- apply(FDivIV[,1:1000], 1, mean)
+FDivIV$sd <- apply(FDivIV[,1:1000], 1, sd)
+FDivIV$sem <- apply(FDivIV[,1:1000], 1, std.error)
+FDivIV$year <- 1:110
+
+
+
+# Plot both functional divergence for both estimates from posterior samples and null samples
+require(ggplot2)
+ggplot(FDmatrics$FDivSum, aes(x=(year+1899), y=mean)) + 
+geom_pointrange(aes(ymin=mean-sd, ymax=mean+sd)) + 
+  geom_ribbon(aes(ymin = ((nullFDmatrics$FDivSum$mean)-(nullFDmatrics$FDivSum$sd)), 
+                    ymax = ((nullFDmatrics$FDivSum$mean)+(nullFDmatrics$FDivSum$sd))), 
+                colour = "grey", fill = "grey", alpha = 0.4) +
+  xlab("Year") + ylab(" \n Functional divergence") + 
+  theme_bw() + theme(text = element_text(size=20))
+
+
+ggplot(FDivIV, aes(x=(year+1899), y=mean)) + 
+geom_pointrange(aes(ymin=mean-sd, ymax=mean+sd)) + 
+  xlab("Year") + ylab("Index of variance \n (functional divergence)") + 
+    theme_bw() + theme(text = element_text(size=20))
+
+```
+
+### Functional trait composition
+
+```{r CWM-summary}
+# Source a function that summarises the CWMs in the matrics list
+source("../analyses/function-summarise_CWM.R")
+
+
+###########################################################
+########################  MOBILITY  #######################
+###########################################################
+
+### Average Wingspan
+# Summarize absolute change in average wingspan
+Wingspan.average <- summarise_CWM(FD_list, 1, 1000,116)
+# plot average wingspan
+ggplot(Wingspan.average, aes(x=(year+1899), y=mean)) + 
+  geom_vline(xintercept = 1975, linetype = "dashed") +
+    geom_ribbon(aes(ymin=mean-sd, ymax=mean+sd), 
+                colour = "grey", fill = "grey", alpha = 0.4) + 
+  geom_line(aes(y = mean)) +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+          panel.background = element_blank(), axis.line = element_line(colour = "black")) +
+    theme(text = element_text(size=34)) +
+  #ggtitle("Wingspan") +
+  xlab("Year") + ylab("Wingspan (mm)")
+
+
+### Mobility Score
+Mobility.score <- summarise_CWM(FD_list, 2, 1000,116)
+# plot average wingspan
+ggplot(Mobility.score, aes(x=(year+1899), y=mean)) + 
+#geom_pointrange(aes(ymin=mean-sd, ymax=mean+sd)) + 
+  geom_vline(xintercept = 1975, linetype = "dashed") +
+    geom_ribbon(aes(ymin=mean-sd, ymax=mean+sd), 
+                colour = "grey", fill = "grey", alpha = 0.4) + 
+  geom_line(aes(y = mean)) +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+          panel.background = element_blank(), axis.line = element_line(colour = "black")) +
+    theme(text = element_text(size=34)) +
+  #ggtitle("Mobility Score") +
+  xlab("Year") + ylab("Mobility Score") 
+      #theme_bw() + theme(text = element_text(size=34))
+
+
+
+
+###########################################################
+#################  Laval dietary breadth  #################
+###########################################################
+### Phagy score
+PhagyAll <- summarise_CWM(FD_list, 3, 1000,116)
+# Loop through and make all columns numeric
+for(i in 1:1000){
+  PhagyAll[,i] <- as.numeric(as.character(PhagyAll[,i]))
+}
+# summarise mean, sd and sem
+require(plotrix)
+PhagyAll$mean <- apply(PhagyAll[,1:1000], 1, mean)
+PhagyAll$sd <- apply(PhagyAll[,1:1000], 1, sd)
+PhagyAll$sem <- apply(PhagyAll[,1:1000], 1, std.error)
+# plot
+ggplot(PhagyAll, aes(x=(year+1899), y=mean)) + 
+geom_pointrange(aes(ymin=mean-sd, ymax=mean+sd)) + 
+  #ggtitle("Phagy score") +
+  xlab("Year") + ylab("Phagy score") +
+      theme_bw() + theme(text = element_text(size=20))
+
+### Number of host plants
+HPphenRange <- summarise_CWM(FD_list, 4, 1000,116)
+# plot
+ggplot(HPphenRange, aes(x=(year+1899), y=mean)) + 
+# geom_pointrange(aes(ymin=mean-sd, ymax=mean+sd)) + 
+  geom_vline(xintercept = 1975, linetype = "dashed") +
+    geom_ribbon(aes(ymin=mean-sd, ymax=mean+sd), 
+                colour = "grey", fill = "grey", alpha = 0.4) + 
+  geom_line(aes(y = mean)) +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+          panel.background = element_blank(), axis.line = element_line(colour = "black")) +
+    theme(text = element_text(size=34)) +
+  #ggtitle("Number of host plants") +
+  xlab("Year") + ylab("Host plants")
+
+### Symbiosis
+Symbiosis <- summarise_CWM(FD_list, 5, 1000,116)
+# Loop through and make all columns numeric
+for(i in 1:1000){
+  Symbiosis[,i] <- as.numeric(as.character(Symbiosis[,i]))
+}
+# summarise mean, sd and sem
+require(plotrix)
+Symbiosis$mean <- apply(Symbiosis[,1:1000], 1, mean)
+Symbiosis$sd <- apply(Symbiosis[,1:1000], 1, sd)
+Symbiosis$sem <- apply(Symbiosis[,1:1000], 1, std.error)
+# plot
+ggplot(Symbiosis, aes(x=(year+1899), y=mean)) + 
+geom_pointrange(aes(ymin=mean-sd, ymax=mean+sd)) + 
+  #ggtitle("Symbiosis score") +
+  xlab("Year") + ylab("Symbiosis score") +
+      theme_bw() + theme(text = element_text(size=20))
+
+
+
+
+###########################################################
+#################  Adult dietary breadth  #################
+###########################################################
+
+### Proboscis length
+ProboscisL <- summarise_CWM(FD_list, 6, 1000,116)
+# plot
+ggplot(ProboscisL, aes(x=(year+1899), y=mean)) + 
+geom_pointrange(aes(ymin=mean-sd, ymax=mean+sd)) + 
+  #ggtitle("Proboscis length") +
+  xlab("Year") + ylab("Proboscis length (mm)") +
+      theme_bw() + theme(text = element_text(size=20))
+
+
+### Feeding specialisation
+Fsp <- summarise_CWM(FD_list, 7, 1000,116)
+ggplot(Fsp, aes(x=(year+1899), y=mean)) + 
+#geom_pointrange(aes(ymin=mean-sd, ymax=mean+sd)) + 
+  #ggtitle("Feeding specialisation") +
+    geom_vline(xintercept = 1975, linetype = "dashed") +
+    geom_ribbon(aes(ymin=mean-sd, ymax=mean+sd), 
+                colour = "grey", fill = "grey", alpha = 0.4) + 
+  geom_line(aes(y = mean)) +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+          panel.background = element_blank(), axis.line = element_line(colour = "black")) +
+    theme(text = element_text(size=34)) +
+  xlab("Year") + ylab("Diet specialisation")
+     # theme_bw() + theme(text = element_text(size=20))
+
+
+
+###########################################################
+#######################  FECUNDITY  #######################
+###########################################################
+
+### Egg size
+EggSize <- summarise_CWM(FD_list, 8, 100,116)
+# plot egg size
+ggplot(EggSize, aes(x=(year+1899), y=mean)) + 
+#geom_pointrange(aes(ymin=mean-sd, ymax=mean+sd)) + 
+  #ggtitle("Egg Size") +
+  geom_vline(xintercept = 1975, linetype = "dashed") +
+    geom_ribbon(aes(ymin=mean-sd, ymax=mean+sd), 
+                colour = "grey", fill = "grey", alpha = 0.4) + 
+  geom_line(aes(y = mean)) +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+          panel.background = element_blank(), axis.line = element_line(colour = "black")) +
+    theme(text = element_text(size=34)) +
+  xlab("Year") + ylab("Egg Size (mm2)")
+      #theme_bw() + theme(text = element_text(size=20))
+
+
+
+### Egg load
+EggLoad <- summarise_CWM(FD_list, 9, 100,116)
+# plot egg size
+ggplot(EggLoad, aes(x=(year+1899), y=mean)) + 
+#geom_pointrange(aes(ymin=mean-sd, ymax=mean+sd)) + 
+ # ggtitle("Egg Load") +
+    geom_vline(xintercept = 1975, linetype = "dashed") +
+    geom_ribbon(aes(ymin=mean-sd, ymax=mean+sd), 
+                colour = "grey", fill = "grey", alpha = 0.4) + 
+  geom_line(aes(y = mean)) +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+          panel.background = element_blank(), axis.line = element_line(colour = "black")) +
+    theme(text = element_text(size=34)) +
+  xlab("Year") + ylab("Egg Load") 
+  
+      #theme_bw() + theme(text = element_text(size=20))
+
+
+
+###########################################################
+#############  Thermal tolerance & phenology  #############
+###########################################################
+
+### Adult hardiness
+AH <- summarise_CWM(FD_list, 10, 1000,116)
+# Loop through and make all columns numeric
+for(i in 1:1000){
+  AH[,i] <- as.numeric(as.character(AH[,i]))
+}
+# summarise mean, sd and sem
+require(plotrix)
+AH$mean <- apply(AH[,1:1000], 1, mean)
+AH$sd <- apply(AH[,1:1000], 1, sd)
+AH$sem <- apply(AH[,1:1000], 1, std.error)
+# plot
+ggplot(AH, aes(x=(year+1899), y=mean)) + 
+geom_pointrange(aes(ymin=mean-sd, ymax=mean+sd)) + 
+  #ggtitle("Adult hardiness") +
+  xlab("Year") + ylab("Adult hardiness")+
+      theme_bw() + theme(text = element_text(size=20))
+
+### Overwintering stage
+HibStage <- summarise_CWM(FD_list, 11, 1000,116)
+# Loop through and make all columns numeric
+for(i in 1:1000){
+  HibStage[,i] <- as.numeric(as.character(HibStage[,i]))
+}
+# summarise mean, sd and sem
+require(plotrix)
+HibStage$mean <- apply(HibStage[,1:1000], 1, mean)
+HibStage$sd <- apply(HibStage[,1:1000], 1, sd)
+HibStage$sem <- apply(HibStage[,1:1000], 1, std.error)
+# plot
+ggplot(HibStage, aes(x=(year+1899), y=mean)) + 
+geom_pointrange(aes(ymin=mean-sd, ymax=mean+sd)) + 
+  #ggtitle("Overwintering stage") +
+  xlab("Year") + ylab("Overwintering stage") +
+      theme_bw() + theme(text = element_text(size=20))
+
+
+### Voltinism score
+VoltScore <- summarise_CWM(FD_list, 12, 1000,116)
+# Loop through and make all columns numeric
+for(i in 1:1000){
+  VoltScore[,i] <- as.numeric(as.character(VoltScore[,i]))
+}
+# summarise mean, sd and sem
+require(plotrix)
+VoltScore$mean <- apply(VoltScore[,1:1000], 1, mean)
+VoltScore$sd <- apply(VoltScore[,1:1000], 1, sd)
+VoltScore$sem <- apply(VoltScore[,1:1000], 1, std.error)
+# plot
+ggplot(VoltScore, aes(x=(year+1899), y=mean)) + 
+geom_pointrange(aes(ymin=mean-sd, ymax=mean+sd)) + 
+  #ggtitle("Voltinism score") +
+  xlab("Year") + ylab("Voltinism score")+
+      theme_bw() + theme(text = element_text(size=20))
+
+###########################################################
+##################  Population structure  #################
+###########################################################
+
+### Population Structure score 
+POPSTR2 <- summarise_CWM(FD_list, 13, 1000,116)
+
+# Loop through and make all columns numeric
+for(i in 1:1000){
+  POPSTR2[,i] <- as.numeric(as.character(POPSTR2[,i]))
+}
+# summarise mean, sd and sem
+require(plotrix)
+POPSTR2$mean <- apply(POPSTR2[,1:100], 1, mean)
+POPSTR2$sd <- apply(POPSTR2[,1:100], 1, sd)
+POPSTR2$sem <- apply(POPSTR2[,1:100], 1, std.error)
+# plot
+ggplot(POPSTR2, aes(x=(year+1899), y=mean)) + 
+geom_pointrange(aes(ymin=mean-sd, ymax=mean+sd)) + 
+  #ggtitle("Population structure score") +
+  xlab("Year") + ylab("Population structure score") +
+      theme_bw() + theme(text = element_text(size=20))
+
+### Breeding population Structure 
+PopStr1t <- summarise_CWM(FD_list, 14, 1000,116)
+# Loop through and make all columns numeric
+for(i in 1:1000){
+  PopStr1t[,i] <- as.numeric(as.character(PopStr1t[,i]))
+}
+# summarise mean, sd and sem
+require(plotrix)
+PopStr1t$mean <- apply(PopStr1t[,1:100], 1, mean)
+PopStr1t$sd <- apply(PopStr1t[,1:100], 1, sd)
+PopStr1t$sem <- apply(PopStr1t[,1:100], 1, std.error)
+# plot
+ggplot(PopStr1t, aes(x=(year+1899), y=mean)) + 
+geom_pointrange(aes(ymin=mean-sd, ymax=mean+sd)) + 
+  #ggtitle("Breeding population structure score") +
+  xlab("Year") + ylab("Breeding pop. structure score") +
+      theme_bw() + theme(text = element_text(size=20))
+
+### Metapopulation Structure
+METApop <- summarise_CWM(FD_list, 15, 1000,116)
+# Loop through and make all columns numeric
+for(i in 1:1000){
+  METApop[,i] <- as.numeric(as.character(METApop[,i]))
+}
+# summarise mean, sd and sem
+require(plotrix)
+METApop$mean <- apply(METApop[,1:1000], 1, mean)
+METApop$sd <- apply(METApop[,1:1000], 1, sd)
+METApop$sem <- apply(METApop[,1:1000], 1, std.error)
+# plot
+ggplot(METApop, aes(x=(year+1899), y=mean)) + 
+geom_pointrange(aes(ymin=mean-sd, ymax=mean+sd)) + 
+  #ggtitle("Metapopulation structure score") +
+  xlab("Year") + ylab("Metapopulation structure score") +
+      theme_bw() + theme(text = element_text(size=20))
+
+
+
+
+
+
+
+
+
+str(FD_list[[10]])
+```
