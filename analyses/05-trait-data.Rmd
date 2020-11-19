@@ -1,0 +1,409 @@
+---
+title: "03-trait-data"
+author: "Galina M. Jönsson"
+date: "24/02/2020"
+output: html_document
+---
+
+## Middleton-Welling paper
+
+### Read trait types
+```{r load-trait-data, include=FALSE}
+AsherTraits <- read.csv("../data/traitData/Middleton_Welling2017_Asher.csv")
+AsherTraits<-AsherTraits[AsherTraits$Species!="Maculinea arion",]
+AsherTraits<-AsherTraits[AsherTraits$Species!="Leptidea juvernica",]
+AsherTraits <- droplevels(AsherTraits)
+
+DennisTraits <- read.csv("../data/traitData/Middleton_Welling2017_Dennis.csv")
+DennisTraits<-DennisTraits[DennisTraits$Species!="Maculinea arion",]
+DennisTraits<-DennisTraits[DennisTraits$Species!="Leptidea juvernica",]
+DennisTraits <- droplevels(DennisTraits)
+
+EelesTraits <- read.csv("../data/traitData/Middleton_Welling2017_Eeles.csv")
+EelesTraits<-EelesTraits[EelesTraits$Species!="Maculinea arion",]
+EelesTraits<-EelesTraits[EelesTraits$Species!="Leptidea juvernica",]
+EelesTraits <- droplevels(EelesTraits)
+
+EmmetTraits <- read.csv("../data/traitData/Middleton_Welling2017_Emmet.csv")
+EmmetTraits<-EmmetTraits[EmmetTraits$Species!="Maculinea arion",]
+EmmetTraits<-EmmetTraits[EmmetTraits$Species!="Leptidea juvernica",]
+EmmetTraits<-EmmetTraits[EmmetTraits$Species!="",]
+EmmetTraits <- droplevels(EmmetTraits)
+
+NewlandTraits <- read.csv("../data/traitData/Middleton_Welling2017_Newland.csv")
+NewlandTraits<-NewlandTraits[NewlandTraits$Species!="Maculinea arion",]
+NewlandTraits<-NewlandTraits[NewlandTraits$Species!="Leptidea juvernica",]
+NewlandTraits<-NewlandTraits[NewlandTraits$Species!="",]
+NewlandTraits <- droplevels(NewlandTraits)
+
+ThomasTraits <- read.csv("../data/traitData/Middleton_Welling2017_Thomas.csv")
+ThomasTraits<-ThomasTraits[ThomasTraits$Species!="Maculinea arion",]
+ThomasTraits<-ThomasTraits[ThomasTraits$Species!="Leptidea juvernica",]
+ThomasTraits<-ThomasTraits[ThomasTraits$Species!="",]
+ThomasTraits <- droplevels(ThomasTraits)
+```
+
+I will go through each trait and adjust. 
+
+### Overwintering stage
+- 1: egg  
+- 2: larva  
+- 3: pupa  
+- 4: adult  
+(if multiple stages overwinter then the earliest development stage was scored). 
+
+Kappa among all trait sources: 0.973
+```{r clean-overwintering-stage, eval=FALSE}
+overwintering <- data.frame(Species = AsherTraits$Species,
+                      Asher = AsherTraits$Overwintering.stage)
+overwintering <- merge(overwintering, DennisTraits[,c(1, 12)], by="Species")
+names(overwintering)[names(overwintering) == "Overwintering.stage"] <- "Dennis"
+overwintering <- merge(overwintering, EelesTraits[,c(1, 12)], by="Species")
+names(overwintering)[names(overwintering) == "Overwintering.stage"] <- "Eeles"
+overwintering <- merge(overwintering, EmmetTraits[,c(1, 12)], by="Species")
+names(overwintering)[names(overwintering) == "Overwintering.stage"] <- "Emmet"
+overwintering <- merge(overwintering, NewlandTraits[,c(1, 12)], by="Species")
+names(overwintering)[names(overwintering) == "Overwintering.stage"] <- "Newland"
+overwintering <- merge(overwintering, ThomasTraits[,c(1, 12)], by="Species")
+names(overwintering)[names(overwintering) == "Overwintering.stage"] <- "Thomas"
+
+##### Disagreement among sources for two spp:
+# Thymelicus sylvestris
+# Tymelicus lineola
+### Chose the earliest stage (represented by Emmet)
+
+traits <- EmmetTraits[, c("Species", "Overwintering.stage")]
+```
+
+### Mate locating stratagy
+
+Mate location strategies can be categorised into two the two broad strategies perching and patrolling (Scott, 1974; n.b. this is in addition to hilltopping and pheromones). Patrolling species' males search for females by flying across an area and locate females that are either perching or on the wing, whereas perching species' males perch on vegetation or other landscape features and wait for females to fly by before courting. The difference is not always clear cut, for example in Aphantopus hyperantus, males patrol and females "perch" by flying up and initiating courtship (Wiklund, 1982; Wickman 1992). For simplicity, the below will refer to male mate locating stategy. 
+#### Perching
+- 0: no  
+- 1: yes  
+
+Kappa among all trait sources: 0.778
+```{r clean-Perching, eval=FALSE}
+perching <- data.frame(Species = AsherTraits$Species,
+                      Asher = AsherTraits$Perching)
+perching <- merge(perching, DennisTraits[,c(1, 16)], by="Species")
+names(perching)[names(perching) == "Perching"] <- "Dennis"
+perching <- merge(perching, EelesTraits[,c(1, 16)], by="Species")
+names(perching)[names(perching) == "Perching"] <- "Eeles"
+perching <- merge(perching, EmmetTraits[,c(1, 16)], by="Species")
+names(perching)[names(perching) == "Perching"] <- "Emmet"
+perching <- merge(perching, NewlandTraits[,c(1, 16)], by="Species")
+names(perching)[names(perching) == "Perching"] <- "Newland"
+perching <- merge(perching, ThomasTraits[,c(1, 16)], by="Species")
+names(perching)[names(perching) == "Perching"] <- "Thomas"
+
+##### Disagreement among sources for ten spp:
+# Aphantopus hyperantus -> males patrol and females "perch" -> 0
+# Argynnis paphia -> Dennis  -> 1
+# Erebia aethiops -> all but Newland say 1!!
+# Euphydryas aurinia -> 2-2 -> 1!!
+# Hamearis lucina -> all but Newland say 1!!
+# Lasiommata megera -> all but Newland and Thomas say 1!!
+# Lycaena phlaeas -> all but Newland say 1!!
+# Plebeius argus - DO BOTH PLoS One. 2016; 11(11): e0165857. -> 1!!
+# Polygonia c-album -> all but Newland say 1!!
+# Polyommatus icarus -> three but Eeles say 1!!
+
+traits$Perching <- DennisTraits$Perching
+```
+
+
+#### Patrolling
+- 0: no  
+- 1: yes  
+
+Kappa among all trait sources: 0.778
+```{r clean-Patrolling, eval=FALSE}
+patrolling <- data.frame(Species = AsherTraits$Species,
+                      Asher = AsherTraits$Patrolling)
+patrolling <- merge(patrolling, DennisTraits[,c(1, 17)], by="Species")
+names(patrolling)[names(patrolling) == "Patrolling"] <- "Dennis"
+patrolling <- merge(patrolling, EelesTraits[,c(1, 17)], by="Species")
+names(patrolling)[names(patrolling) == "Patrolling"] <- "Eeles"
+patrolling <- merge(patrolling, EmmetTraits[,c(1, 17)], by="Species")
+names(patrolling)[names(patrolling) == "Patrolling"] <- "Emmet"
+patrolling <- merge(patrolling, NewlandTraits[,c(1, 17)], by="Species")
+names(patrolling)[names(patrolling) == "Patrolling"] <- "Newland"
+patrolling <- merge(patrolling, ThomasTraits[,c(1, 17)], by="Species")
+names(patrolling)[names(patrolling) == "Patrolling"] <- "Thomas"
+
+##### Disagreement among sources for ten spp:
+# Aphantopus hyperantus  -> males patrol and females "perch" -> 1
+# Aricia agestis - All but Emmet -> 1
+# Celastrina argiolus -> 1
+# Coenonympha pamphilus -> 1
+# Hamearis lucina  -> all but Newland say 0!!
+# Hesperia comma -> 1
+# Hipparchia semele -> 1
+# Thymelicus sylvestris  -> 0
+# Tymelicus lineola -> 1 (Change Dennis to 1)
+
+
+traits$Patrolling <- DennisTraits$Patrolling
+traits[38,4] <- 1
+traits$Mate.locating.strategy <- traits$Patrolling + traits$Perching
+```
+
+
+### Wingspan
+Emmet, Newland and Eeles report wingspan (continous trait) with a high correlation coefficient among sources (average: 0.998, max: 0.995, min: 0.993). I will thus report the average wingspan among the three sources.
+```{r clean-wingspan-min, eval=FALSE}
+wingspanMin <- data.frame(Species = EelesTraits$Species,
+                      Eeles = EelesTraits$Wingspan..min.)
+wingspanMin <- merge(wingspanMin, EmmetTraits[,c(1, 25)], by="Species")
+names(wingspanMin)[names(wingspanMin) == "Wingspan..min."] <- "Emmet"
+wingspanMin <- merge(wingspanMin, NewlandTraits[,c(1, 25)], by="Species")
+names(wingspanMin)[names(wingspanMin) == "Wingspan..min."] <- "Newland"
+
+wingspanMin$meanWingspan..min. <- apply(wingspanMin[, c(2:4)], 1, mean)
+
+traits$Wingspan.min <- wingspanMin$meanWingspan..min
+```
+
+```{r clean-wingspan-max, eval=FALSE}
+wingspanMax <- data.frame(Species = EelesTraits$Species,
+                      Eeles = EelesTraits$Wingspan..max.)
+wingspanMax <- merge(wingspanMax, EmmetTraits[,c(1, 26)], by="Species")
+names(wingspanMax)[names(wingspanMax) == "Wingspan..max."] <- "Emmet"
+wingspanMax <- merge(wingspanMax, NewlandTraits[,c(1, 26)], by="Species")
+names(wingspanMax)[names(wingspanMax) == "Wingspan..max."] <- "Newland"
+
+wingspanMax$meanWingspan..max. <- apply(wingspanMax[, c(2:4)], 1, mean)
+
+traits$Wingspan.max <- wingspanMax$meanWingspan..max
+
+traits$Wingspan.average <- (traits$Wingspan.max+traits$Wingspan.min)/2
+
+traits$Wingspan.variation <- (traits$Wingspan.max-traits$Wingspan.min)/traits$Wingspan.average
+```
+
+
+
+### Clean up species names 
+```{r clean-spp-names, eval=FALSE}
+levels(traits$Species)[levels(traits$Species)=="Inachis io"] <- "Aglais io"
+levels(traits$Species)[levels(traits$Species)=="Argynnis  aglaja"] <- "Argynnis aglaja"
+levels(traits$Species)[levels(traits$Species)=="Neozephrus quercus"] <- "Favonius quercus"
+levels(traits$Species)[levels(traits$Species)=="Caterocephalus palaemon"] <- "Carterocephalus palaemon"
+levels(traits$Species)[levels(traits$Species)=="Meliteaea athalia"] <- "Melitaea athalia"
+levels(traits$Species)[levels(traits$Species)=="Meliteaea cinxia"] <- "Melitaea cinxia"
+levels(traits$Species)[levels(traits$Species)=="Plebeius argus"] <- "Plebejus argus"
+levels(traits$Species)[levels(traits$Species)=="Tymelicus lineola"] <- "Thymelicus lineola"
+
+# Save trait data
+#write.csv(traits, './data/cleanData/CleanTraitData.csv', row.names=FALSE)
+```
+
+
+
+## Isaac and Dennis traits
+
+Roger Dennis (and Nick?) has collated 208 butterfly traits but *NOTE* only for 46 species. I will decide which to use. The traits are from two main sources: Hardy et al. 2007 and Dennis et al. 2004. 
+
+### Trait selection
+
+I will select traits according to Middleton-Welling's criteria: "traits that govern specific vegetation and physical structure usage and describe resource use, rather than relying on the interaction of these resource require- ments with current vegetation structures, that is current biotope associations."
+
+
+#### Hardy et al. 2007
+Firstly, some traits come form Hardy et al. 2007 (https://doi.org/10.1016/j.biocon.2007.05.014). I will use two of these traits: 
+- Nectar specialisation (negative values specialism, positive values generalism)	NEsp  
+- Adult feeding specialisation (values as for NEsp)	Fsp  
+
+Both metrics are the residuals from the regression of each species' flower nectar sources (the number of plant species described as a nectar source) against the number of records of individuals feeding on nectar and those of adults feeding on any substrate (i.e. not only nectar flowers), respectively. All variables were log transformed to force linearity (it is assumed that log tranformation will do this and not any other transformation.... Which might not be the case...) and only unique records were used, i.e. abundance were ignored, since many individuals might be recorded to feed at the same substrate at a given time. 
+
+
+#### Dennis et al. 2004 (the C-S-R paper)
+Secondly, the majority of traits come from Dennis et al. 2004 (the C-S-R paper). These traits are devided into:
+* (a) Host plant and host‐plant environment variables  
+* (b) Butterfly morphology, life history, and physiology variables  
+* (c) Butterfly habitat and biotope variables  
+* (d) Butterfly population and mobility variables (measured over individuals in populations)  
+* (e) Butterfly geographical variables  
+
+I know right away that traits that fall under (a) and (e) are innaproproate for long term studies. I went through all traits within each remaming category and selected all suitable traits: 
+
+##### (b) Butterfly morphology, life history, and physiology variables*
+
+*YES*
+- Proboscis length (mm) PL  
+- Relative proboscis length (PL/WL) RPL 
+- Egg size (length × breadth, mm) ES  **(Depends on how it's measured, e.g. eggs are smaller before having been layed and then kinda flatten out but I will have to go with this data)**
+- Relative egg size (ES/WL) RES  **(as above)**
+- Symbiosis in early stadia (0 to 3: absent, polyphagous, oligophagous, monophagous) SMB
+- Hibernation stage (1 to 4, 2.5 for P. aegeria) HS  
+- Hibernation stage (egg stage) (0 or 1) HSe
+- Hibernation stage (larval stage) (0 or 1) HSl
+- Hibernation stage (pupal stage) (0 or 1) HSp  
+- Hibernation stage (adult stage) (0 or 1) HSa  
+
+*MAYBE*
+- Mobility score; sum of ranked scores for nine variables MO ; "Variables included are: ex‐habitat vagrants, garden records, urban central business district records, at‐sea records, mass movements, range expansions, overseas migration from continent to Europe, regular reversed long distance migration, over‐ocean (Atlantic) migration." BUT these are again Dennis' unpublished data so perhaps not the most reliable source.   
+
+*NO*
+- Wing expanse (mm) WS (theoretically yes but I will use the average one from multiple sources from Middleton-Welling)  
+- Egg batch size EBS  
+- Egg load (mean number developed eggs) ELC  
+- Egg load (mean total egg production) ELT  
+- Oviposition behaviour (1 to 9 careless to precise) OB  
+- Pre‐oviposition period (1 to 6 from 1 day to 3 weeks) PP  
+- Larval growth rate (1 to 9 from slow to fast) LG  
+- Larval duration period (days) LD  
+- Development duration of early stadia (days) ESD  
+- Adult lifespan (days, summer brood) AD  
+- Adult lifespan (days, plus hibernation for adults) ADmax  
+
+
+
+##### *(c) Butterfly habitat and biotope variables*
+
+*NO*
+- Utility resource use (by pupae and adults) UT *Theoretically yes* as it is the "number of non‐consumable resources used by species for activities such as roosting, mate location resting, etc." but it is Dennis et. al's unpublished data so the methods are unknown and these things are very difficult to estimate. As such, I till not include it.  
+- Plant life‐form association (all stages mean) LocMean  
+- Plant life‐form association (immature stages mean) ImLm  
+- Plant life‐form association (adult stages mean) AdLm  
+- Host‐plant growth forms (1 to 4: herbs, shrubs, climbers, trees) Grform  
+- Number of biotopes occupied BT  
+- Number of host plants HP  
+- Phagy score (1 to 4) PS  
+- Host‐plant phenology (0 or 1) (annuals) HPAn  
+- Host‐plant phenology (0 or 1) (biennials) HPBi  
+- Host‐plant phenology (0 or 1) (short‐lived perennials) HPSlp  
+- Host‐plant phenology (0 or 1) (long‐lived perennials) HPLlp  
+- Host‐plant phenology range HPphR  
+- Nectar sources (number) NE  
+- Host‐plant phenology (longevity) score (1 to 4: annuals, biennials, short‐lived perennials, long‐lived perennials) Phen  
+
+
+
+##### *(d) Butterfly population and mobility variables (measured over individuals in populations)*
+
+*YES*
+- Population structure (1 to 3: sedentary, intermediate or wide ranging) PopStr2 : This classification isfrom the book "Monitoring butterflies for ecology and conservation : the British Butterfly Monitoring Scheme" by Ernest Pollard. I do not yet know how the species were classified but have requested the book as of 5 March 2020.  
+
+*NO*
+- Population structure; min. size of breeding habitat (1 to 7 for closed to open structures) PopStr1  
+- Population structure (1 to 4: closed to open structures) PopStr1m
+- Minimum habitat space occupied (1 to 9 from <1 ha to >1000 km2) MS  
+- Population density i.e. typical density within breeding site (1 to 9 for 1000 per ha to 2 per 100 ha) PD  
+- National density 1978–82 for 49 species (BMS) Natdens82  
+- National density 1980 for 47 species (BMS) Natdens80  
+- National density 1990 for 47 species (BMS) Natdens90  
+- Metapopulation structure (1 or 0) METstr  
+- Mean first record of flight period in days dated from 1 April (BMS) FR  
+- Mean peak flight period in days of first brood from 1 April (BMS) PR1  
+- Mean peak flight period in days of second brood from 1 April (BMS) PR2  
+- Mean last record in days dated from 1 April (BMS) LR  
+- Mean length of flight period in days (BMS) FP  
+
+
+### Extracting selected traits
+
+Below are the traits I will extact: 
+
+- Nectar specialisation (negative values specialism, positive values generalism)	NEsp  
+- Adult feeding specialisation (values as for NEsp)	Fsp 
+- Proboscis length (mm) PL  
+- Relative proboscis length (PL/WL) RPL 
+- Egg size (length × breadth, mm) ES  **(Depends on how it's measured, e.g. eggs are smaller before having been layed and then kinda flatten out but I will have to go with this data)**
+- Relative egg size (ES/WL) RES  **(as above)**
+- Symbiosis in early stadia (0 to 3: absent, polyphagous, oligophagous, monophagous) SMB
+- Hibernation stage (1 to 4, 2.5 for P. aegeria) HS  
+- Hibernation stage (egg stage) (0 or 1) HSe
+- Hibernation stage (larval stage) (0 or 1) HSl
+- Hibernation stage (pupal stage) (0 or 1) HSp  
+- Hibernation stage (adult stage) (0 or 1) HSa  
+- Population structure (1 to 3: sedentary, intermediate or wide ranging) PopStr2 : This classification isfrom the book "Monitoring butterflies for ecology and conservation : the British Butterfly Monitoring Scheme" by Ernest Pollard. I do not yet know how the species were classified but have requested the book as of 5 March 2020.  
+
+
+```{r tidy-dennis-trait-data, eval=FALSE}
+# Load the trait data (this contains 208 traits)
+rawTraits <- read.csv("../data/traitData/Isaac_Dennis_traits/speciestraits208.csv")
+
+require(tidyverse)
+traits2 <- rawTraits %>% select(scientificname, 
+                                mobilityscore, # Mobility score
+                   Fsp, # Adult feeding specialisation
+                   ProboscisL, # Proboscis length
+                   EggSize, # Egg size
+                   ELC, # Egg load
+                   Symbiosis, # Symbiosis in early stadia
+                   VoltScore, # Voltinism Score
+                   AH, # Adult thermal hardiness score
+                   PhagyAll, # Phagy score
+                   HPphenRange, # Number of host plants in range
+                   POPSTR1, # Population structure score
+                   PopStr1t, # Breeding population structure score
+                   METApop # Metapopulation structure score
+                   )
+
+
+# Remove immigrant species
+traits2 <- subset(traits2, scientificname != "Colias croceus")
+traits2 <- subset(traits2, scientificname != "Vanessa atalanta")
+traits2 <- subset(traits2, scientificname != "Vanessa cardui")
+
+
+# Rename to match my names
+levels(traits2$scientificname)[levels(traits2$scientificname)=="Anthocaris cardamines"] <- "Anthocharis cardamines"
+levels(traits2$scientificname)[levels(traits2$scientificname)=="Inachis io"] <- "Aglais io"
+levels(traits2$scientificname)[levels(traits2$scientificname)=="Lasiommata megara"] <- "Lasiommata megera"
+levels(traits2$scientificname)[levels(traits2$scientificname)=="Ochlodes venata"] <- "Ochlodes sylvanus"
+levels(traits2$scientificname)[levels(traits2$scientificname)=="Plebeius argus"] <- "Plebejus argus"
+levels(traits2$scientificname)[levels(traits2$scientificname)=="Polygonum c-album"] <- "Polygonia c-album"
+levels(traits2$scientificname)[levels(traits2$scientificname)=="Thymelicus lineola "] <- "Thymelicus lineola"
+
+# Drop unused levels
+traits2 <- droplevels(traits2)
+
+
+# Merge the Middleton-Welling traits with the Dennis traits 
+traits <- merge(traits2, traits, by.x = "scientificname", by.y = "Species", all.x = TRUE)
+
+# Reclassify functional traits. Traits can be numeric, ordered, or factor. Binary traits should be numeric and only contain 0 and 1. character traits will be converted to factor. For a given trait, species with NA are excluded.
+traits$species <- as.factor(traits$scientificname)
+#traits$NEsp <- as.numeric(traits$NEsp)
+traits$Fsp <- as.numeric(traits$Fsp)
+traits$ProboscisL <- as.numeric(traits$ProboscisL)
+#traits$RPL <- as.numeric(traits$RPL)
+traits$EggSize <- as.numeric(traits$EggSize)
+#traits$RES <- as.numeric(traits$RES)
+traits$Symbiosis <- as.ordered(traits$Symbiosis)
+#traits$HibStage <- as.ordered(traits$HibStage)
+#traits$HSegg <- as.numeric(traits$HSegg)
+#traits$HSlarva <- as.numeric(traits$HSlarva)
+#traits$HSpupa <- as.numeric(traits$HSpupa)
+#traits$HSadult <- as.numeric(traits$HSadult)
+#traits$POPSTR2 <- as.ordered(traits$POPSTR2)
+traits$Overwintering.stage <- as.ordered(traits$Overwintering.stage)
+#traits$Perching <- as.numeric(traits$Perching)
+#traits$Patrolling <- as.numeric(traits$Patrolling)
+#traits$Mate.locating.strategy <- as.factor(traits$Mate.locating.strategy)
+traits$Wingspan.average <- as.numeric(traits$Wingspan.average)
+
+
+# Remove maximum, minimum and variation in vingspan for now
+traits <- subset(traits, select = -c(Wingspan.min,
+                                     Wingspan.max,
+                                     Wingspan.variation,
+                                     scientificname,
+                                     Perching,
+                                     Patrolling,
+                                     Mate.locating.strategy))
+
+# Fix species names to match models' species names
+traits$species <- gsub(" ", ".", traits$species)
+
+# Save trait data
+#write.csv(traits, '../data/cleanData/CleanTraitData.csv', row.names=FALSE)
+```
+
+
+
+
+
