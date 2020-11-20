@@ -2,19 +2,31 @@
 title: "06-trait-diversity"
 author: "Galina M. Jönsson"
 date: "27/02/2020"
-output: html_document
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
 ---
 
 
-### Standardise functional traits
+# Functional traits data
 
-### Load functions and data
-```{r clean-spp-names, eval=FALSE}
-# Load trait data
+First I load, format and standardise the functional traits data collated in 05-trait-data.Rdm in such a way that it is usable by the function estimating functional diversity metrics. 
+```{r clean-traits-data, message=FALSE}
+
+### Load trait data
+
 traits <- read.csv("../data/cleanData/CleanTraitData.csv")
 
 
-# Reclassify functional traits. Traits can be numeric, ordered, or factor. Binary traits should be numeric and only contain 0 and 1. character traits will be converted to factor. For a given trait, species with NA are excluded.
+
+### Reclassify functional traits
+
+# Traits can be numeric, ordered, or factor
+# Binary traits should be numeric and only contain 0 and 1
+# Character traits will be converted to factor
+# For a given trait, species with NA are excluded.
 traits$species <- as.factor(traits$species)
 traits$Fsp <- as.numeric(traits$Fsp) # Adult feeding specialisation: not based on any other traits used here
 traits$ProboscisL <- as.numeric(traits$ProboscisL) # Proboscis length
@@ -33,27 +45,34 @@ traits$mobilityscore <- as.numeric(traits$mobilityscore)
 traits$ELC <- as.numeric(traits$ELC)
 
 
+
+### Rename and remove species 
+
 # Rename Polygonia c-album in traits dataset to match the occu data
 levels(traits$species)[levels(traits$species)=="Polygonia.c-album"] <- "Polygonia.c.album"
-
-# Make the species column in trait the row names and get rid of the column
-row.names(traits) <- traits$species
-traits <- traits[,1:15]
-
-# Remove Pieris brassicae as I've lost that data file
+# Remove Pieris brassicae as I've lost that data file (Nov 2020)
 traits <- traits[row.names(traits) != "Pieris.brassicae", , drop = FALSE]
-
 # Remove Pyronia tithonus as it has not converged
 traits <- traits[row.names(traits) != "Pyronia.tithonus", , drop = FALSE]
 
 
-################ In November 2020 as third level was lost
+
+################ In November 2020 as third level was not present in dataset due to different number and identity of species used
 traits$METApop <- as.numeric(traits$METApop) # Metapopulation structure
 
 
+
+### Format
+
+# Make the species column in trait the row names and get rid of the column specifying species name
+row.names(traits) <- traits$species
+traits <- traits[,1:15]
+# Order the trait data appropriately
 traits <- traits[,c(15,1,9,10,6,3,2,4:5,8,14,7,11:13)]
 ```
 
+
+# Functional diversity
 
 Once the species-species distance matrix is obtained, dbFD checks whether it is Euclidean. This
 is done via is.euclid. PCoA axes corresponding to negative eigenvalues are imaginary axes that
@@ -66,7 +85,9 @@ cailliez. "lingoes" refers to the approach described by Lingoes (1971) and is im
 lingoes. "none" creates a distance matrix with only the positive eigenvalues of the Euclidean
 representation via quasieuclid. See Legendre and Legendre (1998) and Legendre and Anderson
 (1999) for more details on these corrections.
-```{r setup, include=FALSE}
+
+## Estimate functional diversity matrices
+```{r setup, eval=FALSE}
 # Load the function that extracts a selected number of estimates from the posterior distribution
 source("../analyses/function-extractPosterior.R")
 
@@ -105,8 +126,8 @@ names(FD_list) <- nameList
 
 
 
-### Summarise and visualise matrices
-```{r summarise-visualise}
+### Summarise and visualise functional diversity matrices
+```{r summarise-visualise, message=FALSE, warning=FALSE}
 # Read the data
 FD_list <- readRDS("../outputs/FDoutputs/FDlist_2020-11-19.rds")
 
@@ -144,9 +165,8 @@ ggplot(FDmatrics$FEveSum, aes(x=(year+1899), y=mean)) +
 
 
 
-### Make null model
-
-```{r null-model}
+## Estimate functional diversity null model
+```{r null-model, eval=FALSE}
 require(vegan)
 
 # Read original occu
@@ -192,7 +212,7 @@ names(nullFD_list) <- nameList
 ```
 
 ### Summarise null model metrics
-```{r summarise-null-model}
+```{r summarise-null-model, eval=FALSE}
 # Read nullFD_list
 nullFD_list <- readRDS("../outputs/FDoutputs/null_FD_list.rds")
 
@@ -209,7 +229,7 @@ nullFDmatrics <- summarise_FDmatrics(nullFD_list, 1000, 110)
 
 ### Find Index of variance - Functional evenness
 
-```{r FEve-IV}
+```{r FEve-IV, eval=FALSE}
  
 
 require(plotrix)
@@ -247,7 +267,7 @@ geom_pointrange(aes(ymin=mean-sd, ymax=mean+sd)) +
 
 ### Index of variance - Functional divergence
 
-```{r FDiv-IV}
+```{r FDiv-IV, eval=FALSE}
 FDivIV <- FDmatrics$FDivSum[,1:101]
 
 # Loop through all FEveSum iterations in FDmatrics and find the Index of variance
@@ -283,9 +303,13 @@ geom_pointrange(aes(ymin=mean-sd, ymax=mean+sd)) +
 
 ```
 
-### Functional trait composition
 
-```{r CWM-summary}
+
+
+# Functional trait composition
+
+Here I estimate community weighted means (CWM) for all traits and plot each in turn
+```{r CWM-summary, message=FALSE, warning=FALSE}
 # Source a function that summarises the CWMs in the matrics list
 source("../analyses/function-summarise_CWM.R")
 
@@ -568,21 +592,10 @@ for(i in 1:1000){
 require(plotrix)
 METApop$mean <- apply(METApop[,1:1000], 1, mean)
 METApop$sd <- apply(METApop[,1:1000], 1, sd)
-METApop$sem <- apply(METApop[,1:1000], 1, std.error)
 # plot
 ggplot(METApop, aes(x=(year+1899), y=mean)) + 
 geom_pointrange(aes(ymin=mean-sd, ymax=mean+sd)) + 
   #ggtitle("Metapopulation structure score") +
   xlab("Year") + ylab("Metapopulation structure score") +
       theme_bw() + theme(text = element_text(size=20))
-
-
-
-
-
-
-
-
-
-str(FD_list[[10]])
 ```
