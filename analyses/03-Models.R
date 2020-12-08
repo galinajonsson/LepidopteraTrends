@@ -1601,3 +1601,36 @@ saveRDS(time.taken, "/home/galina/time.taken_results_Hamearis_lucina_crick_mixLL
 # scp -o ProxyJump=galj@orca.nhm.ac.uk -r galina@157.140.15.118:/home/galina/ .
 
 
+
+
+
+
+
+
+##########################################################################################
+###################################### 8 DEC 2020 ########################################
+##########################################################################################
+
+# Somewhere along the line, the model outputs for Pieris brassicae were lost and I will therefore rerun the analysis for this species. 
+
+############################################# ctag 
+occDetdata_merged_7April2020 <- read.csv("/home/galina/occDetdata_merged_2020-04-07.csv", header=T, na.strings=c("","NA")) 
+spp_vis_merged_7April2020 <- read.csv('/home/galina/spp_vis_merged_2020-04-07.csv', header=T, na.strings=c("","NA"))
+
+library(sparta, lib = "~/R_libs")
+
+start.time <- Sys.time()
+results_Pieris_brassicae_crick_mixLL <- sparta::occDetFunc(taxa_name = "Pieris.brassicae",
+                                                         n_iterations = 50000,
+                                                         burnin = 25000,
+                                                         thinning = 3, 
+                                                         occDetdata = occDetdata_merged_7April2020, 
+                                                         spp_vis = spp_vis_merged_7April2020, 
+                                                         modeltype = c('ranwalk', 'halfcauchy', 'mixlistlength'), 
+                                                         write_results = FALSE)
+end.time <- Sys.time()
+time.taken <- end.time - start.time
+# Save outputs
+saveRDS(results_Pieris_brassicae_crick_mixLL, "/home/galina/results_Pieris_brassicae_crick_mixLL.rds")
+saveRDS(time.taken, "/home/galina/time.taken_results_Pieris_brassicae_crick_mixLL.rds")
+
