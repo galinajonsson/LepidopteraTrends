@@ -38,13 +38,12 @@ summarise_Rhat <-  function(input_dir, verbose = TRUE) {
     
     out <- loadrds(file) 
     
-    # some old outputs dont have min year in which case make it == 1
+    # some old outputs don't have min year in which case make it == 1
     min_year <- ifelse(is.null(out$min_year), 1, out$min_year)
     #Get the summary output for the rows and columns that we are interested in
     temp_out <- as.data.frame(out$BUGSoutput$summary)
       rows <- grep("^(psi.fs[^.r])", row.names(temp_out))
-      for (i in rows) 
-      {
+      for (i in rows) {
         if (temp_out[i, c("Rhat")] > 1.1) 
           {
           convergenceYN <- "N"
