@@ -2,7 +2,11 @@
 title: "03-OccupancyTrends_new"
 author: "Galina M. Jönsson"
 date: "16/11/2020"
-output: html_document
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
 ---
 ## Set up
 
@@ -24,10 +28,10 @@ library("BRCindicators")
 
 # Inspect output
 
-### Convergance
+## Convergance
 I run the analyses on a computer cluster and must fist test whether all annual estimates have converged. 
 
-```{r test-Rhat, }
+```{r test-Rhat, cache=TRUE, message=FALSE}
 # Source the function that loops through all model outputs and checks convergence, i.e. is Rhat >1.1?
 source("./function-summarise_Rhat.R")
 
@@ -38,33 +42,182 @@ require(dplyr)
 NotConvergedSpp <- subset(RhatSummary, grepl("N", converged))
 NotConvergedSpp
 ```
-Aglais.io, Apatura.iris, Ochlodes.sylvanus and Pyronia.tithonus have all not converged at 50k iterations
-Pyronia.tithonus does not converge at 80k iterations and will not be considered here
+*Aglais io*, *Apatura iris*, *Ochlodes sylvanus* and *Pyronia tithonus* did not converge when modeled with 50,000 iterations. All were subsequentually modeled with 80,000 iterations and as seen avove, only *Pyronia tithonus* still did not converge. The moxlistlength model outputs for *Pyronia tithonus* will not be considered further here. 
 
 
 
-### Plot
-```{r plot-species, }
+## Visualise occupancy
+
+```{r plot-Occupancy, cache=TRUE, message=FALSE}
 require(sparta)
 
 # Create empty list
 list <- list() 
+names <- list()
 
 # Input directory
-input_dir <- "../outputs/mixLL-outputs/"
+input_dir <- "../outputs/mixLL-outputs_Converged/"   # Only converged models used
 files <- list.files(path = paste(input_dir), ignore.case = TRUE, pattern = '\\.rds$') # list of the files to loop through
 
+# Loop through the files and list occupancy plots and species names in two separate lists
 for(i in 1:length(files)){
   # read the rds file
   out <- readRDS(file.path(input_dir, files[i])) 
   list[[i]] <- plot(out)
+  names[[i]] <- out$SPP_NAME
 }
 
 list
 ``` 
 
-### BMA
-```{r BMA, cache=TRUE, message=FALSE}
+
+
+## Visualise detection
+```{r plot-Detection, cache=TRUE, message=FALSE}
+require(sparta)
+
+# Create empty list
+list2 <- list() 
+
+# Input directory
+input_dir <- "../outputs/mixLL-outputs_Converged/"
+files2 <- list.files(path = paste(input_dir), ignore.case = TRUE, pattern = '\\.rds$') # list of the files to loop through
+
+for(i in 1:length(files2)){
+  # read the rds file
+  out <- readRDS(file.path(input_dir, files2[i])) 
+  list2[[i]] <- plot_DetectionOverTime(out, out$SPP_NAME)
+}
+
+list2
+```
+
+
+
+\n
+\n
+\n
+
+
+### Select species for further model comparison
+\n
+I select 15 species to run using the mixlistlength2 observation sub-model formulation based on the following criteria and methodology: 
+\n
+
+1. Geographic coverage: subset all species into three categories: low (<0.25 percentile), medium (0.25-0.75 percentile) and high (>0.75 percentile) occupancy today   
+2. Habitat generalists (WCS) or specialist (HS): group each geographic coverage category into either specialists or generalists, resulting in six groups       
+3. Go through the species in each of the six groups and select species based on whether they show much interannual variation in detection probability. Species that show much variation and uncertainty are expected to benefit most from an improved detection sub-model formulation       
+\n
+```{r MixLL2-select1, cache=TRUE, message=FALSE, warning = FALSE, eval=TRUE}
+#### 1 
+
+# Source the function that loops through all model outputs and summarises
+source("./function-sumOccDet_output.R")
+
+# Run function
+output <- sumOccDet_output("../outputs/mixLL-outputs_Converged/", categoriseOccu = TRUE, quantileProbs = c(0, 0.25, 0.75, 1))
+
+
+
+
+#### 2
+
+# Load generalists vs. specialist looku-up table
+CatLookUp <- read.csv("../data/auxiliaryData/MSI_lookup.csv")
+
+# Substitute blank space in species name for punctuation
+CatLookUp$Species <- gsub(" ", ".", CatLookUp$Species)
+CatLookUp$HS_WCS <- as.factor(CatLookUp$HS_WCS)
+
+# Merge with output
+output <- merge(output, CatLookUp, by.x = "species_name", by.y = "Species", all.x = TRUE, all.y = FALSE)
+```
+
+
+\n
+\n
+\n
+\n
+
+
+
+**Low geographic coverage + HS** \n
+Please note that there are no species in the low geographic coverage category that are habitat generalists. Hence, I will select four instead of two species here.   
+```{r MixLL2-select-Low-HS, cache=TRUE, message=FALSE, eval=FALSE}
+(subset((subset(output, category=="1")), HS_WCS=="HS"))
+```
+- I will chose the three species with the largest mean annual detection probability standard deviations (*Erebia epiphron*, *Carterocephalus palaemon* and *Melitaea athalia*) and the sixth (of 13) most variable species, *Polyommatus bellargus*, which has most records of all species in this group.   
+
+\n
+\n
+\n
+
+
+**Medium geographic coverage + HS**
+```{r MixLL2-select-Medium-HS, cache=TRUE, message=FALSE, eval=FALSE}
+(subset((subset(output, category=="2")), HS_WCS=="HS"))
+```
+- I will chose the species with the largest mean annual detection probability standard deviation (*Thecla betulae*) and fourth (of 16) most variable species, *Limenitis camilla*, as it has among the most records of the species in this group and in contrast to all other species has shown recent range expansions. 
+
+\n
+\n
+\n
+
+**Medium geographic coverage + WCS**
+```{r MixLL2-select-Medium-WCS, cache=TRUE, message=FALSE, eval=FALSE}
+(subset((subset(output, category=="2")), HS_WCS=="WCS"))
+```
+- I will chose the species with the largest mean annual detection probability standard deviation (*Polygonia c-album*) and the third (of 10) most variable species, *Erebia aethiops*, as it has among the fewest records of the species in this group.
+
+\n
+\n
+\n
+
+
+**High geographic coverage + WCS**
+Please note that there are no species in the high geographic coverage category that are habitat specialists. Hence, I will select four instead of two species here. 
+```{r MixLL2-select-High-WCS, cache=TRUE, message=FALSE, eval=FALSE}
+(subset((subset(output, category=="3")), HS_WCS=="WCS"))
+```
+- I will chose the three species with the largest mean annual detection probability standard deviations (*Aglais urticae*, *Pararge aegeria* and *Lycaena.phlaeas*) and the fourth (of 13) most variable species, *Pieris.rapae*, as the genus of the third (*Aglais io*) is already represented in the sample.
+
+\n
+\n
+\n
+
+
+
+**In short, the species I will run using the MixLL2 formulation are:**   
+1. *Erebia epiphron*   
+2. *Carterocephalus palaemon*   
+3. *Melitaea athalia*   
+4. *Polyommatus bellargus*   
+5. *Thecla betulae*    
+6. *Limenitis camilla*   
+7. *Polygonia c-album*   
+8. *Erebia aethiops*   
+9. *Aglais urticae*   
+10. *Pararge aegeria*   
+11. *Lycaena.phlaeas*   
+12. *Pieris.rapae*   
+
+
+\n
+\n
+\n
+\n
+\n
+\n
+\n
+\n
+\n
+\n
+
+
+# Multispecies indicators
+
+## BMA
+```{r BMA, cache=TRUE, message=FALSE, eval=FALSE}
 # Load my arrayBuilder function
 source("./function-arrayBuilder.R")
 
@@ -212,11 +365,11 @@ plot_LMSIgal(indicator1 = (indicator = bma_indicator_all2k[,'Index']),
 
 
 
-# Monte Carlo Multi-Species Indicator
+## Monte Carlo Multi-Species Indicator
 Statistics Neatherlands' method to account for sampling error of species indices in the calculation of multi-species indicators based on Monte Carlo simulation of annual species indices (Soldaat et al., 2017; https://doi.org/10.1016/j.ecolind.2017.05.033).
 
 ### Monte Carlo MSI: Habitat specialists vs. Wider countryside species
-```{r MSI, cache=TRUE, message=FALSE}
+```{r MSI, cache=TRUE, message=FALSE, eval=FALSE}
 # Load summarise_Rhat function
 source("./function-summarise_occDetRds_BMA.R")
 
@@ -361,10 +514,10 @@ plot.MSIgal2_Linnean(msi_out_HS, msi_out_WCS)
 ```
 
 
-# Lamda Multi-Species Indicator
+## Lamda Multi-Species Indicator
 From DEFRA/CEH. Calculates an indicator using growth rates from one year to the next. Advantages over the conventional approach to constructing indicators is that the categorisation of species as ‘increasing’ or ‘decreasing’ can be made from the same set of data (the growth rates) as the construction of the indicator. ALSO uses the actual iterations for each species specific estimate as opposed to mean+se. 
 
-```{r lambdaIndicator, cache=TRUE, message=FALSE}
+```{r lambdaIndicator, cache=TRUE, message=FALSE, eval=FALSE}
 # Load my arrayBuilder function
 source("./function-arrayBuilder.R")
 
@@ -399,9 +552,9 @@ plot_LMSIgal(indicator1 = (lambdaIndicator_all$summary[,'indicator']),
 ```
 
 
-# Growth rate between time periods
+## Growth rate between time periods
 
-```{r percentdif, cache=TRUE, message=FALSE}
+```{r percentdif, cache=TRUE, message=FALSE, eval=FALSE}
 # Load my function summarising percent differences between all successive years and giving the average 
 source("./function-summarise_percentdif.R")
 out <- summarise_percentdif("../outputs/mixLL-outputs/", cutoff = 77)
@@ -423,7 +576,7 @@ lambdaIndicator_all_2TP <- lambda_indicator(lambdaArray_all_2TP)
 
 Argynnis adippe and Boloria euphrosyne have not converged, lets take a closer look:
 
-```{r non-converged-models, }
+```{r non-converged-models, eval=FALSE}
 # 
 require(sparta)
 
