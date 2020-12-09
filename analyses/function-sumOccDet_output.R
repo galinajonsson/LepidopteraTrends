@@ -1,10 +1,13 @@
 # Function to summarise occupancy estimates throughout the time series for many .rds files in an input directory
 # This function reads in and summarises all the .rds files' mean occupancy and detection year effect throughout the time series, as well as the mean effect of data types, list lengths and the last years mean occupancy 
+# There is also an option to categorise species into low, medium or high occupancies based on the last years occupancy estimates. To do so one must provide a vector with four numbers indicating the three ranges which define the three categories. 
 
-sumOccDet_output <-  function(input_dir, verbose = TRUE) {
+sumOccDet_output <-  function(input_dir, verbose = TRUE, categoriseOccu = FALSE, quantileProbs = NULL) {
   
-  library(reshape2)
+  require(reshape2)
   require(dplyr)
+  require(plyr)
+  require(boot)
   
   # get files from the input directory
   files <- list.files(path = paste(input_dir), ignore.case = TRUE, pattern = '\\.rds$') # list of the files to loop through
@@ -25,12 +28,6 @@ sumOccDet_output <-  function(input_dir, verbose = TRUE) {
     if(!("SPP_NAME" %in% ls(out))){
       stop('The rds file(s) do not contain a "SPP_NAME" object.')
     }
-    if(!("min_year" %in% ls(out))){
-      stop('The rds file(s) do not contain a "min_year" object.')
-    }
-    if(!("max_year" %in% ls(out))){
-      stop('The rds file(s) do not contain a "max_year" object.')
-    }
     return(out)
   }
   
@@ -38,11 +35,6 @@ sumOccDet_output <-  function(input_dir, verbose = TRUE) {
   read_bayes <- function(file){
     
     out <- loadrds(file) 
-    
-    # some old outputs don't have min year in which case make it == 1
-    min_year <- ifelse(is.null(out$min_year), 1, out$min_year)
-    
-    max_year <- out$max_year
     
     #Get the summary output for the rows and columns that we are interested in
     temp_out <- as.data.frame(out$BUGSoutput$summary)
@@ -61,23 +53,23 @@ sumOccDet_output <-  function(input_dir, verbose = TRUE) {
     MeanYearEffect_sd <- stats::sd(inv.logit(alpha.p_dat[, c("mean")]))
     
     # Detection
-    dtype2.p_row <- grep("^(dtype2.p[^.r])", row.names(temp_out))
-    DT2effect_mean <- inv.logit(temp_out[dtype2.p_row, c("mean")])
-    dtype3.p_row <- grep("^(dtype3.p[^.r])", row.names(temp_out))
-    DT3effect_mean <- inv.logit(temp_out[dtype3.p_row, c("mean")])
-    LLp_row <- grep("^(LL.p[^.r])", row.names(temp_out))
-    LLeffect_mean <- inv.logit(temp_out[LLp_row, c("mean")])
+    dtype2.p_row <- grep("dtype2.p", row.names(temp_out))
+    DT2effect_mean <- inv.logit(mean(alpha.p_dat[, c("mean")])+(temp_out[dtype2.p_row, c("mean")]))
+    dtype3.p_row <- grep("dtype3.p", row.names(temp_out))
+    DT3effect_mean <- inv.logit(mean(alpha.p_dat[, c("mean")])+(temp_out[dtype3.p_row, c("mean")]))
+    LLp_row <- grep("^LL.p", row.names(temp_out))
+    LLeffect_mean <- inv.logit(mean(alpha.p_dat[, c("mean")])+(temp_out[LLp_row, c("mean")]))
     
     # summmarise
     summary_out <- c(species_name = out$SPP_NAME,
-                              Occupancy_lastYrX = Occupancy_lastYr,
-                              MeanOccupancy_meanX = MeanOccupancy_mean,
-                              MeanOccupancy_sdX = MeanOccupancy_sd,
-                              MeanYearEffect_meanX = MeanYearEffect_mean,
-                              MeanYearEffect_sdX = MeanYearEffect_sd,
-                              DT2effect_meanX = DT2effect_mean,
-                              DT3effect_meanX = DT3effect_mean,
-                              LLeffect_meanX = LLeffect_mean)
+                              Occupancy_lastYr = Occupancy_lastYr,
+                              MeanOccupancy_mean = MeanOccupancy_mean,
+                              MeanOccupancy_sd = MeanOccupancy_sd,
+                              MeanYearEffect_mean = MeanYearEffect_mean,
+                              MeanYearEffect_sd = MeanYearEffect_sd,
+                              DT2effect_mean = DT2effect_mean,
+                              DT3effect_mean = DT3effect_mean,
+                              LLeffect_mean = LLeffect_mean)
     return(summary_out)
   }
   
@@ -88,6 +80,40 @@ sumOccDet_output <-  function(input_dir, verbose = TRUE) {
   
   # Unlist these and bind them together
   spp_data <- do.call(rbind, list_summaries)
+  
+  # If categoriseOccu is true 
+  if(isTRUE(categoriseOccu)){
+    
+    # Check that "quantileProbs" is given as a vector with four items
+    if(!(is.vector(quantileProbs))){
+      stop('quantileProbs is not specified or not specified as a vector')
+    }
+    if(!(length(quantileProbs) == 4)){
+      stop('four numbers are not specified for quantileProbs')
+    }
+    
+    category = cut(as.numeric(spp_data[,"Occupancy_lastYr"]), 
+                   quantile(as.numeric(spp_data[,"Occupancy_lastYr"]), probs = quantileProbs), 
+                   labels = c('Low', 'Medium', 'High'), 
+                   include.lowest = TRUE)
+    
+    spp_data <- cbind(spp_data, category)
+  }
+  
+  spp_data <- data.frame(spp_data)
+  spp_data$category <- as.factor(spp_data$category)
+  revalue(spp_data$category, c("1"="Low", "2"="Medium", "3"="High"))
+  spp_data$species_name <- as.factor(spp_data$species_name)
+  spp_data$Occupancy_lastYr <- as.numeric(spp_data$Occupancy_lastYr)
+  spp_data$MeanOccupancy_mean <- as.numeric(spp_data$MeanOccupancy_mean)
+  spp_data$MeanOccupancy_sd <- as.numeric(spp_data$MeanOccupancy_sd)
+  spp_data$MeanYearEffect_mean <- as.numeric(spp_data$MeanYearEffect_mean)
+  spp_data$MeanYearEffect_sd <- as.numeric(spp_data$MeanYearEffect_sd)
+  spp_data$DT2effect_mean <- as.numeric(spp_data$DT2effect_mean)
+  spp_data$DT3effect_mean <- as.numeric(spp_data$DT3effect_mean)
+  spp_data$LLeffect_mean <- as.numeric(spp_data$LLeffect_mean)
+  
+  
   
   return(spp_data)
 }
