@@ -2,6 +2,7 @@
 *.csv
 *.rds
 *.xls
+*.xlsx
 *.csv.zip
 *daily_count_data.txt
 *visits_data.txt.zip
