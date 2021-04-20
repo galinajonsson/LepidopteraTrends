@@ -1,0 +1,206 @@
+---
+title: "07 Model Selection"
+author: "Galina M. Jönsson"
+date: "20/04/2021"
+output: html_document
+---
+
+Here, I compare the three occupancy model formulations:   
+- Model A: specifies that list length should be considered as a categorical variable. There are 3 classes: BNM records (excluding BMS records), UKBMS records, and NHM records.  
+- Model B: specifies that list length should be considered as both a continuous variable and a categorical variable. There are 3 classes: BNM records (excluding BMS records) are considered continuous, whilst UKBMS records and NHM records are considered as categorical.  
+- Model C: specifies that list length should be considered as both continuous and categorical variables with no year effect estimated for one class (NHM records). There are 3 classes: BNM records (excluding BMS records) are considered continuous, whilst UKBMS records and NHM records are considered as categorical.  
+
+
+
+
+```{r load-model-outputs, message=FALSE, warning=FALSE}
+### Load required packages
+require(sparta)
+
+########################################################## 
+#######################  Model B  ########################
+##########################################################
+
+# Load model outputs
+Aglais_urticae_mixLL <- readRDS("../outputs/mixLL-outputs/results_Aglais_urticae_crick_mixLL.rds")
+Carterocephalus_palaemon_mixLL <- readRDS("../outputs/mixLL-outputs/results_Carterocephalus_palaemon_ctag_mixLL.rds")
+Erebia_aethiops_mixLL <- readRDS("../outputs/mixLL-outputs/results_Erebia_aethiops_crick_mixLL.rds")
+Erebia_epiphron_mixLL <- readRDS("../outputs/mixLL-outputs/results_Erebia_epiphron_crick_mixLL.rds")
+Limenitis_camilla_mixLL <- readRDS("../outputs/mixLL-outputs/results_Limenitis_camilla_ctag_mixLL.rds")
+Lycaena_phlaeas_mixLL <- readRDS("../outputs/mixLL-outputs/results_Lycaena_phlaeas_crick_mixLL.rds")
+Melitaea_athalia_mixLL <- readRDS("../outputs/mixLL-outputs/results_Melitaea_athalia_watson_mixLL.rds")
+Pararge_aegeria_mixLL <- readRDS("../outputs/mixLL-outputs/results_Pararge_aegeria_watson_mixLL.rds")
+Pieris_rapae_mixLL <- readRDS("../outputs/mixLL-outputs/results_Pieris_rapae_crick_mixLL.rds")
+Polygonia_c.album_mixLL <- readRDS("../outputs/mixLL-outputs/results_Polygonia_c_album_watson_mixLL.rds")
+Polyommatus_bellargus_mixLL <- readRDS("../outputs/mixLL-outputs/results_Polyommatus_bellargus_crick_mixLL.rds")
+Thecla_betulae_mixLL <- readRDS("../outputs/mixLL-outputs/results_Thecla_betulae_crick_mixLL.rds")
+
+# List model outputs
+mixLL_list <- list(Aglais_urticae_mixLL,
+                Carterocephalus_palaemon_mixLL, 
+                Erebia_aethiops_mixLL, 
+                Erebia_epiphron_mixLL,
+                Limenitis_camilla_mixLL, 
+                Lycaena_phlaeas_mixLL, 
+                Melitaea_athalia_mixLL, 
+                Pararge_aegeria_mixLL, 
+                Pieris_rapae_mixLL, 
+                Polygonia_c.album_mixLL, 
+                Polyommatus_bellargus_mixLL, 
+                Thecla_betulae_mixLL 
+)
+
+
+
+
+########################################################## 
+#######################  Model C  ########################
+##########################################################
+
+# Load model outputs
+Aglais_urticae_mixLL2 <- readRDS("../outputs/mixLL2-outputs/results_Aglais_urticae_crick_mixLL2.rds")
+Carterocephalus_palaemon_mixLL2 <- readRDS("../outputs/mixLL2-outputs/results_Carterocephalus_palaemon_watson_mixLL2.rds")
+Erebia_aethiops_mixLL2 <- readRDS("../outputs/mixLL2-outputs/results_Erebia_aethiops_crick_mixLL2.rds")
+Erebia_epiphron_mixLL2 <- readRDS("../outputs/mixLL2-outputs/results_Erebia_epiphron_watson_mixLL2.rds")
+Limenitis_camilla_mixLL2 <- readRDS("../outputs/mixLL2-outputs/results_Limenitis_camilla_watson_mixLL2.rds")
+Lycaena_phlaeas_mixLL2 <- readRDS("../outputs/mixLL2-outputs/results_Lycaena_phlaeas_crick_mixLL2.rds")
+Melitaea_athalia_mixLL2 <- readRDS("../outputs/mixLL2-outputs/results_Melitaea_athalia_watson_mixLL2.rds")
+Pararge_aegeria_mixLL2 <- readRDS("../outputs/mixLL2-outputs/results_Pararge_aegeria_crick_mixLL2.rds")
+Pieris_rapae_mixLL2 <- readRDS("../outputs/mixLL2-outputs/results_Pieris_rapae_crick_mixLL2.rds")
+Polygonia_c.album_mixLL2 <- readRDS("../outputs/mixLL2-outputs/results_Polygonia_c.album_crick_mixLL2.rds")
+Polyommatus_bellargus_mixLL2 <- readRDS("../outputs/mixLL2-outputs/results_Polyommatus_bellargus_watson_mixLL2.rds")
+Thecla_betulae_mixLL2 <- readRDS("../outputs/mixLL2-outputs/results_Thecla_betulae_watson_mixLL2.rds")
+
+# List model outputs
+mixLL2_list <- list(Aglais_urticae_mixLL2,
+                Carterocephalus_palaemon_mixLL2, 
+                Erebia_aethiops_mixLL2, 
+                Erebia_epiphron_mixLL2,
+                Limenitis_camilla_mixLL2, 
+                Lycaena_phlaeas_mixLL2, 
+                Melitaea_athalia_mixLL2, 
+                Pararge_aegeria_mixLL2, 
+                Pieris_rapae_mixLL2, 
+                Polygonia_c.album_mixLL2, 
+                Polyommatus_bellargus_mixLL2, 
+                Thecla_betulae_mixLL2 
+)
+
+
+
+########################################################## 
+##############  Check model B & C outputs ################
+##########################################################
+
+for (i in 1:length(mixLL_list)) {
+  if(isFALSE(mixLL_list[[i]]$species_observations == mixLL2_list[[i]]$species_observations)){
+    # print(paste(names(mixLL_list)[[i]], names(mixLL2_list)[[i]], sep = " species_observations not equal to "))
+    print("stop, two species_observations differ")
+  }
+  if(isFALSE(mixLL_list[[i]]$species_sites == mixLL2_list[[i]]$species_sites)){
+    # print(paste(names(mixLL_list)[[i]], names(mixLL2_list)[[i]], sep = " species_sites not equal to "))
+    print("stop, two species_sites differ")
+  }
+}
+```
+
+
+### Plot
+```{r plot-model-outputs, cache=TRUE, message=FALSE, echo=FALSE}
+### Source plotting function
+source("./fig-plot.Occdet_G.R")
+
+### Vector of species names
+spp_names <- c('Aglais urticae',
+               'Carterocephalus palaemon',
+               'Erebia aethiops',
+               'Erebia epiphron',
+               'Limenitis camilla',
+               'Lycaena phlaeas',
+               'Melitaea athalia',
+               'Pararge aegeria',
+               'Pieris rapae',
+               'Polygonia c-album',
+               'Polyommatus bellargus',
+               'Thecla betulae')
+
+# Create empty list
+plot_list <- list() 
+
+for (i in 1:length(mixLL_list)) {
+  plot_list[[i]] <- plot.occDet_G(mixLL_list[[i]], mixLL2_list[[i]]) +
+  ggtitle(as.expression(substitute(italic(spp_names), list(spp_names=spp_names[i])))) +
+  theme(text=element_text(size=18))
+}
+
+plot_list
+```
+
+
+```{r plot-model-outputs2, cache=TRUE, message=FALSE, eval=FALSE, echo=FALSE}
+plot.occDet_G(mixLL_list[[1]], mixLL2_list[[1]]) +
+  ggtitle(as.expression(substitute(italic(spp_names), list(spp_names=spp_names[1])))) +
+  theme(text=element_text(size=18))
+plot.occDet_G(mixLL_list[[2]], mixLL2_list[[2]]) +
+  ggtitle(as.expression(substitute(italic(spp_names), list(spp_names=spp_names[2])))) +
+        theme(text=element_text(size=18))
+plot.occDet_G(mixLL_list[[3]], mixLL2_list[[3]]) +
+  ggtitle(as.expression(substitute(italic(spp_names), list(spp_names=spp_names[3])))) +
+        theme(text=element_text(size=18))
+plot.occDet_G(mixLL_list[[4]], mixLL2_list[[4]]) +
+  ggtitle(as.expression(substitute(italic(spp_names), list(spp_names=spp_names[4])))) +
+        theme(text=element_text(size=18))
+plot.occDet_G(mixLL_list[[5]], mixLL2_list[[5]]) +
+  ggtitle(as.expression(substitute(italic(spp_names), list(spp_names=spp_names[5])))) +
+        theme(text=element_text(size=18))
+plot.occDet_G(mixLL_list[[6]], mixLL2_list[[6]]) +
+  ggtitle(as.expression(substitute(italic(spp_names), list(spp_names=spp_names[6])))) +
+        theme(text=element_text(size=18))
+plot.occDet_G(mixLL_list[[7]], mixLL2_list[[7]]) +
+  ggtitle(as.expression(substitute(italic(spp_names), list(spp_names=spp_names[7])))) +
+        theme(text=element_text(size=18))
+plot.occDet_G(mixLL_list[[8]], mixLL2_list[[8]]) +
+  ggtitle(as.expression(substitute(italic(spp_names), list(spp_names=spp_names[8])))) +
+        theme(text=element_text(size=18))
+plot.occDet_G(mixLL_list[[9]], mixLL2_list[[9]]) +
+  ggtitle(as.expression(substitute(italic(spp_names), list(spp_names=spp_names[9])))) +
+        theme(text=element_text(size=18))
+plot.occDet_G(mixLL_list[[10]], mixLL2_list[[10]]) +
+  ggtitle(as.expression(substitute(italic(spp_names), list(spp_names=spp_names[10])))) +
+        theme(text=element_text(size=18))
+plot.occDet_G(mixLL_list[[11]], mixLL2_list[[11]]) +
+  ggtitle(as.expression(substitute(italic(spp_names), list(spp_names=spp_names[11])))) +
+        theme(text=element_text(size=18))
+plot.occDet_G(mixLL_list[[12]], mixLL2_list[[12]]) +
+  ggtitle(as.expression(substitute(italic(spp_names), list(spp_names=spp_names[12])))) +
+        theme(text=element_text(size=18))
+
+```
+
+
+
+### DIC
+```{r DIC, cache=TRUE, message=FALSE, echo=FALSE}
+# Create empty data frame to populate
+summary_out <- data.frame(species_name = as.character(),
+                          Best_fit = as.character(),
+                          Model_B = as.numeric(),
+                          Model_C = as.numeric(),
+                          Difference = as.numeric())
+
+# loop through BUGSoutput for each species pair in turn
+for (i in 1:length(mixLL_list)) { # If Model B's DIC is lower than C's
+  if(mixLL_list[[i]]$BUGSoutput$DIC < mixLL2_list[[i]]$BUGSoutput$DIC) {
+    Best <- "B"    # Name 'Best' B
+  } else {
+      Best <- "C"    # Else name 'Best' C
+  }
+  summary_out[i, "species_name"] <- paste(paste("*", spp_names[i], sep = ""), "*", sep = "")     # Populate species_name column from spp_names list and surround by asterisks
+  summary_out[i, "Best_fit"] <-  Best     # Populate Best_fit column with lowest DIC model
+  summary_out[i, "Model_B"] <-  mixLL_list[[i]]$BUGSoutput$DIC     # Enter Model B's DIC value
+  summary_out[i, "Model_C"] <-  mixLL2_list[[i]]$BUGSoutput$DIC     # Enter Model C's DIC value
+  summary_out[i, "Difference"] <- abs(mixLL_list[[i]]$BUGSoutput$DIC - mixLL2_list[[i]]$BUGSoutput$DIC)     # Enter the difference between Model B's and C's DIC values
+  }
+
+knitr::kable(summary_out)
+```
