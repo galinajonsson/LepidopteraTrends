@@ -10,6 +10,16 @@ output:
     toc_float: true
 ---
 
+To do list:
+* Run next species
+* Read all MixLL2 outputs from folder
+* Set up to do the same for CatLL
+* Include species justification here not in 04-OccupancyTrends
+* List common names
+* Plot detection probability
+
+
+
 ## Background & standardisation
 
 Here, I compare the three occupancy model formulations:   
@@ -225,6 +235,12 @@ Use each of the 99 sets of probabilities to sample a vector of potential observa
 For each realization *y*~*rep*~ and for each year, calculate the annual proportion of sites in which the species was recorded; denote this proportion, for species *s* and year *t*, by *T*~*st*~(*y*~*rep*~)
 
 
+**Species left to run**
+* *Pararge aegeria*
+* *Pieris rapae*
+* *Polygonia c-album*
+* *Polyommatus bellargus*
+* *Thecla betulae*
 
 ```{r PostPredChecks1, eval=FALSE, message=FALSE}
 require("rjags")
@@ -237,7 +253,7 @@ require("LearnBayes")
 require("R2jags")
 
 
-Melitaea_athalia_mixLL <- readRDS("../outputs/mixLL-outputs/results_Melitaea_athalia_watson_mixLL.rds")
+Pararge_aegeria_mixLL <- readRDS("../outputs/mixLL-outputs/results_Pararge_aegeria_watson_mixLL.rds")
 
 
 ###########################
@@ -246,12 +262,12 @@ Melitaea_athalia_mixLL <- readRDS("../outputs/mixLL-outputs/results_Melitaea_ath
 
 
 # recompile the model
-Melitaea_athalia_mixLL$model$recompile()
+Pararge_aegeria_mixLL$model$recompile()
 
 #out$model$recompile()
 
 # Sample 100 iterations of each of the 3 chains and thin by 3, giving 99 samples
-samp <- rjags:::coda.samples(model=Melitaea_athalia_mixLL$model, 
+samp <- rjags:::coda.samples(model=Pararge_aegeria_mixLL$model, 
                              parallel=TRUE, n.cores=3,
                              variable.names="Py", 
                              n.iter=100, # Define number of iterations to run
@@ -283,7 +299,7 @@ Y_rep$iter <- with(Y_rep, Var1 + max(Var1)*(L1 - 1))
 # Include year, siteID and the actual observation (y)        
 # load the raw data
 #temp_data <- out$model$data()
-temp_data <- Melitaea_athalia_mixLL$model$data()
+temp_data <- Pararge_aegeria_mixLL$model$data()
 temp_data <- as.data.frame(with(temp_data, cbind(Site, Year, y)))
 temp_data$VisitID <- 1:nrow(temp_data)
 Y_rep <- merge(Y_rep[,-c(1,2,4)], temp_data)
@@ -302,7 +318,7 @@ RR1 <- Y_rep %>% group_by(Site, Year, iter) %>%
   ungroup()
 # the data in RR1 refer to whether the species was recorded in each site in each year
 # save this file
-write.csv(RR1, "../outputs/posteriorPredictiveChecks-outputs/Melitaea_athalia_mixLL_RR1.csv")
+write.csv(RR1, "../outputs/posteriorPredictiveChecks-outputs/Pararge_aegeria_mixLL_RR1.csv")
 
 # next, the mean of these across years (i.e., Tst(yrep))
 RR2 <- RR1 %>% group_by(Year, iter) %>%
@@ -313,7 +329,7 @@ RR2 <- RR1 %>% group_by(Year, iter) %>%
 
 # the data in RR2 refer to the proportion of Sites with positive records per Year
 # save this file
-write.csv(RR2, "../outputs/posteriorPredictiveChecks-outputs/Melitaea_athalia_mixLL_RR2.csv")
+write.csv(RR2, "../outputs/posteriorPredictiveChecks-outputs/Pararge_aegeria_mixLL_RR2.csv")
 
 
 
@@ -326,7 +342,7 @@ write.csv(RR2, "../outputs/posteriorPredictiveChecks-outputs/Melitaea_athalia_mi
 ######################################################################
 
 
-Melitaea_athalia_mixLL2 <- readRDS("../outputs/mixLL2-outputs/results_Melitaea_athalia_watson_mixLL2.rds")
+Pararge_aegeria_mixLL2 <- readRDS("../outputs/mixLL2-outputs/results_Pararge_aegeria_crick_mixLL2.rds")
 
 
 ###########################
@@ -335,12 +351,12 @@ Melitaea_athalia_mixLL2 <- readRDS("../outputs/mixLL2-outputs/results_Melitaea_a
 
 
 # recompile the model
-Melitaea_athalia_mixLL2$model$recompile()
+Pararge_aegeria_mixLL2$model$recompile()
 
 #out$model$recompile()
 
 # Sample 100 iterations of each of the 3 chains and thin by 3, giving 99 samples
-samp <- rjags:::coda.samples(model=Melitaea_athalia_mixLL2$model, 
+samp <- rjags:::coda.samples(model=Pararge_aegeria_mixLL2$model, 
                              parallel=TRUE, n.cores=3,
                              variable.names="Py", 
                              n.iter=100, # Define number of iterations to run
@@ -372,7 +388,7 @@ Y_rep$iter <- with(Y_rep, Var1 + max(Var1)*(L1 - 1))
 # Include year, siteID and the actual observation (y)        
 # load the raw data
 #temp_data <- out$model$data()
-temp_data <- Melitaea_athalia_mixLL2$model$data()
+temp_data <- Pararge_aegeria_mixLL2$model$data()
 temp_data <- as.data.frame(with(temp_data, cbind(Site, Year, y)))
 temp_data$VisitID <- 1:nrow(temp_data)
 Y_rep <- merge(Y_rep[,-c(1,2,4)], temp_data)
@@ -391,7 +407,7 @@ RR1 <- Y_rep %>% group_by(Site, Year, iter) %>%
   ungroup()
 # the data in RR1 refer to whether the species was recorded in each site in each year
 # save this file
-write.csv(RR1, "../outputs/posteriorPredictiveChecks-outputs/Melitaea_athalia_mixLL2_RR1.csv")
+write.csv(RR1, "../outputs/posteriorPredictiveChecks-outputs/Pararge_aegeria_mixLL2_RR1.csv")
 
 # next, the mean of these across years (i.e.,, Tst(yrep))
 RR2 <- RR1 %>% group_by(Year, iter) %>%
@@ -402,7 +418,7 @@ RR2 <- RR1 %>% group_by(Year, iter) %>%
 
 # the data in RR2 refer to the proportion of Sites with positive records per Year
 # save this file
-write.csv(RR2, "../outputs/posteriorPredictiveChecks-outputs/Melitaea_athalia_mixLL2_RR2.csv")
+write.csv(RR2, "../outputs/posteriorPredictiveChecks-outputs/Pararge_aegeria_mixLL2_RR2.csv")
 
 ```
 
@@ -411,13 +427,13 @@ write.csv(RR2, "../outputs/posteriorPredictiveChecks-outputs/Melitaea_athalia_mi
 
 
 > (4)
-Calculate Tgt(yrep) for each replicate dataset as the mean of Tst(yrep) across species in each taxonomic group, g.
+Calculate *T*~*gt*~(*y*~*rep*~) for each replicate dataset as the mean of *T*~*st*~(*y*~*rep*~) across species in each taxonomic group, *g*.
 
 This is not relevant for me 
 
 
 > (5)
-Calculate the mean m across years as Tgm(yrep) for each replicate dataset.
+Calculate the mean *m* across years as *T*~*gm*~(*y*~*rep*~) for each replicate dataset
 
 
 ```{r readData}
@@ -464,13 +480,13 @@ sppMeanSites$Year <- sppMeanSites$Year + 1899
 
 Now we're ready to calculate three other summary statistics:
 sppVarSites: the variance across years in the proportion of sites with a record
-taxonMeanSites: the annual mean (across species) in the proportion of sites with a record
-taxonVarSites: the variance across years in the above
+modelMeanSites: the annual mean (across species) in the proportion of sites with a record per model
+modelVarSites: the variance across years in the above
 
 
 
 > (6)
-Calculate Tgvar(yrep) as the variance across years in Tgt(yrep) for each replicate dataset.
+Calculate Tgvar(*y*~*rep*~) as the variance across years in Tgt(*y*~*rep*~) for each replicate dataset.
 
 > (7)
 Calculate the observed mean proportion of sites with records, Tgm(y), and the variance across years, Tgvar(y), for each replicate dataset.
