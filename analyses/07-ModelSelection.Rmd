@@ -112,6 +112,8 @@ for (i in 1:length(mixLL_list)) {
 
 
 ### Visualisation
+
+##### Occupancy estimates
 ```{r plot-model-outputs, message=FALSE, echo=FALSE}
 require(shiny)
 require(ggplot2)
@@ -147,8 +149,8 @@ shinyApp(
   server = function(input, output) {
     output$spplt <- renderPlot({
       plot.occDet_G(mixLL_list[[input$species_choose]], mixLL2_list[[input$species_choose]]) +
-  #ggtitle(as.expression(substitute(italic(spp_names), list(spp_names=spp_names[i])))) +
-        ggtitle(expression(paste(input$species_choose))) +
+        ggtitle(paste(input$species_choose)) +
+        theme(plot.title=element_text(face="italic")) +
   theme(text=element_text(size=18))
     })
   },
@@ -158,6 +160,8 @@ shinyApp(
 ```
 
 
+
+##### Detection probability estimates
 
 
 ### DIC
