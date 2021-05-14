@@ -99,22 +99,22 @@ plot.occDet_G <- function(x, y = NULL, main = x$SPP_NAME, reg_agg = '', ...){
         geom_ribbon(data = new_data2,
                     aes_string(group = 1, 
                                ymin = "quant_025", ymax = "quant_975"),
-                    alpha = 0.2, fill="#E69F00") +
+                    alpha = 0.2, fill="red") +
         geom_line(data = new_data, size = 1, 
                   aes(col = "black"), linetype = "solid") +
         geom_line(data = new_data2, size = 1, 
-                  aes(col = "#E69F00"), linetype = "dotdash") +
+                  aes(col = "red"), linetype = "solid") +
         geom_vline(xintercept = 1976, linetype = "dashed") +   # Vertical line = 1976
         ylab("Occupancy") +
         xlab("Year") +
         scale_y_continuous(limits = c(0, 1)) +   # Limits to y-scale
         scale_x_continuous(breaks=seq(1900, 2020, 20), limits = c(1900, 2025)) +
         #theme(plot.title = element_text(lineheight = .8, face = "bold"))+
-        scale_colour_manual(name = 'Species', 
-                            values =c("#E69F00"="#E69F00",
+        scale_colour_manual(name = 'Model', 
+                            values =c("red"="red",
                                       "black"="black"), 
-                            labels = c("Y", 
-                                       "X")) +
+                            labels = c("B", 
+                                       "C")) +
         theme(panel.grid.major = element_blank(), 
               panel.grid.minor = element_blank(),
               panel.background = element_blank(), 
