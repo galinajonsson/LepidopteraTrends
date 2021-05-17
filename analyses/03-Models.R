@@ -2411,4 +2411,37 @@ saveRDS(time.taken, "/home/galina/time.taken_results_Thecla_betulae_ctag_catLL.r
 
 
 
+
+##########################################################################################
+###################################### 16 May 2021 #######################################
+##########################################################################################
+
+
+# scp -o ProxyJump=galj@orca.nhm.ac.uk -r galina@157.140.15.119:/home/galina/results_Limenitis_camilla_crick_catLL.rds .
+# scp -o ProxyJump=galj@orca.nhm.ac.uk -r galina@157.140.15.119:/home/galina/results_Melitaea_athalia_crick_catLL.rds .
+# scp -o ProxyJump=galj@orca.nhm.ac.uk -r galina@157.140.15.119:/home/galina/time.taken_results_Limenitis_camilla_crick_catLL.rds .
+# scp -o ProxyJump=galj@orca.nhm.ac.uk -r galina@157.140.15.119:/home/galina/time.taken_results_Melitaea_athalia_crick_catLL.rds .
+
+
+
+##########################################################################################
+###################################### 17 May 2021 #######################################
+##########################################################################################
+
+
+# scp -o ProxyJump=galj@orca.nhm.ac.uk -r galina@157.140.15.119:/home/galina/results_Lycaena_phlaeas_crick_catLL.rds .
+# scp -o ProxyJump=galj@orca.nhm.ac.uk -r galina@157.140.15.119:/home/galina/results_Pararge_aegeria_crick_catLL.rds .
+# scp -o ProxyJump=galj@orca.nhm.ac.uk -r galina@157.140.15.119:/home/galina/time.taken_results_Lycaena_phlaeas_crick_catLL.rds .
+# scp -o ProxyJump=galj@orca.nhm.ac.uk -r galina@157.140.15.119:/home/galina/time.taken_results_Pararge_aegeria_crick_catLL.rds .
+
+# scp -o ProxyJump=galj@orca.nhm.ac.uk -r galina@157.140.15.118:/home/galina/results_Carterocephalus_palaemon_watson_catLL.rds .
+# scp -o ProxyJump=galj@orca.nhm.ac.uk -r galina@157.140.15.118:/home/galina/results_Erebia_aethiops_watson_catLL.rds .
+# scp -o ProxyJump=galj@orca.nhm.ac.uk -r galina@157.140.15.118:/home/galina/results_Erebia_epiphron_watson_catLL.rds .
+# scp -o ProxyJump=galj@orca.nhm.ac.uk -r galina@157.140.15.118:/home/galina/time.taken_results_Carterocephalus_palaemon_watson_catLL.rds .
+# scp -o ProxyJump=galj@orca.nhm.ac.uk -r galina@157.140.15.118:/home/galina/time.taken_results_Erebia_aethiops_watson_catLL.rds .
+# scp -o ProxyJump=galj@orca.nhm.ac.uk -r galina@157.140.15.118:/home/galina/time.taken_results_Erebia_epiphron_watson_catLL.rds .
+
+
+
+
  
