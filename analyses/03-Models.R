@@ -2444,4 +2444,11 @@ saveRDS(time.taken, "/home/galina/time.taken_results_Thecla_betulae_ctag_catLL.r
 
 
 
- 
+##########################################################################################
+###################################### 19 May 2021 #######################################
+##########################################################################################
+
+
+# scp -o ProxyJump=galj@orca.nhm.ac.uk -r galina@157.140.15.118:/home/galina/results_Aglais_urticae_watson_catLL.rds .
+# scp -o ProxyJump=galj@orca.nhm.ac.uk -r galina@157.140.15.118:/home/galina/time.taken_results_Aglais_urticae_watson_catLL.rds .
+#
