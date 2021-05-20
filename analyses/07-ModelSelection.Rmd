@@ -2,7 +2,6 @@
 title: "07 Model Selection"
 author: "Galina M. Jönsson"
 date: "20/04/2021"
-runtime: shiny
 output: 
   html_document:
     toc: true
@@ -12,38 +11,20 @@ output:
 
 **To do list:**   
 
-* ~~Run *Polygonia c-album* mixLL2 Py summary~~
-* ~~Run *Polyommatus bellargus* mixLL2 Py summary~~
-* ~~Run *Thecla betulae* Py mixLL2 summary~~
+* Fix DETECTION PROBABILITY PLOTTING FUNCTION  
+* Tidy plot Bayesian *p*-values
+* Fix Rhat function I broke  
 * Annotate shiny plotting code
-* Annotate Rhat_lists function
-* Plot record numbers over time
-* Visualise posterior predictive checks
+* Rewrite shiny code detprob as rmarkdown
 * Get outputs for all catLL outputs
-    + ~~*Erebia epiphron*~~  
-    + ~~*Carterocephalus palaemon*~~   
-    + ~~*Melitaea athalia*~~   
     + *Polyommatus bellargus*   
     + *Thecla betulae*   
-    + ~~*Limenitis camilla*~~   
     + *Polygonia c-album*   
-    + *Erebia aethiops*   
-    + *Aglais urticae*   
-    + ~~*Pararge aegeria*~~   
-    + ~~*Lycaena phlaeas*~~   
     + *Pieris rapae*  
 * Run Py summary for all catLL outputs
-    + *Erebia epiphron*  
-    + ~~*Carterocephalus palaemon*~~   
-    + *Melitaea athalia*   
     + *Polyommatus bellargus*   
     + *Thecla betulae*   
-    + *Limenitis camilla*   
     + *Polygonia c-album*   
-    + *Erebia aethiops*   
-    + *Aglais urticae*   
-    + *Pararge aegeria*   
-    + *Lycaena phlaeas*   
     + *Pieris rapae*   
 * Generalize first Py summary code chunk
 
@@ -111,6 +92,9 @@ The three species with the largest mean annual detection probability standard de
 
 ```{r load-model-outputs, message=FALSE, warning=FALSE}
 require(dplyr)
+#require(devtools)
+#devtools::install_github("rstudio/rmarkdown")
+require(rmarkdown)
 
 
 # Create a vector with species names to name model outputs
@@ -133,8 +117,17 @@ ModelNames <- c('Aglais_urticae',
 ########################################################## 
 #######################  Model A  ########################
 ##########################################################
+ModelNames20210619 <- c('Aglais_urticae',
+               'Carterocephalus_palaemon',
+               'Erebia_aethiops',
+               'Erebia_epiphron',
+               'Limenitis_camilla',
+               'Lycaena_phlaeas',
+               'Melitaea_athalia',
+               'Pararge_aegeria')
 
-ModelNames_catLL <- paste(ModelNames, "catLL", sep="_") # Add '_catLL' to model names
+
+ModelNames_catLL <- paste(ModelNames20210619, "catLL", sep="_") # Add '_catLL' to model names
 catLL_list <- list() # Create an empty list
 input_dir <- "../outputs/catLL-outputs/"  # Define input directory
 
@@ -239,6 +232,9 @@ RhatSummary <- summarise_Rhat_lists(append(#catLL_list,
                                      mixLL2_list), 
                               verbose=FALSE)
 
+#RhatSummary <- summarise_Rhat(mixLL_list, 
+#                              verbose=FALSE)
+
 # Check whether species have not converged (converged-column == "N")
 NotConvergedSpp <- subset(RhatSummary, grepl("N", converged))
 
@@ -251,8 +247,156 @@ if(nrow(NotConvergedSpp) > 0){
 
 ## Visualisation
 
-### Occupancy estimates
-```{r plot-occu-outputs, message=FALSE, warning=FALSE, echo=FALSE}
+### Occupancy estimates {.tabset .tabset-dropdown}
+```{r plot-occu-outputs-setup, message=FALSE, warning=FALSE, echo=FALSE}
+require(ggplot2)
+require(labelmachine)
+require(sparta)
+require(dplyr)
+
+### Source plotting function
+source("./fig-plot.Occdet_G.R")
+
+# Change ModelNames vetor to species names with spaces
+spp_names <- gsub(ModelNames, patt = "_", repl=" ")
+spp_names <- sub(spp_names, patt = "c.album", repl="c-album")
+
+# Name the lists of outputs their species names
+names(mixLL_list)[1:12] <- spp_names
+names(mixLL2_list)[1:12] <- spp_names
+
+
+# Create a dictionary translating Latin names to common names
+dict <- new_lama_dictionary(common_names = 
+                              c("Aglais urticae" = 'Small Tortoiseshell',
+                                "Carterocephalus palaemon" = 'Chequered Skipper',
+                                "Erebia aethiops" = 'Scotch Argus',
+                                "Erebia epiphron" = 'Mountain Ringlet',
+                                "Limenitis camilla" = 'White Admiral',
+                                "Lycaena phlaeas" = 'Small Copper',
+                                "Melitaea athalia" = 'Heath Fritillary',
+                                "Pararge aegeria" = 'Speckled Wood',
+                                "Pieris rapae" = 'Small White',
+                                "Polygonia c-album" = 'Comma',
+                                "Polyommatus bellargus" = 'Adonis Blue',
+                                "Thecla betulae" = 'Brown Hairstreak'))
+
+```
+
+#### *Aglais urticae*
+```{r plot-occu-outputs1, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+### Source plotting function
+source("./fig-plot.Occdet_G.R")
+
+plot.occDet_G(mixLL_list[[1]], mixLL2_list[[1]], catLL_list[[1]]) +
+  ggtitle(label = "Aglais urticae", 
+          subtitle = paste(lama_translate_("Aglais urticae", dict, "common_names"))) + 
+  theme(plot.title=element_text(face="italic")) +
+  theme(text=element_text(size=15)) 
+```
+
+#### *Carterocephalus palaemon*
+```{r plot-occu-outputs2, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+plot.occDet_G(mixLL_list[[2]], mixLL2_list[[2]], catLL_list[[2]]) +
+  ggtitle(label = "Carterocephalus palaemon", 
+          subtitle = paste(lama_translate_("Carterocephalus palaemon", dict, "common_names"))) + 
+  theme(plot.title=element_text(face="italic")) +
+  theme(text=element_text(size=15))  
+```
+
+#### *Erebia aethiops*
+```{r plot-occu-outputs3, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+plot.occDet_G(mixLL_list[[3]], mixLL2_list[[3]], catLL_list[[3]]) +
+  ggtitle(label = "Erebia aethiops", 
+          subtitle = paste(lama_translate_("Erebia aethiops", dict, "common_names"))) + 
+  theme(plot.title=element_text(face="italic")) +
+  theme(text=element_text(size=18)) 
+```
+
+#### *Erebia epiphron*
+```{r plot-occu-outputs4, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+plot.occDet_G(mixLL_list[[4]], mixLL2_list[[4]], catLL_list[[4]]) +
+  ggtitle(label = "Erebia epiphron", 
+          subtitle = paste(lama_translate_("Erebia epiphron", dict, "common_names"))) + 
+  theme(plot.title=element_text(face="italic")) +
+  theme(text=element_text(size=18))
+```
+
+#### *Limenitis camilla*
+```{r plot-occu-outputs5, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+plot.occDet_G(mixLL_list[[5]], mixLL2_list[[5]], catLL_list[[5]]) +
+  ggtitle(label = "Limenitis camilla", 
+          subtitle = paste(lama_translate_("Limenitis camilla", dict, "common_names"))) + 
+  theme(plot.title=element_text(face="italic")) +
+  theme(text=element_text(size=18))
+```
+
+#### *Lycaena phlaeas*
+```{r plot-occu-outputs6, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+plot.occDet_G(mixLL_list[[6]], mixLL2_list[[6]], catLL_list[[6]]) +
+  ggtitle(label = "Lycaena phlaeas", 
+          subtitle = paste(lama_translate_("Lycaena phlaeas", dict, "common_names"))) + 
+  theme(plot.title=element_text(face="italic")) +
+  theme(text=element_text(size=18))
+```
+
+#### *Melitaea athalia*
+```{r plot-occu-outputs7, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+plot.occDet_G(mixLL_list[[7]], mixLL2_list[[7]], catLL_list[[7]]) +
+  ggtitle(label = "Melitaea athalia", 
+          subtitle = paste(lama_translate_("Melitaea athalia", dict, "common_names"))) + 
+  theme(plot.title=element_text(face="italic")) +
+  theme(text=element_text(size=18))
+```
+
+#### *Pararge aegeria*
+```{r plot-occu-outputs8, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+plot.occDet_G(mixLL_list[[8]], mixLL2_list[[8]], catLL_list[[8]]) +
+  ggtitle(label = "Pararge aegeria", 
+          subtitle = paste(lama_translate_("Pararge aegeria", dict, "common_names"))) + 
+  theme(plot.title=element_text(face="italic")) +
+  theme(text=element_text(size=18))
+```
+
+#### *Pieris rapae*
+```{r plot-occu-outputs9, message=FALSE, warning=FALSE, echo=FALSE}
+plot.occDet_G(mixLL_list[[9]], mixLL2_list[[9]]) +
+  ggtitle(label = "Pieris rapae", 
+          subtitle = paste(lama_translate_("Pieris rapae", dict, "common_names"))) + 
+  theme(plot.title=element_text(face="italic")) +
+  theme(text=element_text(size=18))
+```
+
+#### *Polygonia c-album*
+```{r plot-occu-outputs10, message=FALSE, warning=FALSE, echo=FALSE}
+plot.occDet_G(mixLL_list[[10]], mixLL2_list[[10]]) +
+  ggtitle(label = "Polygonia c-album", 
+          subtitle = paste(lama_translate_("Polygonia c-album", dict, "common_names"))) + 
+  theme(plot.title=element_text(face="italic")) +
+  theme(text=element_text(size=18))
+```
+
+#### *Polyommatus bellargus*
+```{r plot-occu-outputs11, message=FALSE, warning=FALSE, echo=FALSE}
+plot.occDet_G(mixLL_list[[11]], mixLL2_list[[11]]) +
+  ggtitle(label = "Polyommatus bellargus", 
+          subtitle = paste(lama_translate_("Polyommatus bellargus", dict, "common_names"))) + 
+  theme(plot.title=element_text(face="italic")) +
+  theme(text=element_text(size=18))
+```
+
+#### *Thecla betulae*
+```{r plot-occu-outputs12, message=FALSE, warning=FALSE, echo=FALSE}
+plot.occDet_G(mixLL_list[[12]], mixLL2_list[[12]]) +
+  ggtitle(label = "Thecla betulae", 
+          subtitle = paste(lama_translate_("Thecla betulae", dict, "common_names"))) + 
+  theme(plot.title=element_text(face="italic")) +
+  theme(text=element_text(size=18))
+```
+
+
+
+```{r SHINY-plot-occu-outputs, message=FALSE, warning=FALSE, echo=FALSE, eval=FALSE}
 require(shiny)
 require(ggplot2)
 require(labelmachine)
@@ -317,8 +461,52 @@ shinyApp(
 
 
 
-### Detection probability estimates
-```{r plot-det-outputs, message=FALSE, echo=FALSE, fig.show='hold', out.width='50%'}
+### Detection probability estimates {.tabset .tabset-dropdown}
+```{r plot-detprob-outputs-setup, message=FALSE, warning=FALSE, echo=FALSE}
+require(ggplot2)
+require(labelmachine)
+require(sparta)
+require(dplyr)
+
+### Source plotting function
+source("./fig-plot.Occdet_G.R")
+
+# Change ModelNames vetor to species names with spaces
+spp_names <- gsub(ModelNames, patt = "_", repl=" ")
+spp_names <- sub(spp_names, patt = "c.album", repl="c-album")
+
+# Name the lists of outputs their species names
+names(mixLL_list)[1:12] <- spp_names
+names(mixLL2_list)[1:12] <- spp_names
+
+
+# Create a dictionary translating Latin names to common names
+dict <- new_lama_dictionary(common_names = 
+                              c("Aglais urticae" = 'Small Tortoiseshell',
+                                "Carterocephalus palaemon" = 'Chequered Skipper',
+                                "Erebia aethiops" = 'Scotch Argus',
+                                "Erebia epiphron" = 'Mountain Ringlet',
+                                "Limenitis camilla" = 'White Admiral',
+                                "Lycaena phlaeas" = 'Small Copper',
+                                "Melitaea athalia" = 'Heath Fritillary',
+                                "Pararge aegeria" = 'Speckled Wood',
+                                "Pieris rapae" = 'Small White',
+                                "Polygonia c-album" = 'Comma',
+                                "Polyommatus bellargus" = 'Adonis Blue',
+                                "Thecla betulae" = 'Brown Hairstreak'))
+
+```
+
+#### *Aglais urticae*
+```{r plot-detprob-outputs1, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+
+
+
+```
+
+
+```{r SHINY-plot-det-outputs, message=FALSE, echo=FALSE, fig.show='hold', out.width='50%', eval=FALSE}
+
 require(shiny)
 require(ggplot2)
 require(sparta)
@@ -378,6 +566,144 @@ fluidPage(fluidRow(
          ) 
   )
 )
+```
+
+
+### Record numbers
+```{r plot-record-numbers, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+# Load required packages
+require(dplyr)
+require(plyr)
+require(ggplot2)
+require(viridis)
+require(readr)
+
+# Load spp_vis data (any would do), which contain all visits and whether or not each of the three species have been observed at that visit
+spp_vis <- read.csv('../data/formattedData/spp_vis_merged_2020-04-07.csv', header=T, na.strings=c("","NA"))
+
+# Load occDetdata giving each visits' site ID (grid cell), list length (numper of species observed) and time period (in this case year)
+occDetdata_merged_2020_04_07 <- read.csv('../data/formattedData/occDetdata_merged_2020-04-07.csv', header=T, na.strings=c("","NA"))
+
+# Merge by visit
+spp_vis <- merge(spp_vis, occDetdata_merged_2020_04_07, by="visit")
+
+# Find unique visits
+spp_vis <- unique(spp_vis)
+
+# Create a species column
+spp_vis$species <- as.factor(c("NA"))
+
+### Make L column a source column
+# Change all List lengths between 0 and 22222 to 1 (all these are BNM data)
+spp_vis$L <- replace(spp_vis$L, spp_vis$L > 0 & spp_vis$L < 22222, 1)
+# Make L a factor
+spp_vis$L <- as.factor(spp_vis$L)
+# Rename factor levels according to data type
+spp_vis$L <- revalue(spp_vis$L, c("1"="BNM", "22222"="UKBMS", "33333"="NHCs"))
+# Rename column to Source
+colnames(spp_vis)[colnames(spp_vis)=="L"] <- "Source"
+
+
+# Correct time period so it starts at 1900
+spp_vis$year <- spp_vis$TP+1899
+
+
+
+########################################################################
+
+# Subset each species' records into dataframes and specify species identity
+spp_vis_A <- subset(spp_vis, Aglais.urticae == "TRUE")
+spp_vis_A$species <- c("italic('A. urticae')")
+spp_vis_B <- subset(spp_vis, Pararge.aegeria == "TRUE")
+spp_vis_B$species <- c("italic('P. aegeria')")
+spp_vis_C <- subset(spp_vis, Polygonia.c.album == "TRUE")
+spp_vis_C$species <- c("italic('P. c-album')")
+spp_vis_D <- subset(spp_vis, Pieris.rapae == "TRUE")
+spp_vis_D$species <- c("italic('P. rapae')")
+
+
+# row bind each subsetted species' dataframe with the original spp_vis dataframe
+spp_vis1 <- rbind(spp_vis_A, spp_vis_B)
+spp_vis1 <- rbind(spp_vis1, spp_vis_C)
+spp_vis1 <- rbind(spp_vis1, spp_vis_D)
+
+
+
+
+########################################################################
+
+
+# Subset each species' records into dataframes and specify species identity
+spp_vis_Carterocephalus_palaemon <- subset(spp_vis, Carterocephalus.palaemon == "TRUE")
+spp_vis_Carterocephalus_palaemon$species <- c("italic('C. palaemon')")
+spp_vis_Erebia_aethiops <- subset(spp_vis, Erebia.aethiops == "TRUE")
+spp_vis_Erebia_aethiops$species <- c("italic('E. aethiops')")
+spp_vis_Erebia_epiphron <- subset(spp_vis, Erebia.epiphron == "TRUE")
+spp_vis_Erebia_epiphron$species <- c("italic('E. epiphron')")
+spp_vis_Melitaea_athalia <- subset(spp_vis, Melitaea.athalia == "TRUE")
+spp_vis_Melitaea_athalia$species <- c("italic('M. athalia')")
+
+
+
+# row bind each subsetted species' dataframe with the original spp_vis dataframe
+spp_vis2 <- rbind(spp_vis_Carterocephalus_palaemon, spp_vis_Erebia_aethiops)
+spp_vis2 <- rbind(spp_vis2, spp_vis_Melitaea_athalia)
+spp_vis2 <- rbind(spp_vis2, spp_vis_Erebia_epiphron)
+
+
+
+
+########################################################################
+
+
+# Subset each species' records into dataframes and specify species identity
+spp_vis_Limenitis_camilla <- subset(spp_vis, Limenitis.camilla == "TRUE")
+spp_vis_Limenitis_camilla$species <- c("italic('L. camilla')")
+spp_vis_Lycaena_phlaeas <- subset(spp_vis, Lycaena.phlaeas == "TRUE")
+spp_vis_Lycaena_phlaeas$species <- c("italic('L. phlaeas')")
+spp_vis_Polyommatus_bellargus <- subset(spp_vis, Polyommatus.bellargus == "TRUE")
+spp_vis_Polyommatus_bellargus$species <- c("italic('P. bellargus')")
+spp_vis_Thecla_betulae <- subset(spp_vis, Thecla.betulae == "TRUE")
+spp_vis_Thecla_betulae$species <- c("italic('T. betulae')")
+
+
+# row bind each subsetted species' dataframe with the original spp_vis dataframe
+spp_vis3 <- rbind(spp_vis_Limenitis_camilla, spp_vis_Lycaena_phlaeas)
+spp_vis3 <- rbind(spp_vis3, spp_vis_Polyommatus_bellargus)
+spp_vis3 <- rbind(spp_vis3, spp_vis_Thecla_betulae)
+
+
+################################################################
+
+# Plot function
+plot_speciesVisits <- function(data, title=NULL){
+pp <- ggplot(data, aes(x=year, fill=Source, color=Source)) + 
+  scale_fill_manual(values = alpha(c("#453781FF", 
+                                     "#20A386FF", 
+                                     "#DCE318FF"), 0.5)) +
+  scale_color_manual(values = alpha(c("#453781FF", 
+                                      "#20A386FF", 
+                                      "#DCE318FF"), 0.5)) +
+  facet_grid(~ species, labeller=label_parsed) + # facet grid by species
+  geom_bar(position="identity", alpha=0.7) + 
+  labs(y="Number of Visits", x = "Year") +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()) +
+  # sqrt y scale and expand scale to no space below, 5% above
+  scale_y_sqrt(expand = expansion(mult = c(0, .05))) +
+  theme(text = element_text(size=15),
+        axis.text.x = element_text(angle=90, hjust=1))
+print(pp)
+}
+  
+
+# Apply plot function to the three species lists
+mapply(data = list(spp_vis1, 
+                  spp_vis3, 
+                  spp_vis2),
+       FUN = plot_speciesVisits)
+
 ```
 
 
@@ -447,7 +773,6 @@ Use each of the 99 sets of probabilities to sample a vector of potential observa
 For each realization *y*~rep~ and for each year, calculate the annual proportion of sites in which the species was recorded; denote this proportion, for species *s* and year *t*, by *T*~*st*~(*y*~rep~)
 
 
-**Species left to run**
 
 
 ```{r PostPredChecks1, eval=FALSE, message=FALSE}
@@ -461,7 +786,7 @@ require("LearnBayes")
 require("R2jags")
 
 
-Erebia_aethiops_catLL <- catLL_list[[2]]
+Melitaea_athalia_catLL <- catLL_list[[7]]
 
 
 ###########################
@@ -470,12 +795,12 @@ Erebia_aethiops_catLL <- catLL_list[[2]]
 
 
 # recompile the model
-Erebia_aethiops_catLL$model$recompile()
+Melitaea_athalia_catLL$model$recompile()
 
 #out$model$recompile()
 
 # Sample 100 iterations of each of the 3 chains and thin by 3, giving 99 samples
-samp <- rjags:::coda.samples(model=Erebia_aethiops_catLL$model, 
+samp <- rjags:::coda.samples(model=Melitaea_athalia_catLL$model, 
                              parallel=TRUE, n.cores=3,
                              variable.names="Py", 
                              n.iter=100, # Define number of iterations to run
@@ -507,7 +832,7 @@ Y_rep$iter <- with(Y_rep, Var1 + max(Var1)*(L1 - 1))
 # Include year, siteID and the actual observation (y)        
 # load the raw data
 #temp_data <- out$model$data()
-temp_data <- Erebia_aethiops_catLL$model$data()
+temp_data <- Melitaea_athalia_catLL$model$data()
 temp_data <- as.data.frame(with(temp_data, cbind(Site, Year, y)))
 temp_data$VisitID <- 1:nrow(temp_data)
 Y_rep <- merge(Y_rep[,-c(1,2,4)], temp_data)
@@ -526,7 +851,7 @@ RR1 <- Y_rep %>% group_by(Site, Year, iter) %>%
   ungroup()
 # the data in RR1 refer to whether the species was recorded in each site in each year
 # save this file
-write.csv(RR1, "../outputs/posteriorPredictiveChecks-outputs/Erebia_aethiops_catLL_RR1.csv")
+write.csv(RR1, "../outputs/posteriorPredictiveChecks-outputs/Melitaea_athalia_catLL_RR1.csv")
 
 # next, the mean of these across years (i.e., Tst(yrep))
 RR2 <- RR1 %>% group_by(Year, iter) %>%
@@ -537,7 +862,7 @@ RR2 <- RR1 %>% group_by(Year, iter) %>%
 
 # the data in RR2 refer to the proportion of Sites with positive records per Year
 # save this file
-write.csv(RR2, "../outputs/posteriorPredictiveChecks-outputs/Erebia_aethiops_catLL_RR2.csv")
+write.csv(RR2, "../outputs/posteriorPredictiveChecks-outputs/Melitaea_athalia_catLL_RR2.csv")
 ```
 
 
@@ -547,7 +872,7 @@ write.csv(RR2, "../outputs/posteriorPredictiveChecks-outputs/Erebia_aethiops_cat
 > (4)
 Calculate *T*~*gt*~(*y*~rep~) for each replicate dataset as the mean of *T*~*st*~(*y*~rep~) across species in each taxonomic group, *g*.
 
-Here, I will calculate the mean of *T*~*st*~(*y*~rep~) across species for each model fomrmulation, not taxonomic group (still it calling *g*).
+Here, I will calculate the mean of *T*~*st*~(*y*~rep~) across species for each model formulation, not taxonomic group (still it calling *g*).
 
 
 > (5)
@@ -559,6 +884,10 @@ require("reshape2")
 require("dplyr")
 require("tidyr")
 require("ggplot2")
+require("rjags")
+require("sparta")
+require("lattice")
+require("LearnBayes")
 
 # Define 99% CIs
 q <- c(0.005, 0.995)
@@ -592,6 +921,7 @@ sppMeanSites <- sppMeanSites %>%
 
 # Assign correct years
 sppMeanSites$Year <- sppMeanSites$Year + 1899
+
 ```
 
 
@@ -609,9 +939,7 @@ Calculate *T*~*gvar*~(*y*~*rep*~) as the variance across years in *T*~*gt*~(*y*~
 Calculate the observed mean proportion of sites with records, *T*~*gm*~(*y*), and the variance across years, *T*~*gvar*~(*y*), for each replicate dataset.
 
 
-```{r variance&taxon, message=FALSE, warning=FALSE}
-library("dplyr")
-
+```{r varianceAndModel, message=FALSE, warning=FALSE}
 # now the variance across years 
 sppVarSites <- sppMeanSites %>% group_by(Model, Species, iter) %>%
   summarise(obs_varSitesPerYear = var(obs_meanSitesPerYear),
@@ -619,7 +947,7 @@ sppVarSites <- sppMeanSites %>% group_by(Model, Species, iter) %>%
   ) %>%
   ungroup()
 
-# now summarise these stats to Taxon level
+# now summarise these stats to model level
 # We'll calculate the mean proportion of sites with records for species in each taxon
 modelMeanSites <- sppMeanSites %>% group_by(Model, Year, iter) %>%
   summarise(obs_meanSitesPerYear = mean(obs_meanSitesPerYear),
@@ -633,6 +961,7 @@ modelVarSites <- modelMeanSites %>% group_by(Model, iter) %>%
             sim_varSitesPerYear = var(sim_meanSitesPerYear)
   ) %>%
   ungroup
+
 ```
 
 
@@ -644,7 +973,6 @@ I will use 99% CIs as the lower 95% CI overlaps zero.
 Summarise the data, including the Bayesian *p* value
 
 ```{r BayesianP, message=FALSE, warning=FALSE}
-
 sppMeanSites_Summ <- sppMeanSites %>% 
   group_by(Model, Species) %>%
     summarise(Bp = mean(obs_meanSitesPerYear > sim_meanSitesPerYear),
@@ -687,6 +1015,7 @@ modelVarSites_Summ <- modelVarSites %>%
             sim_upper = quantile(sim_varSitesPerYear, q[2]),
   ) %>%
   ungroup()
+
 ```
 
 
@@ -695,17 +1024,18 @@ modelVarSites_Summ <- modelVarSites %>%
 
 ```{r plot-PySummary, echo=FALSE, message=FALSE, warning=FALSE}
 plot_PredPostTest <- function(data, title=NULL){
-  gp <- ggplot(data = data) +
-    geom_point(aes(x=obs, y=sim_mean, col=Model)) +
-    geom_errorbar(aes(x=obs, ymin=sim_lower, ymax=sim_upper, col=Model)) +
+  gp <- ggplot(data = data,) +
+    geom_point(aes(x=obs, y=sim_mean, col=Model), alpha=0.7) +
+    geom_errorbar(aes(x=obs, ymin=sim_lower, ymax=sim_upper, col=Model), 
+               alpha=0.7) +
     geom_abline(aes(intercept=0, slope=1)) + 
     scale_x_log10() + scale_y_log10() + 
     xlab("observed from data") + ylab("model prediction") + 
     ggtitle(title) + theme_bw()
   print(gp)
 }
-  
 
+  
 mapply(data = list(sppMeanSites_Summ, 
                   sppVarSites_Summ, 
                   modelMeanSites_Summ,
@@ -713,13 +1043,76 @@ mapply(data = list(sppMeanSites_Summ,
         title = list("Mean (across years) proportion of sites with a record - 99%CIs", 
                   "Variance (across years) in proportion of sites per year - 99%CIs", 
                   "Mean proportion of sites per year (mean across species) - 99%CIs",
-                  "Variance across years in proportion of sites per year across species - 99%CIs"),       
+                  "Variance across years in proportion of sites per year across species - 99%CIs"),   
        FUN = plot_PredPostTest)
+
 ```
 
-Now plot the Bayesian *p*-value (the proportion of simulated values that are lower than the observed; the 'best' Bayesian *p*-value is 0.5)
+
+
+Now plot the Bayesian *p*-values (the proportion of simulated values that are lower than the observed; the 'best' Bayesian *p*-value is 0.5)
 
 ```{r plotBp, echo=FALSE, warning=FALSE}
+
+
+
+bpDF <- data.frame(Species= c('Aglais_urticae',
+               'Carterocephalus_palaemon',
+               'Erebia_aethiops',
+               'Erebia_epiphron',
+               'Limenitis_camilla',
+               'Lycaena_phlaeas',
+               'Melitaea_athalia',
+               'Pararge_aegeria',
+               'Pieris_rapae',
+               'Polygonia_c.album',
+               'Polyommatus_bellargus',
+               'Thecla_betulae'),
+               mixLL = c(0.3276733,
+                         0.3184431,
+                         0.5274295,
+                         0.3381226,
+                         0.5336120,
+                         0.5105364,
+                         0.3055556,
+                         0.3311564,
+                         0.2775165,
+                         0.3537966,
+                         0.3580634,
+                         0.3636364),
+               mixLL2 = c(0.3111285,
+                          0.3402125,
+                          0.5208986,
+                          0.3954197,
+                          0.4916405,
+                          0.5131487,
+                          0.3200975,
+                          0.3333333,
+                          0.2697666,
+                          0.3313305,
+                          0.3304598,
+                          0.3554511))
+
+
+ggplot(bpDF, aes(x=mixLL, y=mixLL2)) +
+  geom_point() + 
+  ggtitle("Bayesian p - Mean (across years) proportion of sites with a record") + 
+  theme_bw() +
+  geom_abline(aes(intercept=0, slope=1))
+
+ggplot(bpDF, aes(x=mixLL, y=mixLL2)) +
+  geom_point() + 
+  geom_text(label=bpDF$Species) +
+  ggtitle("Bayesian p - Mean (across years) proportion of sites with a record with spp names") + theme_bw() +
+  geom_abline(aes(intercept=0, slope=1))
+
+```
+  
+  
+  
+```{r plotBp2, echo=FALSE, warning=FALSE, eval=FALSE}
+
+
 hist(sppMeanSites_Summ$Bp)
 hist(sppVarSites_Summ$Bp)
 hist(modelMeanSites_Summ$Bp) ### MixLL_2 on the left
