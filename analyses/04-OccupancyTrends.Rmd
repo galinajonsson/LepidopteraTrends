@@ -20,6 +20,7 @@ new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"
 if(length(new.packages)) install.packages(new.packages)
 #install_github(repo = 'biologicalrecordscentre/BRCindicators')
 #install_github('biologicalrecordscentre/sparta')
+library("sparta")
 library("BRCindicators")
 ```
 
@@ -42,14 +43,14 @@ require(dplyr)
 NotConvergedSpp <- subset(RhatSummary, grepl("N", converged))
 NotConvergedSpp
 ```
-*Aglais io*, *Apatura iris*, *Ochlodes sylvanus* and *Pyronia tithonus* did not converge when modeled with 50,000 iterations. All were subsequentually modeled with 80,000 iterations and as seen avove, only *Pyronia tithonus* still did not converge. The moxlistlength model outputs for *Pyronia tithonus* will not be considered further here. 
+*Aglais io*, *Apatura iris*, *Ochlodes sylvanus* and *Pyronia tithonus* did not converge when modeled with 50,000 iterations. All were subsequentually modeled with 80,000 iterations and as seen avove, only *Pyronia tithonus* still did not converge. The mixlistlength model outputs for *Pyronia tithonus* will not be considered further here. 
 
 
 
 ## Visualise occupancy
 
 ```{r plot-Occupancy, cache=TRUE, message=FALSE}
-require(sparta)
+require(sparta) 
 
 # Create empty list
 list <- list() 
@@ -67,33 +68,50 @@ for(i in 1:length(files)){
   names[[i]] <- out$SPP_NAME
 }
 
+
 list
 ``` 
 
 
 
 ## Visualise detection
-```{r plot-Detection, cache=TRUE, message=FALSE}
-require(sparta)
 
+### Habitat specialists
+```{r plot-Detection_HS, cache=TRUE, message=FALSE, warning=FALSE}
 # Create empty list
 list2 <- list() 
 
 # Input directory
-input_dir <- "../outputs/mixLL-outputs_Converged/"
+input_dir <- "../outputs/mixLL-outputs_HS/"
 files2 <- list.files(path = paste(input_dir), ignore.case = TRUE, pattern = '\\.rds$') # list of the files to loop through
 
 for(i in 1:length(files2)){
   # read the rds file
   out <- readRDS(file.path(input_dir, files2[i])) 
-  list2[[i]] <- plot_DetectionOverTime(out, out$SPP_NAME)
+  list2[[i]] <- plot_DetectionOverTime(out, out$SPP_NAME, min.yr = 1900, legend_labels = c("BNM_LL1/Year_Effect", "UKBMS", "NHCs", "BNM_LL5"), legend_title = "Data Type")
 }
 
 list2
 ```
 
 
+### Wider Countryside Species
+```{r plot-Detection_WCS, cache=TRUE, message=FALSE, warning=FALSE}
+# Create empty list
+list3 <- list() 
 
+# Input directory
+input_dir <- "../outputs/mixLL-outputs_WCS/"
+files3 <- list.files(path = paste(input_dir), ignore.case = TRUE, pattern = '\\.rds$') # list of the files to loop through
+
+for(i in 1:length(files3)){
+  # read the rds file
+  out <- readRDS(file.path(input_dir, files3[i])) 
+  list3[[i]] <- plot_DetectionOverTime(out, out$SPP_NAME, min.yr = 1900, legend_labels = c("BNM_LL1/Year_Effect", "UKBMS", "NHCs", "BNM_LL5"), legend_title = "Data Type")
+}
+
+list3
+```
 \n
 \n
 \n
@@ -122,7 +140,7 @@ output <- sumOccDet_output("../outputs/mixLL-outputs_Converged/", categoriseOccu
 
 #### 2
 
-# Load generalists vs. specialist looku-up table
+# Load generalists vs. specialist look-up table
 CatLookUp <- read.csv("../data/auxiliaryData/MSI_lookup.csv")
 
 # Substitute blank space in species name for punctuation
@@ -179,7 +197,7 @@ Please note that there are no species in the high geographic coverage category t
 ```{r MixLL2-select-High-WCS, cache=TRUE, message=FALSE, eval=FALSE}
 (subset((subset(output, category=="3")), HS_WCS=="WCS"))
 ```
-- I will chose the three species with the largest mean annual detection probability standard deviations (*Aglais urticae*, *Pararge aegeria* and *Lycaena.phlaeas*) and the fourth (of 13) most variable species, *Pieris.rapae*, as the genus of the third (*Aglais io*) is already represented in the sample.
+- I will chose the three species with the largest mean annual detection probability standard deviations (*Aglais urticae*, *Pararge aegeria* and *Lycaena phlaeas*) and the fourth (of 13) most variable species, *Pieris rapae*, as the genus of the third (*Aglais io*) is already represented in the sample.
 
 \n
 \n
@@ -198,8 +216,8 @@ Please note that there are no species in the high geographic coverage category t
 8. *Erebia aethiops*   
 9. *Aglais urticae*   
 10. *Pararge aegeria*   
-11. *Lycaena.phlaeas*   
-12. *Pieris.rapae*   
+11. *Lycaena phlaeas*   
+12. *Pieris rapae*   
 
 
 \n
