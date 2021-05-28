@@ -11,15 +11,10 @@ output:
 
 **To do list:**   
 
-* If statement: detProb plotting function  
-* Tidy plot Bayesian *p*-values
-* Fix Rhat function I broke  
+* Fix SummariseRhatDetProb-function to:   
+    + Handle lists   
+    + handle catLL   
 * Annotate shiny plotting code
-* Get outputs for all catLL outputs
-    + *Polyommatus bellargus*   
-    + *Thecla betulae*   
-    + *Polygonia c-album*   
-    + *Pieris rapae*  
 * Run Py summary for all catLL outputs
     + *Polyommatus bellargus*   
     + *Thecla betulae*   
@@ -116,17 +111,8 @@ ModelNames <- c('Aglais_urticae',
 ########################################################## 
 #######################  Model A  ########################
 ##########################################################
-ModelNames20210619 <- c('Aglais_urticae',
-               'Carterocephalus_palaemon',
-               'Erebia_aethiops',
-               'Erebia_epiphron',
-               'Limenitis_camilla',
-               'Lycaena_phlaeas',
-               'Melitaea_athalia',
-               'Pararge_aegeria')
 
-
-ModelNames_catLL <- paste(ModelNames20210619, "catLL", sep="_") # Add '_catLL' to model names
+ModelNames_catLL <- paste(ModelNames, "catLL", sep="_") # Add '_catLL' to model names
 catLL_list <- list() # Create an empty list
 input_dir <- "../outputs/catLL-outputs/"  # Define input directory
 
@@ -202,16 +188,20 @@ for(i in 1:length(files)){
 
 
 ########################################################## 
-##############  Check model B & C outputs ################
+#############  Check model A, B & C outputs ##############
 ##########################################################
 
 # Check that the number of species observations and sites where the species have been collected and recorded are equal for model B and C. In other words whether the models are based on the same data set. 
 for (i in 1:length(mixLL_list)) {
-  if(isFALSE(mixLL_list[[i]]$species_observations == mixLL2_list[[i]]$species_observations)){
-    print("stop, two species_observations differ")
+  if(isFALSE(mixLL_list[[i]]$species_sites == mixLL2_list[[i]]$species_sites &&
+             catLL_list[[i]]$species_sites == mixLL_list[[i]]$species_sites &&
+             catLL_list[[i]]$species_sites == mixLL2_list[[i]]$species_sites)){
+    print("stop, species_observations differ")
   }
-  if(isFALSE(mixLL_list[[i]]$species_sites == mixLL2_list[[i]]$species_sites)){
-    print("stop, two species_sites differ")
+  if(isFALSE(mixLL_list[[i]]$species_sites == mixLL2_list[[i]]$species_sites &&
+             catLL_list[[i]]$species_sites == mixLL_list[[i]]$species_sites &&
+             catLL_list[[i]]$species_sites == mixLL2_list[[i]]$species_sites)){
+    print("stop, species_sites differ")
   }
 }
 
@@ -222,26 +212,50 @@ for (i in 1:length(mixLL_list)) {
 ##################  Rhat: Convergence ####################
 ##########################################################
 
+
+### occupancy estimates
+
+# Source function to summarise_Rhat to test whether all occupancy estimates have converged
+source("./function-summarise_Rhat.R")
+summarise_Rhat <- summarise_Rhat(append(catLL_list, 
+                                              (append(mixLL_list,
+                                              mixLL2_list))), 
+                                       verbose=FALSE,
+                                       is.list=TRUE) # Specify its a list
+
+# If some species have not converged (converged-column == "N"), subset them
+NotConvergedSpp <- subset(summarise_Rhat, grepl("N", converged))
+
+
 # Source the function that checks convergence, i.e. is Rhat >1.1?
-source("./function-summarise_Rhat_lists.R")
+source("./function-SummariseRhatDetProb.R")
 
-# Use function to summarise whether all occupancy estimates have converged
-RhatSummary <- summarise_Rhat_lists(append(#catLL_list,
-                                     mixLL_list,
-                                     mixLL2_list), 
-                              verbose=FALSE)
-
-#RhatSummary <- summarise_Rhat(mixLL_list, 
+# Run function
+#RhatDet_catLL <- SummariseRhatDetProb("../outputs/catLL-outputs/", 
 #                              verbose=FALSE)
 
-# Check whether species have not converged (converged-column == "N")
-NotConvergedSpp <- subset(RhatSummary, grepl("N", converged))
+RhatDet_mixLL <- SummariseRhatDetProb("../outputs/mixLL-outputs/", 
+                              verbose=FALSE)
+
+RhatDet_mixLL2 <- SummariseRhatDetProb("../outputs/mixLL2-outputs/", 
+                              verbose=FALSE)
+
+# If some species have not converged (converged-column == "N"), subset them
+#NotConvergedDetProb_catLL <- subset(RhatDet_mixLL, grepl("N", RhatDet_catLL[,2:5]))
+NotConvergedDetProb_mixLL <- subset(RhatDet_mixLL, grepl("N", RhatDet_mixLL[,2:5]))
+NotConvergedDetProb_mixLL2 <- subset(RhatDet_mixLL2, grepl("N", RhatDet_mixLL2[,2:5]))
+
 
 # If any of the model outputs have occupancy estimates that have not converged (Rhat >1.1), display them as a table.
 if(nrow(NotConvergedSpp) > 0){
-  knitr::kable(NotConvergedSpp)
+  knitr::kable(NotConvergedOccu)
 }
-
+if(nrow(NotConvergedDetProb_mixLL) > 0){
+  knitr::kable(NotConvergedDetProb_mixLL)
+}
+if(nrow(NotConvergedSpp) > 0){
+  knitr::kable(NotConvergedDetProb_mixLL2)
+}
 ```
 
 
@@ -366,7 +380,7 @@ plot.occDet_G(mixLL_list[[8]], mixLL2_list[[8]], catLL_list[[8]]) +
 ### Source plotting function
 source("./fig-plot.Occdet_G.R")
 
-plot.occDet_G(mixLL_list[[9]], mixLL2_list[[9]]) +
+plot.occDet_G(mixLL_list[[9]], mixLL2_list[[9]], catLL_list[[9]]) +
   ggtitle(label = "Pieris rapae", 
           subtitle = paste(lama_translate_("Pieris rapae", dict, "common_names"))) + 
   theme(plot.title=element_text(face="italic")) +
@@ -375,7 +389,7 @@ plot.occDet_G(mixLL_list[[9]], mixLL2_list[[9]]) +
 
 #### *Polygonia c-album*
 ```{r plot-occu-outputs10, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
-plot.occDet_G(mixLL_list[[10]], mixLL2_list[[10]]) +
+plot.occDet_G(mixLL_list[[10]], mixLL2_list[[10]], catLL_list[[10]]) +
   ggtitle(label = "Polygonia c-album", 
           subtitle = paste(lama_translate_("Polygonia c-album", dict, "common_names"))) + 
   theme(plot.title=element_text(face="italic")) +
@@ -384,7 +398,7 @@ plot.occDet_G(mixLL_list[[10]], mixLL2_list[[10]]) +
 
 #### *Polyommatus bellargus*
 ```{r plot-occu-outputs11, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
-plot.occDet_G(mixLL_list[[11]], mixLL2_list[[11]]) +
+plot.occDet_G(mixLL_list[[11]], mixLL2_list[[11]], catLL_list[[11]]) +
   ggtitle(label = "Polyommatus bellargus", 
           subtitle = paste(lama_translate_("Polyommatus bellargus", dict, "common_names"))) + 
   theme(plot.title=element_text(face="italic")) +
@@ -393,7 +407,7 @@ plot.occDet_G(mixLL_list[[11]], mixLL2_list[[11]]) +
 
 #### *Thecla betulae*
 ```{r plot-occu-outputs12, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
-plot.occDet_G(mixLL_list[[12]], mixLL2_list[[12]]) +
+plot.occDet_G(mixLL_list[[12]], mixLL2_list[[12]], catLL_list[[12]]) +
   ggtitle(label = "Thecla betulae", 
           subtitle = paste(lama_translate_("Thecla betulae", dict, "common_names"))) + 
   theme(plot.title=element_text(face="italic")) +
@@ -1199,7 +1213,10 @@ Use each of the 99 sets of probabilities to sample a vector of potential observa
 > (3)   
 For each realization *y*~rep~ and for each year, calculate the annual proportion of sites in which the species was recorded; denote this proportion, for species *s* and year *t*, by *T*~*st*~(*y*~rep~)
 
-
+    + *Polyommatus bellargus*   
+    + *Thecla betulae*   
+    + *Polygonia c-album*   
+    + *Pieris rapae*   
 
 
 ```{r PostPredChecks1, eval=FALSE, message=FALSE}
@@ -1213,7 +1230,7 @@ require("LearnBayes")
 require("R2jags")
 
 
-Melitaea_athalia_catLL <- catLL_list[[7]]
+Pararge_aegeria_catLL <- catLL_list[[8]]
 
 
 ###########################
@@ -1222,12 +1239,12 @@ Melitaea_athalia_catLL <- catLL_list[[7]]
 
 
 # recompile the model
-Melitaea_athalia_catLL$model$recompile()
+Pararge_aegeria_catLL$model$recompile()
 
 #out$model$recompile()
 
 # Sample 100 iterations of each of the 3 chains and thin by 3, giving 99 samples
-samp <- rjags:::coda.samples(model=Melitaea_athalia_catLL$model, 
+samp <- rjags:::coda.samples(model=Pararge_aegeria_catLL$model, 
                              parallel=TRUE, n.cores=3,
                              variable.names="Py", 
                              n.iter=100, # Define number of iterations to run
@@ -1259,7 +1276,7 @@ Y_rep$iter <- with(Y_rep, Var1 + max(Var1)*(L1 - 1))
 # Include year, siteID and the actual observation (y)        
 # load the raw data
 #temp_data <- out$model$data()
-temp_data <- Melitaea_athalia_catLL$model$data()
+temp_data <- Pararge_aegeria_catLL$model$data()
 temp_data <- as.data.frame(with(temp_data, cbind(Site, Year, y)))
 temp_data$VisitID <- 1:nrow(temp_data)
 Y_rep <- merge(Y_rep[,-c(1,2,4)], temp_data)
@@ -1278,7 +1295,7 @@ RR1 <- Y_rep %>% group_by(Site, Year, iter) %>%
   ungroup()
 # the data in RR1 refer to whether the species was recorded in each site in each year
 # save this file
-write.csv(RR1, "../outputs/posteriorPredictiveChecks-outputs/Melitaea_athalia_catLL_RR1.csv")
+write.csv(RR1, "../outputs/posteriorPredictiveChecks-outputs/Pararge_aegeria_catLL_RR1.csv")
 
 # next, the mean of these across years (i.e., Tst(yrep))
 RR2 <- RR1 %>% group_by(Year, iter) %>%
@@ -1289,7 +1306,7 @@ RR2 <- RR1 %>% group_by(Year, iter) %>%
 
 # the data in RR2 refer to the proportion of Sites with positive records per Year
 # save this file
-write.csv(RR2, "../outputs/posteriorPredictiveChecks-outputs/Melitaea_athalia_catLL_RR2.csv")
+write.csv(RR2, "../outputs/posteriorPredictiveChecks-outputs/Pararge_aegeria_catLL_RR2.csv")
 ```
 
 
@@ -1307,7 +1324,6 @@ Calculate the mean *m* across years as *T*~*gm*~(*y*~rep~) for each replicate da
 
 
 ```{r read-PostPredCheck-Data, message=FALSE, warning=FALSE}
-
 library(R2jags)
 library(reshape2)
 library(sparta)
@@ -1356,7 +1372,6 @@ sppMeanSites$Species <- gsub(sppMeanSites$Species, patt = "c.album", repl="c-alb
 sppMeanSites$Species <- gsub(sppMeanSites$Species, patt = "[.]", repl=" ")
 sppMeanSites$Species <- paste("*", sppMeanSites$Species, sep = "")
 sppMeanSites$Species <- paste(sppMeanSites$Species, "*", sep = "")
-
 ```
 
 
@@ -1396,7 +1411,6 @@ modelVarSites <- modelMeanSites %>% dplyr:::group_by(Model, iter) %>%
             sim_varSitesPerYear = var(sim_meanSitesPerYear)
   ) %>%
   ungroup()
-
 ```
 
 
@@ -1450,6 +1464,7 @@ modelVarSites_Summ <- modelVarSites %>%
             sim_upper = quantile(sim_varSitesPerYear, q[2]),
   ) %>%
   dplyr:::ungroup()
+
 ```
 
 
@@ -1457,7 +1472,6 @@ modelVarSites_Summ <- modelVarSites %>%
 
 
 ```{r plot-PySummary, echo=FALSE, message=FALSE, warning=FALSE, cache=TRUE}
-
 modelMeanBp_Summ <- modelMeanSites %>% 
   dplyr:::group_by(Model) %>%
   dplyr:::summarise(Bp = mean(obs_meanSitesPerYear > sim_meanSitesPerYear),
@@ -1482,13 +1496,13 @@ plot_PredPostTest <- function(data, title=NULL){
 
   
 mapply(data = list(sppMeanSites_Summ, 
-                  sppVarSites_Summ, 
-                  modelMeanSites_Summ,
-                  modelVarSites_Summ), 
+                  sppVarSites_Summ), # 
+                  #modelMeanSites_Summ,
+                  #modelVarSites_Summ), 
         title = list("Mean (across years) proportion of sites with a record - 99%CIs", 
-                  "Variance (across years) in proportion of sites per year - 99%CIs", 
-                  "Mean proportion of sites per year (mean across species) - 99%CIs",
-                  "Variance across years in proportion of sites per year across species - 99%CIs"),   
+                  "Variance (across years) in proportion of sites per year - 99%CIs"), #, 
+                  #"Mean proportion of sites per year (mean across species) - 99%CIs",
+                  #"Variance across years in proportion of sites per year across species - 99%CIs"),   
        FUN = plot_PredPostTest)
 ```
 
@@ -1515,15 +1529,6 @@ ModelVarBp_Summ <- data.frame(ModelVarBp_Summ)
 ModelBp_Summ[,5:7] <- data.frame(ModelVarBp_Summ[,2:4])
 
 
-
-
-op <- par(mfrow = c(1, 2)) # 1 x 2 pictures on one plot
-
-
-## At end of plotting, reset to previous settings:
-par(op)
-
-
 ggplot(ModelBp_Summ, aes(x=mixLL, y=mixLL2, group=Species)) + 
   geom_point(aes(shape=Species, color=Species),  size=5) +
   scale_color_manual(values =c (viridis(12))) +
@@ -1532,7 +1537,7 @@ ggplot(ModelBp_Summ, aes(x=mixLL, y=mixLL2, group=Species)) +
           subtitle = "Mean proportion of sites with records across years") + 
   theme_bw() +
   geom_abline(aes(intercept=0, slope=1)) + 
-  xlab("Model C") + ylab("Model B") +
+  xlab("Model B") + ylab("Model C") +
   geom_hline(yintercept=0.5, linetype="dashed", color = "red", alpha=0.5) +
   geom_vline(xintercept=0.5, linetype="dashed", color = "red", alpha=0.5) +
   theme(legend.text = element_markdown()) +
@@ -1547,7 +1552,7 @@ ggplot(ModelBp_Summ, aes(x=mixLL_var, y=mixLL2_var, group=Species)) +
           subtitle = "Variance proportion of sites with records across years") + 
   theme_bw() +
   geom_abline(aes(intercept=0, slope=1)) + 
-  xlab("Model C") + ylab("Model B") +
+  xlab("Model B") + ylab("Model C") +
   geom_hline(yintercept=0.5, linetype="dashed", color = "red", alpha=0.5) +
   geom_vline(xintercept=0.5, linetype="dashed", color = "red", alpha=0.5) +
   theme(legend.text = element_markdown()) +
@@ -1556,6 +1561,7 @@ ggplot(ModelBp_Summ, aes(x=mixLL_var, y=mixLL2_var, group=Species)) +
   
 
 **Notes**   
+
 * Model B/mixLL: Six of 12 species have better p-values   
 * Model C/mixLL2: Six of 12 species have better p-values   
 * DIC-values favor Model B for all species but three: *M athalia*, *C. palaemon* (Model C better according to p-values) and *L. phlaeas* (p-values practically identical)    
@@ -1569,6 +1575,8 @@ ggplot(ModelBp_Summ, aes(x=mixLL_var, y=mixLL2_var, group=Species)) +
 * *Limenitis camilla*  shows the second largest difference in p-vale between the two models (0.48 for mixLL2/Model C and 0.57 for for mixLL/Model B)     
     + Occupancy estimates for the two models are practically identical (although much underestimated in model A)       
 
+
+**Means Bayesian-p: Model B vs C**
 
 1. *Erebia epiphron*: C much better     
 2. *Carterocephalus palaemon*: C better    
@@ -1586,20 +1594,40 @@ ggplot(ModelBp_Summ, aes(x=mixLL_var, y=mixLL2_var, group=Species)) +
 
 **Nick**   
    
-* Given that the 'optimal' p-value is 0.5, is *Limenitis camilla* (0.48 for mixLL2/Model C and 0.57 for for mixLL/Model B) "more" interesting than let's say *Erebia epiphron* (which shows the largest difference in p-vale between the two models)?    
-* 
+* Given that the 'optimal' p-value is 0.5, is *Limenitis camilla* (0.48 for mixLL2/Model C and 0.57 for for mixLL/Model B) "more" interesting than let's say *Erebia epiphron* (which shows the largest difference in p-vale between the two models)?    Two questions: which model is better ( for most id doesnt make a difference but for E. epophron)
+* Variance: **very** poor p-values...
+* Is the sum of of distance from 0.5 across species for model B (1.597614) vs model C (1.555207) of interest?  
+* Data visualisation: colour blind-friendly vs. visually appealing... 
+
+
+
+```{r BpDiff, echo=FALSE, warning=FALSE, cache=TRUE, eval=FALSE}
+mixLL_out <- 0
+mixLL2_out <- 0
+for(i in 1:nrow(ModelBp_Summ)){
+  mixLLtemp <- abs(0.5 - ModelBp_Summ[i,"mixLL"])
+  mixLL2temp <- abs(0.5 - ModelBp_Summ[i,"mixLL2"])
+  mixLL_out <- mixLL_out + mixLLtemp
+  mixLL2_out <- mixLL2_out + mixLL2temp
+}
+
+for(i in 1:nrow(ModelBp_Summ)){
+  mixLL2temp <- abs(0.5 - ModelBp_Summ[i,"mixLL2"])
+}
+```
+  
+  
   
 ```{r plotBp2, echo=FALSE, warning=FALSE, eval=FALSE}
-
-
 hist(sppMeanSites_Summ$Bp)
 hist(sppVarSites_Summ$Bp)
 hist(modelMeanSites_Summ$Bp) ### MixLL_2 on the left
 hist(modelVarSites_Summ$Bp)
 ```
 
-Finally save the outputs
+
 ```{r savePySummary, echo=FALSE}
+# Finally save the outputs
 #write.csv(taxonMeanSites_Summ, file="taxonMeanSites_Summ.csv")
 #write.csv(taxonVarSites_Summ, file="taxonVarSites_Summ.csv")
 ```
