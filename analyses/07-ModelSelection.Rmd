@@ -14,13 +14,9 @@ output:
 * Fix SummariseRhatDetProb-function to:   
     + Handle lists   
     + handle catLL   
-* Annotate shiny plotting code
-* Run Py summary for all catLL outputs
-    + *Polyommatus bellargus*   
-    + *Thecla betulae*   
-    + *Polygonia c-album*   
-    + *Pieris rapae*   
-* Generalize first Py summary code chunk
+* Detection probability for for catLL   
+* Annotate shiny plotting code  
+* Generalize first Py summary code chunk   
 
 
 
@@ -215,45 +211,46 @@ for (i in 1:length(mixLL_list)) {
 
 ### occupancy estimates
 
-# Source function to summarise_Rhat to test whether all occupancy estimates have converged
+# Source function checking occupancy convergence i.e. Rhat >1.1?
 source("./function-summarise_Rhat.R")
-summarise_Rhat <- summarise_Rhat(append(catLL_list, 
+
+# If some species have not converged (converged-column == "N"), subset them
+NotConvergedOccu <- subset((summarise_Rhat(append(catLL_list, 
                                               (append(mixLL_list,
                                               mixLL2_list))), 
                                        verbose=FALSE,
-                                       is.list=TRUE) # Specify its a list
-
-# If some species have not converged (converged-column == "N"), subset them
-NotConvergedSpp <- subset(summarise_Rhat, grepl("N", converged))
+                                       is.list=TRUE)), # Specify its a list
+                          grepl("N", converged))
 
 
-# Source the function that checks convergence, i.e. is Rhat >1.1?
+# Source function checking detection probability convergence i.e. Rhat >1.1?
 source("./function-SummariseRhatDetProb.R")
 
 # Run function
 #RhatDet_catLL <- SummariseRhatDetProb("../outputs/catLL-outputs/", 
 #                              verbose=FALSE)
 
-RhatDet_mixLL <- SummariseRhatDetProb("../outputs/mixLL-outputs/", 
-                              verbose=FALSE)
-
-RhatDet_mixLL2 <- SummariseRhatDetProb("../outputs/mixLL2-outputs/", 
-                              verbose=FALSE)
 
 # If some species have not converged (converged-column == "N"), subset them
 #NotConvergedDetProb_catLL <- subset(RhatDet_mixLL, grepl("N", RhatDet_catLL[,2:5]))
-NotConvergedDetProb_mixLL <- subset(RhatDet_mixLL, grepl("N", RhatDet_mixLL[,2:5]))
-NotConvergedDetProb_mixLL2 <- subset(RhatDet_mixLL2, grepl("N", RhatDet_mixLL2[,2:5]))
+NotConvergedDetProb_mixLL <- subset((SummariseRhatDetProb("../outputs/mixLL-outputs/", 
+                              verbose=FALSE)), 
+                              grepl("N", (SummariseRhatDetProb("../outputs/mixLL-outputs/", 
+                              verbose=FALSE))[,2:5]))
+NotConvergedDetProb_mixLL2 <- subset((SummariseRhatDetProb("../outputs/mixLL2-outputs/", 
+                              verbose=FALSE)), 
+                              grepl("N", (SummariseRhatDetProb("../outputs/mixLL2-outputs/", 
+                              verbose=FALSE))[,2:5]))
 
 
 # If any of the model outputs have occupancy estimates that have not converged (Rhat >1.1), display them as a table.
-if(nrow(NotConvergedSpp) > 0){
+if(nrow(NotConvergedOccu) > 0){
   knitr::kable(NotConvergedOccu)
 }
 if(nrow(NotConvergedDetProb_mixLL) > 0){
   knitr::kable(NotConvergedDetProb_mixLL)
 }
-if(nrow(NotConvergedSpp) > 0){
+if(nrow(NotConvergedDetProb_mixLL2) > 0){
   knitr::kable(NotConvergedDetProb_mixLL2)
 }
 ```
@@ -299,6 +296,7 @@ dict <- new_lama_dictionary(common_names =
                                 "Thecla betulae" = 'Brown Hairstreak'))
 
 ```
+
 
 #### *Aglais urticae*
 ```{r plot-occu-outputs1, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
@@ -487,9 +485,9 @@ require(ggplot2)
 require(labelmachine)
 require(sparta)
 require(dplyr)
+require(plyr)
+require(boot)
 
-### Source plotting function
-source("./fig-plot.Occdet_G.R")
 
 # Change ModelNames vetor to species names with spaces
 spp_names <- gsub(ModelNames, patt = "_", repl=" ")
@@ -517,12 +515,22 @@ dict <- new_lama_dictionary(common_names =
 
 ```
 
-#### *Aglais urticae*
-```{r plot-detprob-outputs1, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
-require(sparta)
 
-### Source plotting function
-#source("./plot-Det_mixLL2.R")
+
+#### *Aglais urticae*
+```{r plot-detprob-outputs1, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE, eval=FALSE}
+plot_DetectionOverTime(catLL_list[[1]],
+                              min.yr = 1900, 
+                                    legend_labels = c("BNM/Year_Effect", 
+                                                    "UKBMS", 
+                                                   "NHCs"),
+                                  legend_title = "Data Type") +
+             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+             scale_x_continuous(expand = c(0, 0)) +
+  ggtitle(label = "*Aglais urticae* - Model A", 
+          subtitle = paste(lama_translate_("Aglais urticae", dict, "common_names"))) + 
+  theme(plot.title=element_text(face="italic")) +
+  theme(text=element_text(size=15)) 
 
 plot_DetectionOverTime(mixLL_list[[1]], 
                        min.yr = 1900, 
@@ -558,9 +566,19 @@ plot_DetectionOverTime(mixLL2_list[[1]],
 
 
 #### *Carterocephalus palaemon*
-```{r plot-detprob-outputs2, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
-### Source plotting function
-source("./plot-Det_mixLL2.R")
+```{r plot-detprob-outputs2, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE, eval=FALSE}
+plot_DetectionOverTime(catLL_list[[2]],
+                              min.yr = 1900, 
+                                    legend_labels = c("BNM/Year_Effect", 
+                                                    "UKBMS", 
+                                                   "NHCs"),
+                                  legend_title = "Data Type") +
+             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+             scale_x_continuous(expand = c(0, 0)) +
+  ggtitle(label = "Carterocephalus palaemon - Model A", 
+          subtitle = paste(lama_translate_("Carterocephalus palaemon", dict, "common_names"))) + 
+  theme(plot.title=element_text(face="italic")) +
+  theme(text=element_text(size=15)) 
 
 plot_DetectionOverTime(mixLL_list[[2]], 
                               min.yr = 1900, 
@@ -593,9 +611,19 @@ plot_DetectionOverTime(mixLL2_list[[2]],
 ```
 
 #### *Erebia aethiops*
-```{r plot-detprob-outputs3, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
-### Source plotting function
-source("./plot-Det_mixLL2.R")
+```{r plot-detprob-outputs3, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE, eval=FALSE}
+plot_DetectionOverTime(catLL_list[[3]],
+                              min.yr = 1900, 
+                                    legend_labels = c("BNM/Year_Effect", 
+                                                    "UKBMS", 
+                                                   "NHCs"),
+                                  legend_title = "Data Type") +
+             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+             scale_x_continuous(expand = c(0, 0)) +
+  ggtitle(label = "Erebia aethiops - Model A", 
+          subtitle = paste(lama_translate_("Erebia aethiops", dict, "common_names"))) + 
+  theme(plot.title=element_text(face="italic")) +
+  theme(text=element_text(size=15)) 
 
 plot_DetectionOverTime(mixLL_list[[3]], 
                               min.yr = 1900, 
@@ -628,9 +656,19 @@ plot_DetectionOverTime(mixLL2_list[[3]],
 ```
 
 #### *Erebia epiphron*
-```{r plot-detprob-outputs4, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
-### Source plotting function
-source("./plot-Det_mixLL2.R")
+```{r plot-detprob-outputs4, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE, eval=FALSE}
+plot_DetectionOverTime(catLL_list[[4]],
+                              min.yr = 1900, 
+                                    legend_labels = c("BNM/Year_Effect", 
+                                                    "UKBMS", 
+                                                   "NHCs"),
+                                  legend_title = "Data Type") +
+             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+             scale_x_continuous(expand = c(0, 0)) +
+  ggtitle(label = "Erebia epiphron - Model A", 
+          subtitle = paste(lama_translate_("Erebia epiphron", dict, "common_names"))) + 
+  theme(plot.title=element_text(face="italic")) +
+  theme(text=element_text(size=15)) 
 
 plot_DetectionOverTime(mixLL_list[[4]], 
                               min.yr = 1900, 
@@ -664,8 +702,7 @@ plot_DetectionOverTime(mixLL2_list[[4]],
 
 #### *Limenitis camilla*
 ```{r plot-detprob-outputs5, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
-### Source plotting function
-source("./plot-Det_mixLL2.R")
+
 
 plot_DetectionOverTime(mixLL_list[[5]], 
                               min.yr = 1900, 
@@ -1213,11 +1250,6 @@ Use each of the 99 sets of probabilities to sample a vector of potential observa
 > (3)   
 For each realization *y*~rep~ and for each year, calculate the annual proportion of sites in which the species was recorded; denote this proportion, for species *s* and year *t*, by *T*~*st*~(*y*~rep~)
 
-    + *Polyommatus bellargus*   
-    + *Thecla betulae*   
-    + *Polygonia c-album*   
-    + *Pieris rapae*   
-
 
 ```{r PostPredChecks1, eval=FALSE, message=FALSE}
 require("rjags")
@@ -1230,7 +1262,7 @@ require("LearnBayes")
 require("R2jags")
 
 
-Pararge_aegeria_catLL <- catLL_list[[8]]
+Thecla_betulae.catLL <- catLL_list[[12]]
 
 
 ###########################
@@ -1239,12 +1271,12 @@ Pararge_aegeria_catLL <- catLL_list[[8]]
 
 
 # recompile the model
-Pararge_aegeria_catLL$model$recompile()
+Thecla_betulae.catLL$model$recompile()
 
 #out$model$recompile()
 
 # Sample 100 iterations of each of the 3 chains and thin by 3, giving 99 samples
-samp <- rjags:::coda.samples(model=Pararge_aegeria_catLL$model, 
+samp <- rjags:::coda.samples(model=Thecla_betulae.catLL$model, 
                              parallel=TRUE, n.cores=3,
                              variable.names="Py", 
                              n.iter=100, # Define number of iterations to run
@@ -1276,7 +1308,7 @@ Y_rep$iter <- with(Y_rep, Var1 + max(Var1)*(L1 - 1))
 # Include year, siteID and the actual observation (y)        
 # load the raw data
 #temp_data <- out$model$data()
-temp_data <- Pararge_aegeria_catLL$model$data()
+temp_data <- Thecla_betulae.catLL$model$data()
 temp_data <- as.data.frame(with(temp_data, cbind(Site, Year, y)))
 temp_data$VisitID <- 1:nrow(temp_data)
 Y_rep <- merge(Y_rep[,-c(1,2,4)], temp_data)
@@ -1295,7 +1327,7 @@ RR1 <- Y_rep %>% group_by(Site, Year, iter) %>%
   ungroup()
 # the data in RR1 refer to whether the species was recorded in each site in each year
 # save this file
-write.csv(RR1, "../outputs/posteriorPredictiveChecks-outputs/Pararge_aegeria_catLL_RR1.csv")
+write.csv(RR1, "../outputs/posteriorPredictiveChecks-outputs/Thecla_betulae.catLL_RR1.csv")
 
 # next, the mean of these across years (i.e., Tst(yrep))
 RR2 <- RR1 %>% group_by(Year, iter) %>%
@@ -1306,7 +1338,7 @@ RR2 <- RR1 %>% group_by(Year, iter) %>%
 
 # the data in RR2 refer to the proportion of Sites with positive records per Year
 # save this file
-write.csv(RR2, "../outputs/posteriorPredictiveChecks-outputs/Pararge_aegeria_catLL_RR2.csv")
+write.csv(RR2, "../outputs/posteriorPredictiveChecks-outputs/Thecla_betulae.catLL_RR2.csv")
 ```
 
 
@@ -1468,10 +1500,10 @@ modelVarSites_Summ <- modelVarSites %>%
 ```
 
 
-### Visualise summary
+### Visualise Py summary {.tabset .tabset-dropdown}
 
-
-```{r plot-PySummary, echo=FALSE, message=FALSE, warning=FALSE, cache=TRUE}
+#### Observed vs Predicted data
+```{r plot-obsVsPred, echo=FALSE, message=FALSE, warning=FALSE, cache=TRUE}
 modelMeanBp_Summ <- modelMeanSites %>% 
   dplyr:::group_by(Model) %>%
   dplyr:::summarise(Bp = mean(obs_meanSitesPerYear > sim_meanSitesPerYear),
@@ -1489,12 +1521,13 @@ plot_PredPostTest <- function(data, title=NULL){
                alpha=0.7) +
     geom_abline(aes(intercept=0, slope=1)) + 
     scale_x_log10() + scale_y_log10() + 
-    xlab("observed from data") + ylab("model prediction") + 
+    xlab("Observed from data") + ylab("Model prediction") + 
     ggtitle(title) + theme_bw()
   print(gp)
 }
 
   
+
 mapply(data = list(sppMeanSites_Summ, 
                   sppVarSites_Summ), # 
                   #modelMeanSites_Summ,
@@ -1509,12 +1542,11 @@ mapply(data = list(sppMeanSites_Summ,
 
 
 Now plot the Bayesian *p*-values (the proportion of simulated values that are lower than the observed; the 'best' Bayesian *p*-value is 0.5)
-
-```{r plotBp, echo=FALSE, warning=FALSE, cache=TRUE}
+#### Bayesian *p*: Model A vs Model B
+```{r plot-Bp-AvsB, echo=FALSE, warning=FALSE, cache=TRUE}
 require(tidyr)
 require(viridis)
 require(ggtext)
-
 
 ModelMeanBp_Summ <- spread((sppMeanSites_Summ[,1:3]), Model, Bp)
 ModelVarBp_Summ <- spread((sppVarSites_Summ[,1:3]), Model, Bp)
@@ -1529,10 +1561,84 @@ ModelVarBp_Summ <- data.frame(ModelVarBp_Summ)
 ModelBp_Summ[,5:7] <- data.frame(ModelVarBp_Summ[,2:4])
 
 
+ggplot(ModelBp_Summ, aes(x=catLL, y=mixLL, group=Species)) + 
+  geom_point(aes(shape=Species, color=Species),  size=5) +
+  scale_color_manual(values =c (viridis(15))) +
+  scale_shape_manual(values = c(15:18, 21:24, 15:18, 21:23)) + 
+  ggtitle("Bayesian p-values",
+          subtitle = "Mean proportion of sites with records across years") + 
+  theme_bw() +
+  geom_abline(aes(intercept=0, slope=1)) + 
+  xlab("Model A") + ylab("Model B") +
+  geom_hline(yintercept=0.5, linetype="dashed", color = "red", alpha=0.5) +
+  geom_vline(xintercept=0.5, linetype="dashed", color = "red", alpha=0.5) +
+  theme(legend.text = element_markdown()) +
+  theme(text=element_text(size=13)) 
+
+
+ggplot(ModelBp_Summ, aes(x=catLL_var, y=mixLL2_var, group=Species)) +
+  geom_point(aes(shape=Species, color=Species),  size=5) +
+  scale_color_manual(values =c(viridis(15))) +
+  scale_shape_manual(values = c(15:18, 21:24, 15:18, 21:23)) + 
+  ggtitle("Bayesian p",
+          subtitle = "Variance proportion of sites with records across years") + 
+  theme_bw() +
+  geom_abline(aes(intercept=0, slope=1)) + 
+  xlab("Model A") + ylab("Model B") +
+  geom_hline(yintercept=0.5, linetype="dashed", color = "red", alpha=0.5) +
+  geom_vline(xintercept=0.5, linetype="dashed", color = "red", alpha=0.5) +
+  theme(legend.text = element_markdown()) +
+  theme(text=element_text(size=13)) 
+```
+  
+
+
+#### Bayesian *p*: Model A vs. Model C
+```{r plot-Bp-AvsC, echo=FALSE, warning=FALSE, cache=TRUE}
+require(tidyr)
+require(viridis)
+require(ggtext)
+
+ggplot(ModelBp_Summ, aes(x=catLL, y=mixLL2, group=Species)) + 
+  geom_point(aes(shape=Species, color=Species),  size=5) +
+  scale_color_manual(values =c(viridis(15))) +
+  scale_shape_manual(values = c(15:18, 21:24, 15:18, 21:23)) + 
+  ggtitle("Bayesian p-values",
+          subtitle = "Mean proportion of sites with records across years") + 
+  theme_bw() +
+  geom_abline(aes(intercept=0, slope=1)) + 
+  xlab("Model A") + ylab("Model C") +
+  geom_hline(yintercept=0.5, linetype="dashed", color = "red", alpha=0.5) +
+  geom_vline(xintercept=0.5, linetype="dashed", color = "red", alpha=0.5) +
+  theme(legend.text = element_markdown()) +
+  theme(text=element_text(size=13)) 
+
+ggplot(ModelBp_Summ, aes(x=catLL_var, y=mixLL2_var, group=Species)) +
+  geom_point(aes(shape=Species, color=Species),  size=5) +
+  scale_color_manual(values =c(viridis(15))) +
+  scale_shape_manual(values = c(15:18, 21:24, 15:18, 21:23)) + 
+  ggtitle("Bayesian p",
+          subtitle = "Variance proportion of sites with records across years") + 
+  theme_bw() +
+  geom_abline(aes(intercept=0, slope=1)) + 
+  xlab("Model A") + ylab("Model C") +
+  geom_hline(yintercept=0.5, linetype="dashed", color = "red", alpha=0.5) +
+  geom_vline(xintercept=0.5, linetype="dashed", color = "red", alpha=0.5) +
+  theme(legend.text = element_markdown()) +
+  theme(text=element_text(size=13)) 
+```
+
+
+#### Bayesian *p*: Model B vs. Model C
+```{r plot-Bp-BvsC, echo=FALSE, warning=FALSE, cache=TRUE}
+require(tidyr)
+require(viridis)
+require(ggtext)
+
 ggplot(ModelBp_Summ, aes(x=mixLL, y=mixLL2, group=Species)) + 
   geom_point(aes(shape=Species, color=Species),  size=5) +
-  scale_color_manual(values =c (viridis(12))) +
-  scale_shape_manual(values = c(15:18, 21:24, 15:18)) + 
+  scale_color_manual(values =c(viridis(15))) +
+  scale_shape_manual(values = c(15:18, 21:24, 15:18, 21:23)) + 
   ggtitle("Bayesian p-values",
           subtitle = "Mean proportion of sites with records across years") + 
   theme_bw() +
@@ -1541,13 +1647,13 @@ ggplot(ModelBp_Summ, aes(x=mixLL, y=mixLL2, group=Species)) +
   geom_hline(yintercept=0.5, linetype="dashed", color = "red", alpha=0.5) +
   geom_vline(xintercept=0.5, linetype="dashed", color = "red", alpha=0.5) +
   theme(legend.text = element_markdown()) +
-  theme(text=element_text(size=15)) 
+  theme(text=element_text(size=13)) 
 
 
 ggplot(ModelBp_Summ, aes(x=mixLL_var, y=mixLL2_var, group=Species)) +
   geom_point(aes(shape=Species, color=Species),  size=5) +
-  scale_color_manual(values =c(viridis(12))) +
-  scale_shape_manual(values = c(15:18, 21:24, 15:18)) + 
+  scale_color_manual(values =c(viridis(15))) +
+  scale_shape_manual(values = c(15:18, 21:24, 15:18, 21:23)) + 
   ggtitle("Bayesian p",
           subtitle = "Variance proportion of sites with records across years") + 
   theme_bw() +
@@ -1556,10 +1662,8 @@ ggplot(ModelBp_Summ, aes(x=mixLL_var, y=mixLL2_var, group=Species)) +
   geom_hline(yintercept=0.5, linetype="dashed", color = "red", alpha=0.5) +
   geom_vline(xintercept=0.5, linetype="dashed", color = "red", alpha=0.5) +
   theme(legend.text = element_markdown()) +
-  theme(text=element_text(size=15)) 
+  theme(text=element_text(size=13)) 
 ```
-  
-
 **Notes**   
 
 * Model B/mixLL: Six of 12 species have better p-values   
