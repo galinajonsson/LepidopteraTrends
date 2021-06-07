@@ -1539,85 +1539,7 @@ sppMeanSitesYear <- sppMeanSites %>% dplyr:::group_by(Model, Species, Year) %>%
   ) %>%
   dplyr:::ungroup()
 
-
-
 sppMeanSitesYear$Species <- as.factor(sppMeanSitesYear$Species)
-test <- subset(sppMeanSitesYear, Species == "*Aglais urticae*")
-
-test$Model <- as.factor(test$Model)
-
-
-require("ggtext")
-ggplot(data = test,) +
-  geom_ribbon(aes_string(fill = "Model", 
-                    x = "Year", 
-                    y = "sim_MeanSitesPerYear", 
-                             ymin = "sim_lower", ymax = "sim_upper"),
-                  alpha = 0.3) +
-  scale_fill_manual(values =c("#440154FF",
-                                    "#20A387FF",
-                                    "#E69F00")) + 
-  geom_line(aes(x = Year, y = sim_MeanSitesPerYear, colour = Model), size=0.7) + 
-          scale_colour_manual(values =c("#440154FF",
-                                    "#20A387FF",
-                                    "#E69F00")) +
-  geom_line(aes(x=Year, y=obs_meanSitesPerYear), linetype = "dotted", colour=c("black"), size = 1.5) +
-  geom_line(aes(x=Year, y=obs_meanSitesPerYear), colour=c("black"), size = 0.4) +
-  geom_vline(xintercept = 1976, linetype = "dashed") +   # Vertical line = 1976
-  ylab("Proportion of visited sites with records") +
-  xlab("Year") +
-  scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-  scale_x_continuous(breaks=seq(1900, 2020, 20), 
-                     limits = c(1900, 2025), 
-                     expand = c(0, 0)) +
-      #theme(legend.position="bottom") +
-  xlab("Year") + 
-  ylab("Proportion of visited sites with records") + 
-  ggtitle("Aglais urticae") + 
-  theme(plot.title=element_text(face="italic")) +
-  theme_bw()
-
-
-
-
-
-
-
-############################ *Carterocephalus palaemon*
-test2 <- subset(sppMeanSitesYear, Species == "*Carterocephalus palaemon*")
-
-test2$Model <- as.factor(test2$Model)
-
-
-
-ggplot(data = test2,) +
-  geom_ribbon(aes_string(fill = "Model", 
-                    x = "Year", 
-                    y = "sim_MeanSitesPerYear", 
-                             ymin = "sim_lower", ymax = "sim_upper"),
-                  alpha = 0.3) +
-  scale_fill_manual(values =c("#440154FF",
-                                    "#20A387FF",
-                                    "#E69F00")) + 
-  geom_line(aes(x = Year, y = sim_MeanSitesPerYear, colour = Model), size=0.7, alpha=0.9) + 
-          scale_colour_manual(values =c("#440154FF",
-                                    "#20A387FF",
-                                    "#E69F00")) +
-  geom_line(aes(x=Year, y=obs_meanSitesPerYear), linetype = "dotted", colour=c("black"), size = 1.5) +
-  geom_line(aes(x=Year, y=obs_meanSitesPerYear), colour=c("black"), size = 0.4) +
-  geom_vline(xintercept = 1976, linetype = "dashed") +   # Vertical line = 1976
-  ylab("Proportion of visited sites with records") +
-  xlab("Year") +
-  scale_y_continuous(limits=c(0, 0.1), expand = c(0, 0)) +
-  scale_x_continuous(breaks=seq(1900, 2020, 20), 
-                     limits = c(1900, 2025), 
-                     expand = c(0, 0)) +
-  xlab("Year") + 
-  ylab("Proportion of visited sites with records") + 
-  ggtitle("Carterocephalus palaemon") + 
-  theme(plot.title=element_text(face="italic")) +
-  theme_bw()
-
 ```
 
 
@@ -1628,7 +1550,7 @@ I will use 99% CIs as the lower 95% CI overlaps zero.
 
 Summarise the data, including the Bayesian *p* value
 
-```{r BayesianP, message=FALSE, warning=FALSE, cache=TRUE}
+```{r BayesianP, message=FALSE, warning=FALSE}
 sppMeanSites_Summ <- sppMeanSites %>% 
   dplyr:::group_by(Model, Species) %>%
     dplyr:::summarise(Bp = mean(obs_meanSitesPerYear > sim_meanSitesPerYear),
@@ -1919,9 +1841,243 @@ hist(modelVarSites_Summ$Bp)
 
 # Species-wise summary
 
-## *Carterocephalus palaemon* Checkered skipper
 
+## *Aglais urticae* (Small Tortoiseshell)
+
+### Occupancy
+```{r plot-occu-outputs-A-urticae, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+### Source plotting function
+source("./fig-plot.Occdet_G.R")
+
+plot.occDet_G(mixLL_list[[1]], mixLL2_list[[1]], catLL_list[[1]]) +
+  ggtitle(label = "Aglais urticae", 
+          subtitle = paste(lama_translate_("Aglais urticae", dict, "common_names"))) + 
+  theme(plot.title=element_text(face="italic")) +
+  theme(text=element_text(size=15)) 
+```
+
+     
+        
+        
+        
+        
+
+*Aglais urticae* (Small Tortoiseshell) is one of our most widespread butterflies, occurring throughout the British Isles, which is in line with the latter part of the time series (post 1976; but note it has declined by approx 15% since). Nonetheless, there is no anecdotal evidence for a 100% increase between the 1960s and 1980s indicating that the occupanncy is underestimated in the early part of the time series. 
+
+   
+
+### Detection probability
+```{r plot-detprob-outputs-A-urticae, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE, fig.width=7, fig.height=3}
+plot_DetectionOverTime(catLL_list[[1]],
+                              min.yr = 1900, 
+                                    legend_labels =
+                         c("    BNM/Year_Effect  ", 
+                                                    "UKBMS", 
+                                                   "NHCs"),
+                                  legend_title = "Data Type") +
+             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+             scale_x_continuous(expand = c(0, 0)) +
+  ggtitle("Model A") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank()) +
+  #ggtitle(label = (expression(paste(italic("Aglais urticae"), " - Model A")))) #, 
+  #        subtitle = paste(lama_translate_("Aglais urticae", dict, "common_names"))) + 
+  #theme(plot.title=element_text(face="italic")) +
+  theme(text=element_text(size=12)) 
+
+plot_DetectionOverTime(mixLL_list[[1]], 
+                       min.yr = 1900, 
+                       legend_labels = c("BNM_LL1/Year effect", 
+                                         "UKBMS", 
+                                         "NHCs", 
+                                         "BNM_LL5"), 
+                       legend_title = "Data Type") +
+  scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  ggtitle("Model B") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank()) +
+  #ggtitle(label = (expression(paste(italic("Aglais urticae"), " - Model B")))) #, 
+  #        subtitle = paste(lama_translate_("Aglais urticae", dict, "common_names"))) + 
+  #theme(plot.title=element_text(face="italic")) +
+  theme(text=element_text(size=12))
+
+plot_DetectionOverTime(mixLL2_list[[1]],
+                              min.yr = 1900, 
+                       legend_labels = c("BNM_LL1/Year effect", 
+                                         "UKBMS", 
+                                         "NHCs", 
+                                         "BNM_LL5"), 
+                       mixLL2 = TRUE,                  ### Important: specify its mixLL2
+                       legend_title = "Data Type") +
+  scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  ggtitle("Model C") +
+  #ggtitle(label = (expression(paste(italic("Aglais urticae"), " - Model C")))) #, 
+  #        subtitle = paste(lama_translate_("Aglais urticae", dict, "common_names"))) + 
+  #theme(plot.title=element_text(face="italic")) +
+  theme(text=element_text(size=12))
+```
+
+
+      
+      
+      
+      
+BNM and UKBMS detection probability trends are very similar for all three models after 19976. However, NHCs detection probability estimates differ between models such that it is the data type with the highest detection probability (unlikely) in Model A, and the lowest in model B and C; still the detection probability estimates are around 0.05-0.1 for model B (meaning that every 5-10% of museum visits collected a small tortoisshell, which again seems unlikely as that in turn would mean the same percentage of the entire collection would be small tortoisshells).
+
+Please note I have **sense checked** these trends (i.e. compared with actual mean annual estimates and they are correct).  
+
+
+
+### Visits with records
+
+```{r plot-siteprop-A-urticae, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE, fig.width=7, fig.height=4}
+sppMeanSitesYear$Species <- as.factor(sppMeanSitesYear$Species)
+test <- subset(sppMeanSitesYear, Species == "*Aglais urticae*")
+
+test$Model <- as.factor(test$Model)
+
+
+require("ggtext")
+ggplot(data = test,) +
+  geom_ribbon(aes_string(fill = "Model", 
+                    x = "Year", 
+                    y = "sim_MeanSitesPerYear", 
+                             ymin = "sim_lower", ymax = "sim_upper"),
+                  alpha = 0.3) +
+  scale_fill_manual(values =c("#440154FF",
+                                    "#20A387FF",
+                                    "#E69F00")) + 
+  geom_line(aes(x = Year, y = sim_MeanSitesPerYear, colour = Model), size=0.7) + 
+          scale_colour_manual(values =c("#440154FF",
+                                    "#20A387FF",
+                                    "#E69F00")) +
+  geom_line(aes(x=Year, y=obs_meanSitesPerYear), linetype = "dotted", colour=c("black"), size = 1.5) +
+  geom_line(aes(x=Year, y=obs_meanSitesPerYear), colour=c("black"), size = 0.4) +
+  geom_vline(xintercept = 1976, linetype = "dashed") +   # Vertical line = 1976
+  ylab("Proportion of visited sites with records") +
+  xlab("Year") +
+  scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+  scale_x_continuous(breaks=seq(1900, 2020, 20), 
+                     limits = c(1900, 2025), 
+                     expand = c(0, 0)) +
+      #theme(legend.position="bottom") +
+  xlab("Year") + 
+  ylab("Proportion of visited sites with records") + 
+  ggtitle("Aglais urticae") + 
+  theme(plot.title=element_text(face="italic")) +
+  theme_bw()
+```
+
+
+### Record numbers
+```{r plot-record-numbers-A-urticae, message=FALSE, warning=FALSE, echo=FALSE, fig.width=7, fig.height=4}
+# Load required packages
+require(dplyr)
+require(plyr)
+require(ggplot2)
+require(viridis)
+require(readr)
+require(ggtext)
+
+# Load spp_vis data (any would do), which contain all visits and whether or not each of the three species have been observed at that visit
+spp_vis <- read.csv('../data/formattedData/spp_vis_merged_2020-04-07.csv', header=T, na.strings=c("","NA"))
+
+# Load occDetdata giving each visits' site ID (grid cell), list length (numper of species observed) and time period (in this case year)
+occDetdata_merged_2020_04_07 <- read.csv('../data/formattedData/occDetdata_merged_2020-04-07.csv', header=T, na.strings=c("","NA"))
+
+# Merge by visit
+spp_vis <- merge(spp_vis, occDetdata_merged_2020_04_07, by="visit")
+
+# Find unique visits
+spp_vis <- unique(spp_vis)
+
+# Create a species column
+spp_vis$species <- as.factor(c("NA"))
+
+### Make L column a source column
+# Change all List lengths between 0 and 22222 to 1 (all these are BNM data)
+spp_vis$L <- replace(spp_vis$L, spp_vis$L > 0 & spp_vis$L < 22222, 1)
+# Make L a factor
+spp_vis$L <- as.factor(spp_vis$L)
+# Rename factor levels according to data type
+spp_vis$L <- revalue(spp_vis$L, c("1"="BNM", "22222"="UKBMS", "33333"="NHCs"))
+# Rename column to Source
+colnames(spp_vis)[colnames(spp_vis)=="L"] <- "Source"
+
+
+# Correct time period so it starts at 1900
+spp_vis$year <- spp_vis$TP+1899
+
+
+
+########################################################################
+
+# Subset each species' records into dataframes and specify species identity
+spp_vis_A_urticae <- subset(spp_vis, Aglais.urticae == "TRUE")
+spp_vis_A_urticae$species <- c("italic('A. urticae')")
+
+
+
+ ggplot(spp_vis_A_urticae, aes(x=year, fill=Source, color=Source)) + 
+  scale_fill_manual(values = alpha(c("#453781FF", 
+                                     "#20A386FF", 
+                                     "#DCE318FF"), 0.5)) +
+  scale_color_manual(values = alpha(c("#453781FF", 
+                                      "#20A386FF", 
+                                      "#DCE318FF"), 0.5)) +
+  geom_bar(position="identity", alpha=0.7) + 
+  labs(y="Records", x = "Year") +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()) +
+  # sqrt y scale and expand scale to no space below, 5% above
+  scale_y_sqrt(expand = expansion(mult = c(0, .05))) +
+  scale_x_continuous(breaks=seq(1900, 2020, 20), 
+                     limits = c(1900, 2025), 
+                     expand = c(0, 0)) +
+  ggtitle("Aglais urticae") + 
+  theme(plot.title=element_text(face="italic")) +
+  theme(text = element_text(size=15),
+        axis.text.x = element_text(angle=90, hjust=1))
+
+
+```
+
+
+
+
+
+### DIC & Bayesian *p*
+```{r DIC-A-urticae, cache=TRUE, message=FALSE, echo=FALSE}
+# Create empty data frame to populate
+summary_out <- data.frame(Model = as.factor(c("catLL", "mixLL", "mixLL2")),
+                          DIC = as.numeric(NA),
+                          Bayesian_p = as.numeric(NA),
+                          Bayesian_p_var = as.numeric(NA)) 
+
+
+  summary_out[1:3, "DIC"] <-  c((catLL_list[[1]]$BUGSoutput$DIC), 
+                                (mixLL_list[[1]]$BUGSoutput$DIC),
+                                (mixLL2_list[[1]]$BUGSoutput$DIC))  
+  summary_out[1, "Bayesian_p"] <-  ModelBp_Summ[1, 2]
+  summary_out[2, "Bayesian_p"] <-  ModelBp_Summ[1, 3]
+  summary_out[3, "Bayesian_p"] <-  ModelBp_Summ[1, 4]
+  summary_out[1, "Bayesian_p_var"] <-  ModelBp_Summ[1, 5]
+  summary_out[2, "Bayesian_p_var"] <-  ModelBp_Summ[1, 6]
+  summary_out[3, "Bayesian_p_var"] <-  ModelBp_Summ[1, 7]
+
+knitr::kable(summary_out)
+```
+
+## *Carterocephalus palaemon* (Checkered skipper)
+
+### Occupancy
 ```{r plot-occu-outputs-C-palaemon, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+### Source plotting function
+source("./fig-plot.Occdet_G.R")
+
 plot.occDet_G(mixLL_list[[2]], mixLL2_list[[2]], catLL_list[[2]]) +
   ggtitle(label = "Carterocephalus palaemon", 
           subtitle = paste(lama_translate_("Carterocephalus palaemon", dict, "common_names"))) + 
@@ -1930,6 +2086,441 @@ plot.occDet_G(mixLL_list[[2]], mixLL2_list[[2]], catLL_list[[2]]) +
   scale_x_continuous(expand = c(0, 0)) +
   theme(text=element_text(size=15))  
 ```
+
+
+### Detection probability
+```{r plot-detprob-outputs-C-palaemon, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE, fig.width=7, fig.height=3}
+plot_DetectionOverTime(catLL_list[[2]],
+                              min.yr = 1900, 
+                                    legend_labels =
+                         c("    BNM/Year_Effect  ", 
+                                                    "UKBMS", 
+                                                   "NHCs"),
+                                  legend_title = "Data Type") +
+             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+             scale_x_continuous(expand = c(0, 0)) +
+  ggtitle("Model A") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank()) +
+  theme(text=element_text(size=12)) 
+
+plot_DetectionOverTime(mixLL_list[[2]], 
+                       min.yr = 1900, 
+                       legend_labels = c("BNM_LL1/Year effect", 
+                                         "UKBMS", 
+                                         "NHCs", 
+                                         "BNM_LL5"), 
+                       legend_title = "Data Type") +
+  scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  ggtitle("Model B") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank()) +
+  theme(text=element_text(size=12))
+
+plot_DetectionOverTime(mixLL2_list[[2]],
+                              min.yr = 1900, 
+                       legend_labels = c("BNM_LL1/Year effect", 
+                                         "UKBMS", 
+                                         "NHCs", 
+                                         "BNM_LL5"), 
+                       mixLL2 = TRUE,                  ### Important: specify its mixLL2
+                       legend_title = "Data Type") +
+  scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  ggtitle("Model C") +
+  theme(text=element_text(size=12))
+```
+
+
+
+### Visits with records
+```{r plot-siteprop-C-palaemon, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE, fig.width=7, fig.height=4}
+sppMeanSitesYear$Species <- as.factor(sppMeanSitesYear$Species)
+test <- subset(sppMeanSitesYear, Species == "*Carterocephalus palaemon*")
+
+test$Model <- as.factor(test$Model)
+
+
+require("ggtext")
+ggplot(data = test,) +
+  geom_ribbon(aes_string(fill = "Model", 
+                    x = "Year", 
+                    y = "sim_MeanSitesPerYear", 
+                             ymin = "sim_lower", ymax = "sim_upper"),
+                  alpha = 0.3) +
+  scale_fill_manual(values =c("#440154FF", "#20A387FF", "#E69F00")) + 
+  geom_line(aes(x = Year, y = sim_MeanSitesPerYear, colour = Model), size=0.7) + 
+          scale_colour_manual(values =c("#440154FF", "#20A387FF", "#E69F00")) +
+  geom_line(aes(x=Year, y=obs_meanSitesPerYear), linetype = "dotted", colour=c("black"), size = 1.5) +
+  geom_line(aes(x=Year, y=obs_meanSitesPerYear), colour=c("black"), size = 0.4) +
+  geom_vline(xintercept = 1976, linetype = "dashed") +   # Vertical line = 1976
+  ylab("Proportion of visited sites with records") +
+  xlab("Year") +
+  scale_y_continuous(limits=c(0, 0.1), expand = c(0, 0)) +
+  scale_x_continuous(breaks=seq(1900, 2020, 20), 
+                     limits = c(1900, 2025), 
+                     expand = c(0, 0)) +
+      #theme(legend.position="bottom") +
+  xlab("Year") + 
+  ylab("Proportion of visited sites with records") + 
+  ggtitle("Carterocephalus palaemon") + 
+  theme(plot.title=element_text(face="italic")) +
+  theme_bw()
+```
+
+
+### Record numbers
+```{r plot-record-numbers-C-palaemon, message=FALSE, warning=FALSE, echo=FALSE, fig.width=7, fig.height=4, cache=TRUE}
+# Subset each species' records into dataframes and specify species identity
+spp_vis_C_palaemon <- subset(spp_vis, Carterocephalus.palaemon == "TRUE")
+spp_vis_C_palaemon$species <- c("italic('C. palaemon')")
+
+ ggplot(spp_vis_C_palaemon, aes(x=year, fill=Source, color=Source)) + 
+  scale_fill_manual(values = alpha(c("#453781FF", 
+                                     "#20A386FF", 
+                                     "#DCE318FF"), 0.5)) +
+  scale_color_manual(values = alpha(c("#453781FF", 
+                                      "#20A386FF", 
+                                      "#DCE318FF"), 0.5)) +
+  geom_bar(position="identity", alpha=0.7) + 
+  labs(y="Records", x = "Year") +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()) +
+  # sqrt y scale and expand scale to no space below, 5% above
+  scale_y_sqrt(expand = expansion(mult = c(0, .05))) +
+  scale_x_continuous(breaks=seq(1900, 2020, 20), 
+                     limits = c(1900, 2025), 
+                     expand = c(0, 0)) +
+  ggtitle("Carterocephalus palaemon") + 
+  theme(plot.title=element_text(face="italic")) +
+  theme(text = element_text(size=15),
+        axis.text.x = element_text(angle=90, hjust=1))
+```
+
+
+### DIC & Bayesian *p*
+```{r DIC-C-palaemon, cache=TRUE, message=FALSE, echo=FALSE, cache=TRUE}
+# Create empty data frame to populate
+summary_out <- data.frame(Model = as.factor(c("catLL", "mixLL", "mixLL2")),
+                          DIC = as.numeric(NA),
+                          Bayesian_p = as.numeric(NA),
+                          Bayesian_p_var = as.numeric(NA)) 
+
+
+  summary_out[1:3, "DIC"] <-  c((catLL_list[[2]]$BUGSoutput$DIC), 
+                                (mixLL_list[[2]]$BUGSoutput$DIC),
+                                (mixLL2_list[[2]]$BUGSoutput$DIC))  
+  summary_out[1, "Bayesian_p"] <-  ModelBp_Summ[2, 2]
+  summary_out[2, "Bayesian_p"] <-  ModelBp_Summ[2, 3]
+  summary_out[3, "Bayesian_p"] <-  ModelBp_Summ[2, 4]
+  summary_out[1, "Bayesian_p_var"] <-  ModelBp_Summ[2, 5]
+  summary_out[2, "Bayesian_p_var"] <-  ModelBp_Summ[2, 6]
+  summary_out[3, "Bayesian_p_var"] <-  ModelBp_Summ[2, 7]
+
+knitr::kable(summary_out)
+```
+
+
+
+
+## *Erebia aethiops* (Scotch Argus)
+
+### Occupancy
+```{r plot-occu-outputs-E-aethiops, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+### Source plotting function
+source("./fig-plot.Occdet_G.R")
+
+plot.occDet_G(mixLL_list[[3]], mixLL2_list[[3]], catLL_list[[3]]) +
+  ggtitle(label = "Erebia aethiops", 
+          subtitle = paste(lama_translate_("Erebia aethiops", dict, "common_names"))) + 
+  theme(plot.title=element_text(face="italic")) +
+  scale_y_continuous(limits=c(0, 0.25), expand = c(0, 0)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  theme(text=element_text(size=15))  
+```
+
+
+### Detection probability
+```{r plot-detprob-outputs-E-aethiops, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE, fig.width=7, fig.height=3}
+plot_DetectionOverTime(catLL_list[[3]],
+                              min.yr = 1900, 
+                                    legend_labels =
+                         c("    BNM/Year_Effect  ", 
+                                                    "UKBMS", 
+                                                   "NHCs"),
+                                  legend_title = "Data Type") +
+             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+             scale_x_continuous(expand = c(0, 0)) +
+  ggtitle("Model A") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank()) +
+  theme(text=element_text(size=12)) 
+
+plot_DetectionOverTime(mixLL_list[[3]], 
+                       min.yr = 1900, 
+                       legend_labels = c("BNM_LL1/Year effect", 
+                                         "UKBMS", 
+                                         "NHCs", 
+                                         "BNM_LL5"), 
+                       legend_title = "Data Type") +
+  scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  ggtitle("Model B") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank()) +
+  theme(text=element_text(size=12))
+
+plot_DetectionOverTime(mixLL2_list[[3]],
+                              min.yr = 1900, 
+                       legend_labels = c("BNM_LL1/Year effect", 
+                                         "UKBMS", 
+                                         "NHCs", 
+                                         "BNM_LL5"), 
+                       mixLL2 = TRUE,                  ### Important: specify its mixLL2
+                       legend_title = "Data Type") +
+  scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  ggtitle("Model C") +
+  theme(text=element_text(size=12))
+```
+
+
+
+### Visits with records
+```{r plot-siteprop-E-aethiops, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE, fig.width=7, fig.height=4}
+sppMeanSitesYear$Species <- as.factor(sppMeanSitesYear$Species)
+test <- subset(sppMeanSitesYear, Species == "*Erebia aethiops*")
+
+test$Model <- as.factor(test$Model)
+
+require("ggtext")
+ggplot(data = test,) +
+  geom_ribbon(aes_string(fill = "Model", 
+                    x = "Year", 
+                    y = "sim_MeanSitesPerYear", 
+                             ymin = "sim_lower", ymax = "sim_upper"), alpha = 0.3) +
+  scale_fill_manual(values =c("#440154FF", "#20A387FF", "#E69F00")) + 
+  geom_line(aes(x = Year, y = sim_MeanSitesPerYear, colour = Model), size=0.7) + 
+          scale_colour_manual(values =c("#440154FF", "#20A387FF", "#E69F00")) +
+  geom_line(aes(x=Year, y=obs_meanSitesPerYear), linetype = "dotted", colour=c("black"), size = 1.5) +
+  geom_line(aes(x=Year, y=obs_meanSitesPerYear), colour=c("black"), size = 0.4) +
+  geom_vline(xintercept = 1976, linetype = "dashed") +   # Vertical line = 1976
+  ylab("Proportion of visited sites with records") + xlab("Year") +
+  scale_y_continuous(limits=c(0, 0.1), expand = c(0, 0)) +
+  scale_x_continuous(breaks=seq(1900, 2020, 20), 
+                     limits = c(1900, 2025), 
+                     expand = c(0, 0)) +
+  ggtitle("Erebia aethiops") + 
+  theme(plot.title=element_text(face="italic")) +
+  theme_bw()
+```
+
+
+### Record numbers
+```{r plot-record-numbers-E-aethiops, message=FALSE, warning=FALSE, echo=FALSE, fig.width=7, fig.height=4, cache=TRUE}
+# Subset each species' records into dataframes and specify species identity
+spp_vis_E_aethiops <- subset(spp_vis, Erebia.aethiops == "TRUE")
+spp_vis_E_aethiops$species <- c("italic('E. aethiops')")
+
+ ggplot(spp_vis_E_aethiops, aes(x=year, fill=Source, color=Source)) + 
+  scale_fill_manual(values = alpha(c("#453781FF", 
+                                     "#20A386FF", 
+                                     "#DCE318FF"), 0.5)) +
+  scale_color_manual(values = alpha(c("#453781FF", 
+                                      "#20A386FF", 
+                                      "#DCE318FF"), 0.5)) +
+  geom_bar(position="identity", alpha=0.7) + 
+  labs(y="Records", x = "Year") +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()) +
+  # sqrt y scale and expand scale to no space below, 5% above
+  scale_y_sqrt(expand = expansion(mult = c(0, .05))) +
+  scale_x_continuous(breaks=seq(1900, 2020, 20), 
+                     limits = c(1900, 2025), 
+                     expand = c(0, 0)) +
+  ggtitle("Erebia aethiops") + 
+  theme(plot.title=element_text(face="italic")) +
+  theme(text = element_text(size=15),
+        axis.text.x = element_text(angle=90, hjust=1))
+```
+
+
+### DIC & Bayesian *p*
+```{r DIC-E-aethiops, cache=TRUE, message=FALSE, echo=FALSE, cache=TRUE}
+# Create empty data frame to populate
+summary_out <- data.frame(Model = as.factor(c("catLL", "mixLL", "mixLL2")),
+                          DIC = as.numeric(NA),
+                          Bayesian_p = as.numeric(NA),
+                          Bayesian_p_var = as.numeric(NA)) 
+
+
+  summary_out[1:3, "DIC"] <-  c((catLL_list[[3]]$BUGSoutput$DIC), 
+                                (mixLL_list[[3]]$BUGSoutput$DIC),
+                                (mixLL2_list[[3]]$BUGSoutput$DIC))  
+  summary_out[1, "Bayesian_p"] <-  ModelBp_Summ[3, 2]
+  summary_out[2, "Bayesian_p"] <-  ModelBp_Summ[3, 3]
+  summary_out[3, "Bayesian_p"] <-  ModelBp_Summ[3, 4]
+  summary_out[1, "Bayesian_p_var"] <-  ModelBp_Summ[3, 5]
+  summary_out[2, "Bayesian_p_var"] <-  ModelBp_Summ[3, 6]
+  summary_out[3, "Bayesian_p_var"] <-  ModelBp_Summ[3, 7]
+
+knitr::kable(summary_out)
+```
+
+
+
+
+## *Erebia epiphron* (Mountain Ringlet)
+
+### Occupancy
+```{r plot-occu-outputs-E-epiphron, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+### Source plotting function
+source("./fig-plot.Occdet_G.R")
+
+plot.occDet_G(mixLL_list[[4]], mixLL2_list[[4]], catLL_list[[4]]) +
+  ggtitle(label = "Erebia epiphron", 
+          subtitle = paste(lama_translate_("Erebia epiphron", dict, "common_names"))) + 
+  theme(plot.title=element_text(face="italic")) +
+  scale_y_continuous(limits=c(0, 0.1), expand = c(0, 0)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  theme(text=element_text(size=15)) 
+```
+
+
+
+### Detection probability
+```{r plot-detprob-outputs-E-epiphron, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE, fig.width=7, fig.height=3}
+plot_DetectionOverTime(catLL_list[[4]],
+                              min.yr = 1900, 
+                                    legend_labels =
+                         c("    BNM/Year_Effect  ", 
+                                                    "UKBMS", 
+                                                   "NHCs"),
+                                  legend_title = "Data Type") +
+             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+             scale_x_continuous(expand = c(0, 0)) +
+  ggtitle("Model A") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank()) +
+  theme(text=element_text(size=12)) 
+
+plot_DetectionOverTime(mixLL_list[[4]], 
+                       min.yr = 1900, 
+                       legend_labels = c("BNM_LL1/Year effect", 
+                                         "UKBMS", 
+                                         "NHCs", 
+                                         "BNM_LL5"), 
+                       legend_title = "Data Type") +
+  scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  ggtitle("Model B") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank()) +
+  theme(text=element_text(size=12))
+
+plot_DetectionOverTime(mixLL2_list[[4]],
+                              min.yr = 1900, 
+                       legend_labels = c("BNM_LL1/Year effect", 
+                                         "UKBMS", 
+                                         "NHCs", 
+                                         "BNM_LL5"), 
+                       mixLL2 = TRUE,                  ### Important: specify its mixLL2
+                       legend_title = "Data Type") +
+  scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  ggtitle("Model C") +
+  theme(text=element_text(size=12))
+```
+
+
+
+### Visits with records
+```{r plot-siteprop-E-epiphron, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE, fig.width=7, fig.height=4}
+sppMeanSitesYear$Species <- as.factor(sppMeanSitesYear$Species)
+test <- subset(sppMeanSitesYear, Species == "*Erebia epiphron*")
+
+test$Model <- as.factor(test$Model)
+
+require("ggtext")
+ggplot(data = test,) +
+  geom_ribbon(aes_string(fill = "Model", 
+                    x = "Year", 
+                    y = "sim_MeanSitesPerYear", 
+                             ymin = "sim_lower", ymax = "sim_upper"), alpha = 0.3) +
+  scale_fill_manual(values =c("#440154FF", "#20A387FF", "#E69F00")) + 
+  geom_line(aes(x = Year, y = sim_MeanSitesPerYear, colour = Model), size=0.7) + 
+          scale_colour_manual(values =c("#440154FF", "#20A387FF", "#E69F00")) +
+  geom_line(aes(x=Year, y=obs_meanSitesPerYear), linetype = "dotted", colour=c("black"), size = 1.5) +
+  geom_line(aes(x=Year, y=obs_meanSitesPerYear), colour=c("black"), size = 0.4) +
+  geom_vline(xintercept = 1976, linetype = "dashed") +   # Vertical line = 1976
+  ylab("Proportion of visited sites with records") + xlab("Year") +
+  scale_y_continuous(limits=c(0, 0.1), expand = c(0, 0)) +
+  scale_x_continuous(breaks=seq(1900, 2020, 20), 
+                     limits = c(1900, 2025), 
+                     expand = c(0, 0)) +
+  ggtitle("Erebia epiphron") + 
+  theme(plot.title=element_text(face="italic")) +
+  theme_bw()
+```
+
+
+### Record numbers
+```{r plot-record-numbers-E-epiphron, message=FALSE, warning=FALSE, echo=FALSE, fig.width=7, fig.height=4, cache=TRUE}
+# Subset each species' records into dataframes and specify species identity
+spp_vis_E_epiphron <- subset(spp_vis, Erebia.epiphron == "TRUE")
+spp_vis_E_epiphron$species <- c("italic('E. epiphron')")
+
+ ggplot(spp_vis_E_epiphron, aes(x=year, fill=Source, color=Source)) + 
+  scale_fill_manual(values = alpha(c("#453781FF", 
+                                     "#20A386FF", 
+                                     "#DCE318FF"), 0.5)) +
+  scale_color_manual(values = alpha(c("#453781FF", 
+                                      "#20A386FF", 
+                                      "#DCE318FF"), 0.5)) +
+  geom_bar(position="identity", alpha=0.7) + 
+  labs(y="Records", x = "Year") +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()) +
+  # sqrt y scale and expand scale to no space below, 5% above
+  scale_y_sqrt(expand = expansion(mult = c(0, .05))) +
+  scale_x_continuous(breaks=seq(1900, 2020, 20), 
+                     limits = c(1900, 2025), 
+                     expand = c(0, 0)) +
+  ggtitle("Erebia epiphron") + 
+  theme(plot.title=element_text(face="italic")) +
+  theme(text = element_text(size=15),
+        axis.text.x = element_text(angle=90, hjust=1))
+```
+
+
+### DIC & Bayesian *p*
+```{r DIC-E-epiphron, cache=TRUE, message=FALSE, echo=FALSE, cache=TRUE}
+# Create empty data frame to populate
+summary_out <- data.frame(Model = as.factor(c("catLL", "mixLL", "mixLL2")),
+                          DIC = as.numeric(NA),
+                          Bayesian_p = as.numeric(NA),
+                          Bayesian_p_var = as.numeric(NA)) 
+
+
+  summary_out[1:3, "DIC"] <-  c((catLL_list[[4]]$BUGSoutput$DIC), 
+                                (mixLL_list[[4]]$BUGSoutput$DIC),
+                                (mixLL2_list[[4]]$BUGSoutput$DIC))  
+  summary_out[1, "Bayesian_p"] <-  ModelBp_Summ[4, 2]
+  summary_out[2, "Bayesian_p"] <-  ModelBp_Summ[4, 3]
+  summary_out[3, "Bayesian_p"] <-  ModelBp_Summ[4, 4]
+  summary_out[1, "Bayesian_p_var"] <-  ModelBp_Summ[4, 5]
+  summary_out[2, "Bayesian_p_var"] <-  ModelBp_Summ[4, 6]
+  summary_out[3, "Bayesian_p_var"] <-  ModelBp_Summ[4, 7]
+
+knitr::kable(summary_out)
+```
+
+
+
 
 
 
