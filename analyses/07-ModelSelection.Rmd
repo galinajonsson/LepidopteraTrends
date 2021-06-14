@@ -1862,7 +1862,12 @@ plot.occDet_G(mixLL_list[[1]], mixLL2_list[[1]], catLL_list[[1]]) +
         
         
 
-*Aglais urticae* (Small Tortoiseshell) is one of our most widespread butterflies, occurring throughout the British Isles, which is in line with the latter part of the time series (post 1976; but note it has declined by approx 15% since). Nonetheless, there is no anecdotal evidence for a 100% increase between the 1960s and 1980s indicating that the occupanncy is underestimated in the early part of the time series. 
+*Aglais urticae* (Small Tortoiseshell) is one of our most widespread butterflies, occurring throughout the British Isles, which is in line with the latter part of the time series (post 1976; but note it has declined by approx 15% since). Nonetheless, there is no anecdotal evidence for a 100% increase between the 1960s and 1980s indicating that the occupancy is underestimated in the early part of the time series.   
+   
+   
+   
+**In other words it appears neither of the model formulations are accurately explaining early trends for this species**
+
 
    
 
@@ -1924,9 +1929,9 @@ plot_DetectionOverTime(mixLL2_list[[1]],
       
       
       
-BNM and UKBMS detection probability trends are very similar for all three models after 19976. However, NHCs detection probability estimates differ between models such that it is the data type with the highest detection probability (unlikely) in Model A, and the lowest in model B and C; still the detection probability estimates are around 0.05-0.1 for model B (meaning that every 5-10% of museum visits collected a small tortoisshell, which again seems unlikely as that in turn would mean the same percentage of the entire collection would be small tortoisshells).
+BNM and UKBMS detection probability trends are very similar for all three models after 19976. However, NHCs detection probability estimates differ between models such that it is the data type with the highest detection probability (unlikely) in Model A, and the lowest in model B and C; still the detection probability estimates are around 0.05-0.1 for model B (meaning that every 5-10% of museum visits collected a small tortoiseshell, which again seems unlikely as that in turn would mean that approx. the same percentage of the entire collection would be small tortoiseshells).
 
-Please note I have **sense checked** these trends (i.e. compared with actual mean annual estimates and they are correct).  
+Note I have **sense checked** these trends (i.e. compared with actual mean annual estimates and they are correct).  
 
 
 
@@ -2071,7 +2076,24 @@ summary_out <- data.frame(Model = as.factor(c("catLL", "mixLL", "mixLL2")),
 knitr::kable(summary_out)
 ```
 
-## *Carterocephalus palaemon* (Checkered skipper)
+
+
+
+
+
+* Bayesian p:     
+    + very poor for variance      
+    + OK for mean    
+    + Model A (Cat list length) best    
+* DIC: Model C (mic list length 2) best   
+
+
+
+
+
+
+
+## *Carterocephalus palaemon* (Chequered skipper)
 
 ### Occupancy
 ```{r plot-occu-outputs-C-palaemon, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
@@ -2086,8 +2108,16 @@ plot.occDet_G(mixLL_list[[2]], mixLL2_list[[2]], catLL_list[[2]]) +
   scale_x_continuous(expand = c(0, 0)) +
   theme(text=element_text(size=15))  
 ```
-
-
+   
+   
+   
+   
+The Chequered Skipper is confined to north-west Scotland where it was first discovered in 1939 (distribution is centered on Fort William). It formerly occurred in central and east England, but started to decline in "the early  part of the 20th century" (Millennium atlas) with East Midlands as the last English stronghold where it was "fairly abundant until the 1950s". Thereafter remaining English populations suffered rapid declines and it was declared extinct in England in 1976. 
+   
+   
+**Occupancy estimates are in line with anecdotal evidence for historic distribution changes and very similar across models**   
+    
+   
 ### Detection probability
 ```{r plot-detprob-outputs-C-palaemon, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE, fig.width=7, fig.height=3}
 plot_DetectionOverTime(catLL_list[[2]],
@@ -2131,6 +2161,16 @@ plot_DetectionOverTime(mixLL2_list[[2]],
   ggtitle("Model C") +
   theme(text=element_text(size=12))
 ```
+   
+   
+   
+   
+Detection probabilities when compared between models are similar to previous species. However, I would expect detection probabilities to be higher? Although it is quite hard to spot (skipper = rapid flier etc.). BUT I would expect the detection probability for NHCs in Model C to be much higher than it is.... 
+   
+   
+**General thought: detection probability does not appear to influence occupancy estimates that much?**   
+    
+   
 
 
 
@@ -2221,6 +2261,12 @@ summary_out <- data.frame(Model = as.factor(c("catLL", "mixLL", "mixLL2")),
 
 knitr::kable(summary_out)
 ```
+
+
+* Bayesian p:     
+    + Poor for variance: A best      
+    + OK for mean: C best          
+* DIC: Model B (mic list length) best   
 
 
 
