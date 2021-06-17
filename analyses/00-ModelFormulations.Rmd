@@ -1,0 +1,141 @@
+---
+title: "0-ModelFormulations"
+author: "Galina M. Jönsson"
+date: "17/06/2021"
+output:   
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### For each of 3 models: 
+1. **Model A**: categorical List length   
+2. **Model B**: mixed list length   
+3. **Model C**: mixed list length without year effect for NHCs    
+
+# Model fomulation and justification 
+
+## **Model A**   
+**Model A** specifies that list length should be considered as a categorical variable. Per default, [sparta] (https://github.com/BiologicalRecordsCentre/sparta) has three list length classes:  lists of length 1, 2-3, and 4 and over. I have manually changes the list lengths of all BNM, UKBMS and NHC data to be treated as three separate list lengths. This model formulation is equivalent to our [previous paper] (https://doi.org/10.1111/icad.12494). However, here we 
+
+
+
+
+
+## **Model B**   
+**Model B** list length as both continuous and categorical variable. 
+
+
+
+## **Model C**   
+**Model C** list length as both continuous and categorical variables with varying year effects between list lengths
+
+
+```{r load-data}
+ModelA_A_urticae<- readRDS("../outputs/catLL-outputs/results_Aglais_urticae_watson_catLL.rds")
+ModelB_A_urticae <- readRDS("../outputs/mixLL-outputs/results_Aglais_urticae_crick_mixLL.rds")
+ModelC_A_urticae <- readRDS("../outputs/mixLL2-outputs/results_Aglais_urticae_crick_mixLL2.rds")
+```
+
+# JAGS observation model code
+
+
+#### Model A
+```{r jags-DetProb-code-A, eval=FALSE, echo=TRUE}
+for(j in 1:nvisit) {    
+  y[j] ~ dbern(Py[j])    
+  Py[j]<- z[Site[j],Year[j]]*p[j]    
+  logit(p[j]) <-  alpha.p[Year[j]] + dtype2.p * DATATYPE2[j] + dtype3.p * DATATYPE3[j]    
+} }   
+Fully observed variables:   
+ DATATYPE2 DATATYPE3 Site Year nsite nvisit nyear y  
+```
+
+
+#### Model B
+```{r jags-DetProb-code-B, eval=FALSE, echo=TRUE}
+for(j in 1:nvisit) {   
+  y[j] ~ dbern(Py[j])   
+  Py[j]<- z[Site[j],Year[j]] * p[j]   
+  logit(p[j]) <-  alpha.p[Year[j]] + LL.p * logL[j] + dtype2.p * DATATYPE2[j] + dtype3.p*DATATYPE3[j]   
+}   
+Fully observed variables:   
+ DATATYPE2 DATATYPE3 Site Year dtype2p_max dtype2p_min logL nsite nvisit nyear y    
+```
+
+#### Model C
+```{r jags-DetProb-code-C, eval=FALSE, echo=TRUE}
+for(j in 1:nvisit) {
+  y[j] ~ dbern(Py[j])
+  Py[j]<- z[Site[j],Year[j]] * p[j]
+  logit(p[j]) <-  alpha.p[Year[j]] * (1-DATATYPE3[j]) + LL.p * logL[j] + dtype2.p * DATATYPE2[j] + dtype3.p * DATATYPE3[j]
+} }
+Fully observed variables:
+ DATATYPE2 DATATYPE3 Site Year dtype2p_max dtype2p_min logL nsite nvisit nyear y 
+```
+
+
+
+
+# Detection probability
+
+```{r jags-DetProb-code, echo=FALSE}
+require(ggplot2)
+require(sparta)
+
+
+plot_DetectionOverTime(ModelA_A_urticae,
+                              min.yr = 1900, 
+                                    legend_labels = c("BNM/Year_Effect", 
+                                                    "UKBMS", 
+                                                   "NHCs"),
+                                  legend_title = "Data Type") +
+             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+             scale_x_continuous(expand = c(0, 0)) +
+  ggtitle(label = (expression(paste(italic("Aglais urticae"), " - Model A"))), 
+          subtitle = paste("Small Tortoiseshell")) + 
+  theme(plot.title=element_text(face="italic")) +
+  theme(text=element_text(size=12)) 
+
+
+
+plot_DetectionOverTime(ModelB_A_urticae, 
+                       min.yr = 1900, 
+                       legend_labels = c("BNM_LL1/Year effect", 
+                                         "UKBMS", 
+                                         "NHCs", 
+                                         "BNM_LL5"), 
+                       legend_title = "Data Type") +
+  scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  ggtitle(label = (expression(paste(italic("Aglais urticae"), " - Model B"))), 
+          subtitle = paste("Small Tortoiseshell")) + 
+  theme(plot.title=element_text(face="italic")) +
+  theme(text=element_text(size=12))
+
+plot_DetectionOverTime(ModelC_A_urticae, 
+                       min.yr = 1900, 
+                       legend_labels = c("BNM_LL1/Year effect", 
+                                         "UKBMS", 
+                                         "NHCs", 
+                                         "BNM_LL5"), 
+                       legend_title = "Data Type",
+                       mixLL2 = TRUE) +
+  scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  ggtitle(label = (expression(paste(italic("Aglais urticae"), " - Model C"))), 
+          subtitle = paste("Small Tortoiseshell")) + 
+  theme(plot.title=element_text(face="italic")) +
+  theme(text=element_text(size=12))
+
+```
+
+
+
+
+
