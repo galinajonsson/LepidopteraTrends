@@ -1923,7 +1923,6 @@ plot_DetectionOverTime(mixLL2_list[[1]],
   #        subtitle = paste(lama_translate_("Aglais urticae", dict, "common_names"))) + 
   #theme(plot.title=element_text(face="italic")) +
   theme(text=element_text(size=12))
-
 ```
 
 
@@ -2162,6 +2161,7 @@ plot_DetectionOverTime(mixLL2_list[[2]],
   scale_x_continuous(expand = c(0, 0)) +
   ggtitle("Model C") +
   theme(text=element_text(size=12))
+
 ```
    
    
@@ -2334,6 +2334,7 @@ plot_DetectionOverTime(mixLL2_list[[3]],
   scale_x_continuous(expand = c(0, 0)) +
   ggtitle("Model C") +
   theme(text=element_text(size=12))
+
 ```
 
 
@@ -2483,6 +2484,7 @@ plot_DetectionOverTime(mixLL2_list[[4]],
   scale_x_continuous(expand = c(0, 0)) +
   ggtitle("Model C") +
   theme(text=element_text(size=12))
+
 ```
 
 
@@ -2643,7 +2645,6 @@ plot_DetectionOverTime(mixLL2_list[[5]],
   scale_x_continuous(expand = c(0, 0)) +
   ggtitle("Model C") +
   theme(text=element_text(size=12))
-
 ```
 
 
@@ -2804,7 +2805,6 @@ plot_DetectionOverTime(mixLL2_list[[6]],
   scale_x_continuous(expand = c(0, 0)) +
   ggtitle("Model C") +
   theme(text=element_text(size=12))
-
 ```
 
 
@@ -2925,6 +2925,7 @@ plot.occDet_G(mixLL_list[[7]], mixLL2_list[[7]], catLL_list[[7]]) +
 
 ### Detection probability
 ```{r plot-detprob-outputs-M-athalia, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE, fig.width=7, fig.height=3}
+
 plot_DetectionOverTime(catLL_list[[7]],
                               min.yr = 1900, 
                                     legend_labels =
@@ -3092,6 +3093,7 @@ plot.occDet_G(mixLL_list[[8]], mixLL2_list[[8]], catLL_list[[8]]) +
 
 ### Detection probability
 ```{r plot-detprob-outputs-P-aegeria, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE, fig.width=7, fig.height=3}
+
 plot_DetectionOverTime(catLL_list[[8]],
                               min.yr = 1900, 
                                     legend_labels =
@@ -3254,6 +3256,7 @@ plot.occDet_G(mixLL_list[[9]], mixLL2_list[[9]], catLL_list[[9]]) +
 
 ### Detection probability
 ```{r plot-detprob-outputs-P-rapae, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE, fig.width=7, fig.height=3}
+
 plot_DetectionOverTime(catLL_list[[9]],
                               min.yr = 1900, 
                                     legend_labels =
@@ -3420,6 +3423,7 @@ plot.occDet_G(mixLL_list[[10]], mixLL2_list[[10]], catLL_list[[10]]) +
 
 ### Detection probability
 ```{r plot-detprob-outputs-P-c-album, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE, fig.width=7, fig.height=3}
+
 plot_DetectionOverTime(catLL_list[[10]],
                               min.yr = 1900, 
                                     legend_labels =
@@ -3587,6 +3591,7 @@ plot.occDet_G(mixLL_list[[11]], mixLL2_list[[11]], catLL_list[[11]]) +
 
 ### Detection probability
 ```{r plot-detprob-outputs-P-bellargus, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE, fig.width=7, fig.height=3}
+
 plot_DetectionOverTime(catLL_list[[11]],
                               min.yr = 1900, 
                                     legend_labels =
@@ -3743,6 +3748,7 @@ plot.occDet_G(mixLL_list[[12]], mixLL2_list[[12]], catLL_list[[12]]) +
 
 ### Detection probability
 ```{r plot-detprob-outputs-P-betulae, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE, fig.width=7, fig.height=3}
+
 plot_DetectionOverTime(catLL_list[[12]],
                               min.yr = 1900, 
                                     legend_labels =
