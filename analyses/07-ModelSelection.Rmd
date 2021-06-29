@@ -522,7 +522,7 @@ dict <- new_lama_dictionary(common_names =
 
 
 #### *Aglais urticae*
-```{r plot-detprob-outputs1, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+```{r plot-detprob-outputs1, message=FALSE, warning=FALSE, eval=FALSE}
 plot_DetectionOverTime(catLL_list[[1]],
                               min.yr = 1900, 
                                     legend_labels = c("BNM/Year_Effect", 
@@ -571,7 +571,7 @@ plot_DetectionOverTime(mixLL2_list[[1]],
 
 
 #### *Carterocephalus palaemon*
-```{r plot-detprob-outputs2, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+```{r plot-detprob-outputs2, message=FALSE, warning=FALSE, , eval=FALSE}
 plot_DetectionOverTime(catLL_list[[2]],
                               min.yr = 1900, 
                                     legend_labels = c("BNM/Year_Effect", 
@@ -661,7 +661,7 @@ plot_DetectionOverTime(mixLL2_list[[3]],
 ```
 
 #### *Erebia epiphron*
-```{r plot-detprob-outputs4, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+```{r plot-detprob-outputs4, message=FALSE, warning=FALSE, eval=FALSE}
 plot_DetectionOverTime(catLL_list[[4]],
                               min.yr = 1900, 
                                     legend_labels = c("BNM/Year_Effect", 
@@ -706,7 +706,7 @@ plot_DetectionOverTime(mixLL2_list[[4]],
 ```
 
 #### *Limenitis camilla*
-```{r plot-detprob-outputs5, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+```{r plot-detprob-outputs5, message=FALSE, warning=FALSE, eval=FALSE}
 plot_DetectionOverTime(catLL_list[[5]],
                               min.yr = 1900, 
                                     legend_labels = c("BNM/Year_Effect", 
@@ -751,7 +751,7 @@ plot_DetectionOverTime(mixLL2_list[[5]],
 ```
 
 #### *Lycaena phlaeas*
-```{r plot-detprob-outputs6, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+```{r plot-detprob-outputs6, message=FALSE, warning=FALSE, eval=FALSE}
 plot_DetectionOverTime(catLL_list[[6]],
                               min.yr = 1900, 
                                     legend_labels = c("BNM/Year_Effect", 
@@ -796,7 +796,7 @@ plot_DetectionOverTime(mixLL2_list[[6]],
 ```
 
 #### *Melitaea athalia*
-```{r plot-detprob-outputs7, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+```{r plot-detprob-outputs7, message=FALSE, warning=FALSE, eval=FALSE}
 plot_DetectionOverTime(catLL_list[[7]],
                               min.yr = 1900, 
                                     legend_labels = c("BNM/Year_Effect", 
@@ -841,7 +841,7 @@ plot_DetectionOverTime(mixLL2_list[[7]],
 ```
 
 #### *Pararge aegeria*
-```{r plot-detprob-outputs8, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+```{r plot-detprob-outputs8, message=FALSE, warning=FALSE, eval=FALSE}
 plot_DetectionOverTime(catLL_list[[8]],
                               min.yr = 1900, 
                                     legend_labels = c("BNM/Year_Effect", 
@@ -886,7 +886,7 @@ plot_DetectionOverTime(mixLL2_list[[8]],
 ```
 
 #### *Pieris rapae*
-```{r plot-detprob-outputs9, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+```{r plot-detprob-outputs9, message=FALSE, warning=FALSE, eval=FALSE}
 plot_DetectionOverTime(catLL_list[[9]],
                               min.yr = 1900, 
                                     legend_labels = c("BNM/Year_Effect", 
@@ -931,7 +931,7 @@ plot_DetectionOverTime(mixLL2_list[[9]],
 ```
 
 #### *Polygonia c-album*
-```{r plot-detprob-outputs10, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+```{r plot-detprob-outputs10, message=FALSE, warning=FALSE, eval=FALSE}
 plot_DetectionOverTime(catLL_list[[10]],
                               min.yr = 1900, 
                                     legend_labels = c("BNM/Year_Effect", 
@@ -976,7 +976,7 @@ plot_DetectionOverTime(mixLL2_list[[10]],
 ```
 
 #### *Polyommatus bellargus*
-```{r plot-detprob-outputs11, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+```{r plot-detprob-outputs11, message=FALSE, warning=FALSE, eval=FALSE}
 plot_DetectionOverTime(catLL_list[[11]],
                               min.yr = 1900, 
                                     legend_labels = c("BNM/Year_Effect", 
@@ -1021,7 +1021,7 @@ plot_DetectionOverTime(mixLL2_list[[11]],
 ```
 
 #### *Thecla betulae*
-```{r plot-detprob-outputs12, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+```{r plot-detprob-outputs12, message=FALSE, warning=FALSE, eval=FALSE}
 plot_DetectionOverTime(catLL_list[[12]],
                               min.yr = 1900, 
                                     legend_labels = c("BNM/Year_Effect", 
@@ -1863,7 +1863,7 @@ plot.occDet_G(mixLL_list[[1]], mixLL2_list[[1]], catLL_list[[1]]) +
         
         
 
-*Aglais urticae* (Small Tortoiseshell) is one of our most widespread butterflies, occurring throughout the British Isles, which is in line with the latter part of the time series (post 1976; but note it has declined by approx 15% since). Nonetheless, there is no anecdotal evidence for a 100% increase between the 1960s and 1980s indicating that the occupancy is underestimated in the early part of the time series.   
+*Aglais urticae* (Small Tortoiseshell) is one of the UKs most widespread butterflies, occurring throughout the British Isles, which is in line with the latter part of the time series (post 1976; but note it has declined by approx 15% since). Nonetheless, there is no anecdotal evidence for a 100% increase between the 1960s and 1980s indicating that the occupancy is underestimated in the early part of the time series.   
    
    
    
@@ -1903,9 +1903,6 @@ plot_DetectionOverTime(mixLL_list[[1]],
   ggtitle("Model B") +
   theme(axis.title.x=element_blank(),
         axis.text.x=element_blank()) +
-  #ggtitle(label = (expression(paste(italic("Aglais urticae"), " - Model B")))) #, 
-  #        subtitle = paste(lama_translate_("Aglais urticae", dict, "common_names"))) + 
-  #theme(plot.title=element_text(face="italic")) +
   theme(text=element_text(size=12))
 
 plot_DetectionOverTime(mixLL2_list[[1]],
@@ -1919,9 +1916,6 @@ plot_DetectionOverTime(mixLL2_list[[1]],
   scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
   scale_x_continuous(expand = c(0, 0)) +
   ggtitle("Model C") +
-  #ggtitle(label = (expression(paste(italic("Aglais urticae"), " - Model C")))) #, 
-  #        subtitle = paste(lama_translate_("Aglais urticae", dict, "common_names"))) + 
-  #theme(plot.title=element_text(face="italic")) +
   theme(text=element_text(size=12))
 ```
 
@@ -1930,9 +1924,7 @@ plot_DetectionOverTime(mixLL2_list[[1]],
       
       
       
-BNM and UKBMS detection probability trends are very similar for all three models after 19976. However, NHCs detection probability estimates differ between models such that it is the data type with the highest detection probability (unlikely) in Model A, and the lowest in model B and C; still the detection probability estimates are around 0.05-0.1 for model B (meaning that every 5-10% of museum visits collected a small tortoiseshell, which again seems unlikely as that in turn would mean that approx. the same percentage of the entire collection would be small tortoiseshells).
-
-Note I have **sense checked** these trends (i.e. compared with actual mean annual estimates and they are correct).  
+BNM and UKBMS detection probability trends are similar for all three models after 1976. However, NHCs detection probability estimates differ between models such that it is the data type with the highest detection probability (unlikely) in Model A, and the lowest in model C; still the detection probability estimates are around 0.07 for model C. If we assume that all NHC visits produced single species lists (which the majority did), this would mean that every 5-10% of museum visits collected a small tortoiseshell, which again seems unlikely as that in turn would mean that approx. the same percentage of the entire collection would be small tortoiseshells).
 
 
 
