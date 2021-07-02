@@ -260,877 +260,7 @@ if(nrow(NotConvergedDetProb_mixLL2) > 0){
 
 ## Visualisation
 
-### Occupancy estimates {.tabset .tabset-dropdown}
-```{r plot-occu-outputs-setup, message=FALSE, warning=FALSE, echo=FALSE}
-require(ggplot2)
-require(labelmachine)
-require(sparta)
-require(dplyr)
-#require(boot)
-#require(reshape2)
-#require(plyr)
 
-### Source plotting function
-source("./fig-plot.Occdet_G.R")
-
-# Change ModelNames vetor to species names with spaces
-spp_names <- gsub(ModelNames, patt = "_", repl=" ")
-spp_names <- sub(spp_names, patt = "c.album", repl="c-album")
-
-# Name the lists of outputs their species names
-names(mixLL_list)[1:12] <- spp_names
-names(mixLL2_list)[1:12] <- spp_names
-
-
-# Create a dictionary translating Latin names to common names
-dict <- new_lama_dictionary(common_names = 
-                              c("Aglais urticae" = 'Small Tortoiseshell',
-                                "Carterocephalus palaemon" = 'Chequered Skipper',
-                                "Erebia aethiops" = 'Scotch Argus',
-                                "Erebia epiphron" = 'Mountain Ringlet',
-                                "Limenitis camilla" = 'White Admiral',
-                                "Lycaena phlaeas" = 'Small Copper',
-                                "Melitaea athalia" = 'Heath Fritillary',
-                                "Pararge aegeria" = 'Speckled Wood',
-                                "Pieris rapae" = 'Small White',
-                                "Polygonia c-album" = 'Comma',
-                                "Polyommatus bellargus" = 'Adonis Blue',
-                                "Thecla betulae" = 'Brown Hairstreak'))
-
-```
-
-
-#### *Aglais urticae*
-```{r plot-occu-outputs1, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
-### Source plotting function
-source("./fig-plot.Occdet_G.R")
-
-plot.occDet_G(mixLL_list[[1]], mixLL2_list[[1]], catLL_list[[1]]) +
-  ggtitle(label = "Aglais urticae", 
-          subtitle = paste(lama_translate_("Aglais urticae", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15)) 
-```
-
-#### *Carterocephalus palaemon*
-```{r plot-occu-outputs2, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
-plot.occDet_G(mixLL_list[[2]], mixLL2_list[[2]], catLL_list[[2]]) +
-  ggtitle(label = "Carterocephalus palaemon", 
-          subtitle = paste(lama_translate_("Carterocephalus palaemon", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  scale_y_continuous(limits=c(0, 0.1), expand = c(0, 0)) +
-  scale_x_continuous(expand = c(0, 0)) +
-  theme(text=element_text(size=15))  
-```
-
-#### *Erebia aethiops*
-```{r plot-occu-outputs3, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
-plot.occDet_G(mixLL_list[[3]], mixLL2_list[[3]], catLL_list[[3]]) +
-  ggtitle(label = "Erebia aethiops", 
-          subtitle = paste(lama_translate_("Erebia aethiops", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=18)) 
-```
-
-#### *Erebia epiphron*
-```{r plot-occu-outputs4, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
-plot.occDet_G(mixLL_list[[4]], mixLL2_list[[4]], catLL_list[[4]]) +
-  ggtitle(label = "Erebia epiphron", 
-          subtitle = paste(lama_translate_("Erebia epiphron", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=18))
-```
-
-#### *Limenitis camilla*
-```{r plot-occu-outputs5, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
-plot.occDet_G(mixLL_list[[5]], mixLL2_list[[5]], catLL_list[[5]]) +
-  ggtitle(label = "Limenitis camilla", 
-          subtitle = paste(lama_translate_("Limenitis camilla", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=18))
-```
-
-#### *Lycaena phlaeas*
-```{r plot-occu-outputs6, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
-plot.occDet_G(mixLL_list[[6]], mixLL2_list[[6]], catLL_list[[6]]) +
-  ggtitle(label = "Lycaena phlaeas", 
-          subtitle = paste(lama_translate_("Lycaena phlaeas", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=18))
-```
-
-#### *Melitaea athalia*
-```{r plot-occu-outputs7, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
-plot.occDet_G(mixLL_list[[7]], mixLL2_list[[7]], catLL_list[[7]]) +
-  ggtitle(label = "Melitaea athalia", 
-          subtitle = paste(lama_translate_("Melitaea athalia", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=18))
-```
-
-#### *Pararge aegeria*
-```{r plot-occu-outputs8, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
-plot.occDet_G(mixLL_list[[8]], mixLL2_list[[8]], catLL_list[[8]]) +
-  ggtitle(label = "Pararge aegeria", 
-          subtitle = paste(lama_translate_("Pararge aegeria", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=18))
-```
-
-#### *Pieris rapae*
-```{r plot-occu-outputs9, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
-### Source plotting function
-source("./fig-plot.Occdet_G.R")
-
-plot.occDet_G(mixLL_list[[9]], mixLL2_list[[9]], catLL_list[[9]]) +
-  ggtitle(label = "Pieris rapae", 
-          subtitle = paste(lama_translate_("Pieris rapae", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=18))
-```
-
-#### *Polygonia c-album*
-```{r plot-occu-outputs10, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
-plot.occDet_G(mixLL_list[[10]], mixLL2_list[[10]], catLL_list[[10]]) +
-  ggtitle(label = "Polygonia c-album", 
-          subtitle = paste(lama_translate_("Polygonia c-album", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=18))
-```
-
-#### *Polyommatus bellargus*
-```{r plot-occu-outputs11, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
-plot.occDet_G(mixLL_list[[11]], mixLL2_list[[11]], catLL_list[[11]]) +
-  ggtitle(label = "Polyommatus bellargus", 
-          subtitle = paste(lama_translate_("Polyommatus bellargus", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=18))
-```
-
-#### *Thecla betulae*
-```{r plot-occu-outputs12, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
-plot.occDet_G(mixLL_list[[12]], mixLL2_list[[12]], catLL_list[[12]]) +
-  ggtitle(label = "Thecla betulae", 
-          subtitle = paste(lama_translate_("Thecla betulae", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=18))
-```
-
-
-
-```{r SHINY-plot-occu-outputs, message=FALSE, warning=FALSE, echo=FALSE, eval=FALSE}
-require(shiny)
-require(ggplot2)
-require(labelmachine)
-require(sparta)
-require(dplyr)
-
-### Source plotting function
-source("./fig-plot.Occdet_G.R")
-
-# Change ModelNames vetor to species names with spaces
-spp_names <- gsub(ModelNames, patt = "_", repl=" ")
-spp_names <- sub(spp_names, patt = "c.album", repl="c-album")
-
-# Name the lists of outputs their species names
-names(mixLL_list)[1:12] <- spp_names
-names(mixLL2_list)[1:12] <- spp_names
-
-
-# Create a dictionary translating Latin names to common names
-dict <- new_lama_dictionary(common_names = 
-                              c("Aglais urticae" = 'Small Tortoiseshell',
-                                "Carterocephalus palaemon" = 'Chequered Skipper',
-                                "Erebia aethiops" = 'Scotch Argus',
-                                "Erebia epiphron" = 'Mountain Ringlet',
-                                "Limenitis camilla" = 'White Admiral',
-                                "Lycaena phlaeas" = 'Small Copper',
-                                "Melitaea athalia" = 'Heath Fritillary',
-                                "Pararge aegeria" = 'Speckled Wood',
-                                "Pieris rapae" = 'Small White',
-                                "Polygonia c-album" = 'Comma',
-                                "Polyommatus bellargus" = 'Adonis Blue',
-                                "Thecla betulae" = 'Brown Hairstreak'))
-
-
-# Plot occupancy estimates as a shiny app (currently two models per species)
-
-shinyApp(
-  ui = fluidPage(
-    # Select input
-    selectInput("species_choice", # call the variable storing values (spp names) "species_choice"
-                label = "Select species", # header text of dropdown list
-                choices = spp_names, # vector of all values in dropdown list—in (species)
-                selected ="Aglais urticae"), # dropdown defaults to Aglais urticae
-    plotOutput("occuPlot")
-  ),
-  server = function(input, output) {
-    output$occuPlot <- renderPlot({
-      
-      vec <- paste(input$species_choice)  
-      vec_labeled <- lama_translate_(vec, dict, "common_names")  
-      
-      plot.occDet_G(mixLL_list[[input$species_choice]], mixLL2_list[[input$species_choice]]) +
-        ggtitle(label = paste(input$species_choice), 
-                subtitle = paste(vec_labeled)) + 
-        theme(plot.title=element_text(face="italic")) +
-        theme(text=element_text(size=18))
-    })
-  },
-  options = list(height = 500)
-)
-```
-
-
-
-### Detection probability estimates {.tabset .tabset-dropdown}
-```{r plot-detprob-outputs-setup, message=FALSE, warning=FALSE, echo=FALSE}
-require(ggplot2)
-require(labelmachine)
-require(sparta)
-require(dplyr)
-require(plyr)
-require(boot)
-
-
-# Change ModelNames vetor to species names with spaces
-spp_names <- gsub(ModelNames, patt = "_", repl=" ")
-spp_names <- sub(spp_names, patt = "c.album", repl="c-album")
-
-# Name the lists of outputs their species names
-names(mixLL_list)[1:12] <- spp_names
-names(mixLL2_list)[1:12] <- spp_names
-
-
-# Create a dictionary translating Latin names to common names
-dict <- new_lama_dictionary(common_names = 
-                              c("Aglais urticae" = 'Small Tortoiseshell',
-                                "Carterocephalus palaemon" = 'Chequered Skipper',
-                                "Erebia aethiops" = 'Scotch Argus',
-                                "Erebia epiphron" = 'Mountain Ringlet',
-                                "Limenitis camilla" = 'White Admiral',
-                                "Lycaena phlaeas" = 'Small Copper',
-                                "Melitaea athalia" = 'Heath Fritillary',
-                                "Pararge aegeria" = 'Speckled Wood',
-                                "Pieris rapae" = 'Small White',
-                                "Polygonia c-album" = 'Comma',
-                                "Polyommatus bellargus" = 'Adonis Blue',
-                                "Thecla betulae" = 'Brown Hairstreak'))
-
-```
-
-
-
-#### *Aglais urticae*
-```{r plot-detprob-outputs1, message=FALSE, warning=FALSE, eval=FALSE}
-plot_DetectionOverTime(catLL_list[[1]],
-                              min.yr = 1900, 
-                                    legend_labels = c("BNM/Year_Effect", 
-                                                    "UKBMS", 
-                                                   "NHCs"),
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-  ggtitle(label = (expression(paste(italic("Aglais urticae"), " - Model A"))), 
-          subtitle = paste(lama_translate_("Aglais urticae", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15)) 
-
-plot_DetectionOverTime(mixLL_list[[1]], 
-                       min.yr = 1900, 
-                       legend_labels = c("BNM_LL1/Year effect", 
-                                         "UKBMS", 
-                                         "NHCs", 
-                                         "BNM_LL5"), 
-                       legend_title = "Data Type") +
-  scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-  scale_x_continuous(expand = c(0, 0)) +
-  ggtitle(label = (expression(paste(italic("Aglais urticae"), " - Model B"))), 
-          subtitle = paste(lama_translate_("Aglais urticae", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15))
-
-plot_DetectionOverTime(mixLL2_list[[1]],
-                              min.yr = 1900, 
-                       legend_labels = c("BNM_LL1/Year effect", 
-                                         "UKBMS", 
-                                         "NHCs", 
-                                         "BNM_LL5"), 
-                       mixLL2 = TRUE,                  ### Important: specify its mixLL2
-                       legend_title = "Data Type") +
-  scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-  scale_x_continuous(expand = c(0, 0)) +
-  ggtitle(label = (expression(paste(italic("Aglais urticae"), " - Model C"))), 
-          subtitle = paste(lama_translate_("Aglais urticae", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15))
-
-```
-
-
-
-
-#### *Carterocephalus palaemon*
-```{r plot-detprob-outputs2, message=FALSE, warning=FALSE, , eval=FALSE}
-plot_DetectionOverTime(catLL_list[[2]],
-                              min.yr = 1900, 
-                                    legend_labels = c("BNM/Year_Effect", 
-                                                    "UKBMS", 
-                                                   "NHCs"),
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-    ggtitle(label = (expression(paste(italic("Carterocephalus palaemon"), " - Model A"))), 
-          subtitle = paste(lama_translate_("Carterocephalus palaemon", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15)) 
-
-plot_DetectionOverTime(mixLL_list[[2]], 
-                              min.yr = 1900, 
-                                  legend_labels = c("BNM_LL1/Year_Effect", 
-                                                    "UKBMS", 
-                                                    "NHCs", 
-                                                    "BNM_LL5"), 
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-    ggtitle(label = (expression(paste(italic("Carterocephalus palaemon"), " - Model B"))), 
-          subtitle = paste(lama_translate_("Carterocephalus palaemon", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15))
-
-plot_DetectionOverTime(mixLL2_list[[2]],
-                              min.yr = 1900, 
-                                  legend_labels = c("BNM_LL1/Year_Effect", 
-                                                    "UKBMS", 
-                                                    "NHCs", 
-                                                    "BNM_LL5"),
-                       mixLL2 = TRUE,                  ### Important: specify its mixLL2
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-    ggtitle(label = (expression(paste(italic("Carterocephalus palaemon"), " - Model C"))), 
-          subtitle = paste(lama_translate_("Carterocephalus palaemon", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15)) 
-```
-
-#### *Erebia aethiops*
-```{r plot-detprob-outputs3, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
-plot_DetectionOverTime(catLL_list[[3]],
-                              min.yr = 1900, 
-                                    legend_labels = c("BNM/Year_Effect", 
-                                                    "UKBMS", 
-                                                   "NHCs"),
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-      ggtitle(label = (expression(paste(italic("Erebia aethiops"), " - Model A"))), 
-          subtitle = paste(lama_translate_("Erebia aethiops", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15)) 
-
-plot_DetectionOverTime(mixLL_list[[3]], 
-                              min.yr = 1900, 
-                                  legend_labels = c("BNM_LL1/Year_Effect", 
-                                                    "UKBMS", 
-                                                    "NHCs", 
-                                                    "BNM_LL5"), 
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-      ggtitle(label = (expression(paste(italic("Erebia aethiops"), " - Model B"))), 
-          subtitle = paste(lama_translate_("Erebia aethiops", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15))
-
-plot_DetectionOverTime(mixLL2_list[[3]],
-                              min.yr = 1900, 
-                                  legend_labels = c("BNM_LL1/Year_Effect", 
-                                                    "UKBMS", 
-                                                    "NHCs", 
-                                                    "BNM_LL5"), 
-                              mixLL2 = TRUE,                  ### Important: specify its mixLL2
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-      ggtitle(label = (expression(paste(italic("Erebia aethiops"), " - Model C"))), 
-          subtitle = paste(lama_translate_("Erebia aethiops", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15)) 
-```
-
-#### *Erebia epiphron*
-```{r plot-detprob-outputs4, message=FALSE, warning=FALSE, eval=FALSE}
-plot_DetectionOverTime(catLL_list[[4]],
-                              min.yr = 1900, 
-                                    legend_labels = c("BNM/Year_Effect", 
-                                                    "UKBMS", 
-                                                   "NHCs"),
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-        ggtitle(label = (expression(paste(italic("Erebia epiphron"), " - Model A"))), 
-          subtitle = paste(lama_translate_("Erebia epiphron", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15)) 
-
-plot_DetectionOverTime(mixLL_list[[4]], 
-                              min.yr = 1900, 
-                                  legend_labels = c("BNM_LL1/Year_Effect", 
-                                                    "UKBMS", 
-                                                    "NHCs", 
-                                                    "BNM_LL5"), 
-                              mixLL2 = TRUE,                  ### Important: specify its mixLL2
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-        ggtitle(label = (expression(paste(italic("Erebia epiphron"), " - Model B"))), 
-          subtitle = paste(lama_translate_("Erebia epiphron", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15))
-
-plot_DetectionOverTime(mixLL2_list[[4]],
-                              min.yr = 1900, 
-                                  legend_labels = c("BNM_LL1/Year_Effect", 
-                                                    "UKBMS", 
-                                                    "NHCs", 
-                                                    "BNM_LL5"), 
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-        ggtitle(label = (expression(paste(italic("Erebia epiphron"), " - Model C"))), 
-          subtitle = paste(lama_translate_("Erebia epiphron", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15)) 
-```
-
-#### *Limenitis camilla*
-```{r plot-detprob-outputs5, message=FALSE, warning=FALSE, eval=FALSE}
-plot_DetectionOverTime(catLL_list[[5]],
-                              min.yr = 1900, 
-                                    legend_labels = c("BNM/Year_Effect", 
-                                                    "UKBMS", 
-                                                   "NHCs"),
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-        ggtitle(label = (expression(paste(italic("Limenitis camilla"), " - Model A"))), 
-          subtitle = paste(lama_translate_("Limenitis camilla", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15)) 
-
-plot_DetectionOverTime(mixLL_list[[5]], 
-                              min.yr = 1900, 
-                                  legend_labels = c("BNM_LL1/Year_Effect", 
-                                                    "UKBMS", 
-                                                    "NHCs", 
-                                                    "BNM_LL5"), 
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-  ggtitle(label = (expression(paste(italic("Limenitis camilla"), " - Model B"))), 
-          subtitle = paste(lama_translate_("Limenitis camilla", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15))
-
-plot_DetectionOverTime(mixLL2_list[[5]],
-                              min.yr = 1900, 
-                                  legend_labels = c("BNM_LL1/Year_Effect", 
-                                                    "UKBMS", 
-                                                    "NHCs", 
-                                                    "BNM_LL5"),
-                              mixLL2 = TRUE,                  ### Important: specify its mixLL2
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-  ggtitle(label = (expression(paste(italic("Limenitis camilla"), " - Model C"))), 
-          subtitle = paste(lama_translate_("Limenitis camilla", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15)) 
-```
-
-#### *Lycaena phlaeas*
-```{r plot-detprob-outputs6, message=FALSE, warning=FALSE, eval=FALSE}
-plot_DetectionOverTime(catLL_list[[6]],
-                              min.yr = 1900, 
-                                    legend_labels = c("BNM/Year_Effect", 
-                                                    "UKBMS", 
-                                                   "NHCs"),
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-        ggtitle(label = (expression(paste(italic("Lycaena phlaeas"), " - Model A"))), 
-          subtitle = paste(lama_translate_("Lycaena phlaeas", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15)) 
-
-plot_DetectionOverTime(mixLL_list[[6]], 
-                              min.yr = 1900, 
-                                  legend_labels = c("BNM_LL1/Year_Effect", 
-                                                    "UKBMS", 
-                                                    "NHCs", 
-                                                    "BNM_LL5"), 
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-  ggtitle(label = (expression(paste(italic("Lycaena phlaeas"), " - Model B"))),  
-          subtitle = paste(lama_translate_("Lycaena phlaeas", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15))
-
-plot_DetectionOverTime(mixLL2_list[[6]],
-                              min.yr = 1900, 
-                                  legend_labels = c("BNM_LL1/Year_Effect", 
-                                                    "UKBMS", 
-                                                    "NHCs", 
-                                                    "BNM_LL5"), 
-                              mixLL2 = TRUE, 
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-  ggtitle(label = (expression(paste(italic("Lycaena phlaeas"), " - Model C"))),  
-          subtitle = paste(lama_translate_("Lycaena phlaeas", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15)) 
-```
-
-#### *Melitaea athalia*
-```{r plot-detprob-outputs7, message=FALSE, warning=FALSE, eval=FALSE}
-plot_DetectionOverTime(catLL_list[[7]],
-                              min.yr = 1900, 
-                                    legend_labels = c("BNM/Year_Effect", 
-                                                    "UKBMS", 
-                                                   "NHCs"),
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-        ggtitle(label = (expression(paste(italic("Melitaea athalia"), " - Model A"))), 
-          subtitle = paste(lama_translate_("Melitaea athalia", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15)) 
-
-plot_DetectionOverTime(mixLL_list[[7]], 
-                              min.yr = 1900, 
-                                  legend_labels = c("BNM_LL1/Year_Effect", 
-                                                    "UKBMS", 
-                                                    "NHCs", 
-                                                    "BNM_LL5"), 
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-  ggtitle(label = (expression(paste(italic("Melitaea athalia"), " - Model B"))), 
-          subtitle = paste(lama_translate_("Melitaea athalia", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15))
-
-plot_DetectionOverTime(mixLL2_list[[7]],
-                              min.yr = 1900, 
-                                  legend_labels = c("BNM_LL1/Year_Effect", 
-                                                    "UKBMS", 
-                                                    "NHCs", 
-                                                    "BNM_LL5"), 
-                              mixLL2 = TRUE, 
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-  ggtitle(label = (expression(paste(italic("Melitaea athalia"), " - Model C"))),  
-          subtitle = paste(lama_translate_("Melitaea athalia", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15)) 
-```
-
-#### *Pararge aegeria*
-```{r plot-detprob-outputs8, message=FALSE, warning=FALSE, eval=FALSE}
-plot_DetectionOverTime(catLL_list[[8]],
-                              min.yr = 1900, 
-                                    legend_labels = c("BNM/Year_Effect", 
-                                                    "UKBMS", 
-                                                   "NHCs"),
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-        ggtitle(label = (expression(paste(italic("Pararge aegeria"), " - Model A"))), 
-          subtitle = paste(lama_translate_("Pararge aegeria", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15)) 
-
-plot_DetectionOverTime(mixLL_list[[8]], 
-                              min.yr = 1900, 
-                                  legend_labels = c("BNM_LL1/Year_Effect", 
-                                                    "UKBMS", 
-                                                    "NHCs", 
-                                                    "BNM_LL5"), 
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-  ggtitle(label = (expression(paste(italic("Pararge aegeria"), " - Model B"))), 
-          subtitle = paste(lama_translate_("Pararge aegeria", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15))
-
-plot_DetectionOverTime(mixLL2_list[[8]],
-                              min.yr = 1900, 
-                                  legend_labels = c("BNM_LL1/Year_Effect", 
-                                                    "UKBMS", 
-                                                    "NHCs", 
-                                                    "BNM_LL5"), 
-                              mixLL2 = TRUE,
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-  ggtitle(label = (expression(paste(italic("Pararge aegeria"), " - Model C"))), 
-          subtitle = paste(lama_translate_("Pararge aegeria", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15)) 
-```
-
-#### *Pieris rapae*
-```{r plot-detprob-outputs9, message=FALSE, warning=FALSE, eval=FALSE}
-plot_DetectionOverTime(catLL_list[[9]],
-                              min.yr = 1900, 
-                                    legend_labels = c("BNM/Year_Effect", 
-                                                    "UKBMS", 
-                                                   "NHCs"),
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-        ggtitle(label = (expression(paste(italic("Pieris rapae"), " - Model A"))), 
-          subtitle = paste(lama_translate_("Pieris rapae", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15)) 
-
-plot_DetectionOverTime(mixLL_list[[9]], 
-                              min.yr = 1900, 
-                                  legend_labels = c("BNM_LL1/Year_Effect", 
-                                                    "UKBMS", 
-                                                    "NHCs", 
-                                                    "BNM_LL5"), 
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-  ggtitle(label = (expression(paste(italic("Pieris rapae"), " - Model B"))),  
-          subtitle = paste(lama_translate_("Pieris rapae", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15))
-
-plot_DetectionOverTime(mixLL2_list[[9]],
-                              min.yr = 1900, 
-                                  legend_labels = c("BNM_LL1/Year_Effect", 
-                                                    "UKBMS", 
-                                                    "NHCs", 
-                                                    "BNM_LL5"), 
-                              mixLL2 = TRUE,
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-  ggtitle(label = (expression(paste(italic("Pieris rapae"), " - Model C"))), 
-          subtitle = paste(lama_translate_("Pieris rapae", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15)) 
-```
-
-#### *Polygonia c-album*
-```{r plot-detprob-outputs10, message=FALSE, warning=FALSE, eval=FALSE}
-plot_DetectionOverTime(catLL_list[[10]],
-                              min.yr = 1900, 
-                                    legend_labels = c("BNM/Year_Effect", 
-                                                    "UKBMS", 
-                                                   "NHCs"),
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-        ggtitle(label = (expression(paste(italic("Polygonia c-album"), " - Model A"))), 
-          subtitle = paste(lama_translate_("Polygonia c-album", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15)) 
-
-plot_DetectionOverTime(mixLL_list[[10]], 
-                              min.yr = 1900, 
-                                  legend_labels = c("BNM_LL1/Year_Effect", 
-                                                    "UKBMS", 
-                                                    "NHCs", 
-                                                    "BNM_LL5"), 
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-  ggtitle(label = (expression(paste(italic("Polygonia c-album"), " - Model B"))), 
-          subtitle = paste(lama_translate_("Polygonia c-album", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15))
-
-plot_DetectionOverTime(mixLL2_list[[10]],
-                              min.yr = 1900, 
-                                  legend_labels = c("BNM_LL1/Year_Effect", 
-                                                    "UKBMS", 
-                                                    "NHCs", 
-                                                    "BNM_LL5"), 
-                              mixLL2 = TRUE,
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-  ggtitle(label = (expression(paste(italic("Polygonia c-album"), " - Model C"))), 
-          subtitle = paste(lama_translate_("Polygonia c-album", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15)) 
-```
-
-#### *Polyommatus bellargus*
-```{r plot-detprob-outputs11, message=FALSE, warning=FALSE, eval=FALSE}
-plot_DetectionOverTime(catLL_list[[11]],
-                              min.yr = 1900, 
-                                    legend_labels = c("BNM/Year_Effect", 
-                                                    "UKBMS", 
-                                                   "NHCs"),
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-        ggtitle(label = (expression(paste(italic("Polyommatus bellargus"), " - Model A"))), 
-          subtitle = paste(lama_translate_("Polyommatus bellargus", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15)) 
-
-plot_DetectionOverTime(mixLL_list[[11]], 
-                              min.yr = 1900, 
-                                  legend_labels = c("BNM_LL1/Year_Effect", 
-                                                    "UKBMS", 
-                                                    "NHCs", 
-                                                    "BNM_LL5"), 
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-  ggtitle(label = (expression(paste(italic("Polyommatus bellargus"), " - Model B"))),
-          subtitle = paste(lama_translate_("Polyommatus bellargus", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15))
-
-plot_DetectionOverTime(mixLL2_list[[11]],
-                              min.yr = 1900, 
-                                  legend_labels = c("BNM_LL1/Year_Effect", 
-                                                    "UKBMS", 
-                                                    "NHCs", 
-                                                    "BNM_LL5"), 
-                              mixLL2 = TRUE,
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-  ggtitle(label = (expression(paste(italic("Polyommatus bellargus"), " - Model C"))),
-          subtitle = paste(lama_translate_("Polyommatus bellargus", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15)) 
-```
-
-#### *Thecla betulae*
-```{r plot-detprob-outputs12, message=FALSE, warning=FALSE, eval=FALSE}
-plot_DetectionOverTime(catLL_list[[12]],
-                              min.yr = 1900, 
-                                    legend_labels = c("BNM/Year_Effect", 
-                                                    "UKBMS", 
-                                                   "NHCs"),
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-        ggtitle(label = (expression(paste(italic("Thecla betulae"), " - Model A"))), 
-          subtitle = paste(lama_translate_("Thecla betulae", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15)) 
-
-plot_DetectionOverTime(mixLL_list[[12]], 
-                              min.yr = 1900, 
-                                  legend_labels = c("BNM_LL1/Year_Effect", 
-                                                    "UKBMS", 
-                                                    "NHCs", 
-                                                    "BNM_LL5"), 
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-  ggtitle(label = (expression(paste(italic("Thecla betulae"), " - Model B"))), 
-          subtitle = paste(lama_translate_("Thecla betulae", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15))
-
-plot_DetectionOverTime(mixLL2_list[[12]],
-                              min.yr = 1900, 
-                                  legend_labels = c("BNM_LL1/Year_Effect", 
-                                                    "UKBMS", 
-                                                    "NHCs", 
-                                                    "BNM_LL5"), 
-                              mixLL2 = TRUE,
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-  ggtitle(label = (expression(paste(italic("Thecla betulae"), " - Model C"))), 
-          subtitle = paste(lama_translate_("Thecla betulae", dict, "common_names"))) + 
-  theme(plot.title=element_text(face="italic")) +
-  theme(text=element_text(size=15)) 
-```
-
-
-
-
-
-```{r SHINY-plot-det-outputs, message=FALSE, echo=FALSE, fig.show='hold', out.width='50%', eval=FALSE}
-
-require(shiny)
-require(ggplot2)
-require(sparta)
-require(dplyr)
-
-# Plot detection probability estimates as a shiny app (currently two models per species)
-
-selectInput("species_choice", 
-            label = "Select species",
-            choices = spp_names, 
-            selected ="Aglais urticae")
-
-fluidPage(fluidRow(
-#  column(5, 
-#         renderPlot(
-#           plot_DetectionOverTime(catLL_list[[input$species_choice]], 
-#                                  min.yr = 1900) 
-#             theme(legend.position = "none") +
-#             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-#             scale_x_continuous(expand = c(0, 0)) +
-#             ggtitle(label = paste(input$species_choice), 
-#                subtitle = "Model A") + 
-#             theme(plot.title=element_text(face="italic")) +
-#             theme(text=element_text(size=16))
-#         )
-#         ),
-  column(5, 
-         renderPlot(
-           plot_DetectionOverTime(mixLL_list[[input$species_choice]], 
-                                  min.yr = 1900) + 
-             theme(legend.position = "none") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-             ggtitle(label = paste(input$species_choice), 
-                     subtitle = "Model B") + 
-             theme(plot.title=element_text(face="italic")) +
-             theme(text=element_text(size=16))
-         )
-         ),
-  column(7, 
-         renderPlot(
-           plot_DetectionOverTime(mixLL2_list[[input$species_choice]], 
-                                  min.yr = 1900, 
-                                  legend_labels = c("BNM_LL1/Year_Effect", 
-                                                    "UKBMS", 
-                                                    "NHCs", 
-                                                    "BNM_LL5"), 
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
-             ggtitle(label = paste(input$species_choice, 
-                subtitle = "Model C") + 
-             theme(axis.title.y = element_blank(),
-                   axis.text.y = element_blank(),
-                   text=element_text(size=16))
-           )
-         ) 
-  )
-)
-```
 
 
 ### Record numbers
@@ -1840,8 +970,109 @@ hist(modelVarSites_Summ$Bp)
 
 
 
+
+
+
+# Dunn-Smyth residuals
+
+Here, we plot Dunn-Smyth residuals according to the methodology of [Warton *et al.* (2017)](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.12761). We only plot Dunn-Smyth (DS) residuals for one model (*A. urticae* model B) to demonstrate the plotting procedure, especially given that our data is formatted differently to that of Warton *et al.*, and we wish to plot residuals for multi-year occupancy models, whilst the authors used a single season example; hence, we had to make some alterations to the functions provided by the authors (namely residuals.occMod() and DS.resid.plot(); Supplementary Data 6). Dunn-Smyth residuals for all species and models can be found under 'species-wise summary'.    
+   
+    
+    
+Moreover, I just found a [2019 Warton *et al.* paper](https://scholarworks.montana.edu/xmlui/bitstream/handle/1/15486/Wright_Ecology_2019.pdf?sequence=1&isAllowed=y) titled "Identifying occupancy model inadequacies: can residuals separately assess detection and presence?" 
+   
+   
+   
+   
+Examples of papers that have produced DS residuals for multi-year occupancy models:   
+
+* https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0245973#pone-0245973-g004   
+* https://doi.org/10.1016/j.biocon.2019.03.010   
+* https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6509396/   
+
+ 
+# ENDED HERE
+
 # Species-wise summary
 
+```{r plot-occu-detProb-setup, message=FALSE, warning=FALSE, echo=FALSE}
+
+### Before plotting, we format all models such that the species-wise plot code is short and sweet
+
+
+require(ggplot2)
+require(labelmachine)
+require(sparta)
+require(dplyr)
+require(plyr)
+require(boot)
+#require(reshape2)
+
+### Source plotting function
+source("./fig-plot.Occdet_G.R")
+
+# Change ModelNames vetor to species names with spaces
+spp_names <- gsub(ModelNames, patt = "_", repl=" ")
+spp_names <- sub(spp_names, patt = "c.album", repl="c-album")
+
+# Name the lists of outputs their species names
+names(mixLL_list)[1:12] <- spp_names
+names(mixLL2_list)[1:12] <- spp_names
+
+
+# Create a dictionary translating Latin names to common names
+dict <- new_lama_dictionary(common_names = 
+                              c("Aglais urticae" = 'Small Tortoiseshell',
+                                "Carterocephalus palaemon" = 'Chequered Skipper',
+                                "Erebia aethiops" = 'Scotch Argus',
+                                "Erebia epiphron" = 'Mountain Ringlet',
+                                "Limenitis camilla" = 'White Admiral',
+                                "Lycaena phlaeas" = 'Small Copper',
+                                "Melitaea athalia" = 'Heath Fritillary',
+                                "Pararge aegeria" = 'Speckled Wood',
+                                "Pieris rapae" = 'Small White',
+                                "Polygonia c-album" = 'Comma',
+                                "Polyommatus bellargus" = 'Adonis Blue',
+                                "Thecla betulae" = 'Brown Hairstreak'))
+
+source("./fig-plot.Occdet_G.R")
+```
+
+
+```{r plot-detprob-outputs-setup, message=FALSE, warning=FALSE, eval=FALSE, echo=FALSE}
+require(ggplot2)
+require(labelmachine)
+require(sparta)
+require(dplyr)
+require(plyr)
+require(boot)
+
+
+# Change ModelNames vetor to species names with spaces
+spp_names <- gsub(ModelNames, patt = "_", repl=" ")
+spp_names <- sub(spp_names, patt = "c.album", repl="c-album")
+
+# Name the lists of outputs their species names
+names(mixLL_list)[1:12] <- spp_names
+names(mixLL2_list)[1:12] <- spp_names
+
+
+# Create a dictionary translating Latin names to common names
+dict <- new_lama_dictionary(common_names = 
+                              c("Aglais urticae" = 'Small Tortoiseshell',
+                                "Carterocephalus palaemon" = 'Chequered Skipper',
+                                "Erebia aethiops" = 'Scotch Argus',
+                                "Erebia epiphron" = 'Mountain Ringlet',
+                                "Limenitis camilla" = 'White Admiral',
+                                "Lycaena phlaeas" = 'Small Copper',
+                                "Melitaea athalia" = 'Heath Fritillary',
+                                "Pararge aegeria" = 'Speckled Wood',
+                                "Pieris rapae" = 'Small White',
+                                "Polygonia c-album" = 'Comma',
+                                "Polyommatus bellargus" = 'Adonis Blue',
+                                "Thecla betulae" = 'Brown Hairstreak'))
+
+```
 
 ## *Aglais urticae* (Small Tortoiseshell)
 
@@ -3877,3 +3108,138 @@ knitr::kable(summary_out)
 
 
 
+
+
+
+
+
+
+###### Shiny plots - not used but to annotate
+```{r SHINY-plot-occu-outputs, message=FALSE, warning=FALSE, echo=FALSE, eval=FALSE}
+require(shiny)
+require(ggplot2)
+require(labelmachine)
+require(sparta)
+require(dplyr)
+
+### Source plotting function
+source("./fig-plot.Occdet_G.R")
+
+# Change ModelNames vetor to species names with spaces
+spp_names <- gsub(ModelNames, patt = "_", repl=" ")
+spp_names <- sub(spp_names, patt = "c.album", repl="c-album")
+
+# Name the lists of outputs their species names
+names(mixLL_list)[1:12] <- spp_names
+names(mixLL2_list)[1:12] <- spp_names
+
+
+# Create a dictionary translating Latin names to common names
+dict <- new_lama_dictionary(common_names = 
+                              c("Aglais urticae" = 'Small Tortoiseshell',
+                                "Carterocephalus palaemon" = 'Chequered Skipper',
+                                "Erebia aethiops" = 'Scotch Argus',
+                                "Erebia epiphron" = 'Mountain Ringlet',
+                                "Limenitis camilla" = 'White Admiral',
+                                "Lycaena phlaeas" = 'Small Copper',
+                                "Melitaea athalia" = 'Heath Fritillary',
+                                "Pararge aegeria" = 'Speckled Wood',
+                                "Pieris rapae" = 'Small White',
+                                "Polygonia c-album" = 'Comma',
+                                "Polyommatus bellargus" = 'Adonis Blue',
+                                "Thecla betulae" = 'Brown Hairstreak'))
+
+
+# Plot occupancy estimates as a shiny app (currently two models per species)
+
+shinyApp(
+  ui = fluidPage(
+    # Select input
+    selectInput("species_choice", # call the variable storing values (spp names) "species_choice"
+                label = "Select species", # header text of dropdown list
+                choices = spp_names, # vector of all values in dropdown list—in (species)
+                selected ="Aglais urticae"), # dropdown defaults to Aglais urticae
+    plotOutput("occuPlot")
+  ),
+  server = function(input, output) {
+    output$occuPlot <- renderPlot({
+      
+      vec <- paste(input$species_choice)  
+      vec_labeled <- lama_translate_(vec, dict, "common_names")  
+      
+      plot.occDet_G(mixLL_list[[input$species_choice]], mixLL2_list[[input$species_choice]]) +
+        ggtitle(label = paste(input$species_choice), 
+                subtitle = paste(vec_labeled)) + 
+        theme(plot.title=element_text(face="italic")) +
+        theme(text=element_text(size=18))
+    })
+  },
+  options = list(height = 500)
+)
+```
+
+
+ 
+```{r SHINY-plot-det-outputs, message=FALSE, echo=FALSE, fig.show='hold', out.width='50%', eval=FALSE}
+
+require(shiny)
+require(ggplot2)
+require(sparta)
+require(dplyr)
+
+ 
+# Plot detection probability estimates as a shiny app (currently two models per species)
+ 
+selectInput("species_choice", 
+            label = "Select species",
+            choices = spp_names, 
+            selected ="Aglais urticae")
+fluidPage(fluidRow(
+#  column(5, 
+#         renderPlot(
+#           plot_DetectionOverTime(catLL_list[[input$species_choice]], 
+#                                  min.yr = 1900) 
+#             theme(legend.position = "none") +
+#             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+#             scale_x_continuous(expand = c(0, 0)) +
+#             ggtitle(label = paste(input$species_choice), 
+#                subtitle = "Model A") + 
+#             theme(plot.title=element_text(face="italic")) +
+#             theme(text=element_text(size=16))
+#         )
+#         ),
+  column(5, 
+         renderPlot(
+           plot_DetectionOverTime(mixLL_list[[input$species_choice]], 
+                                  min.yr = 1900) + 
+             theme(legend.position = "none") +
+             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+             scale_x_continuous(expand = c(0, 0)) +
+             ggtitle(label = paste(input$species_choice), 
+                     subtitle = "Model B") + 
+             theme(plot.title=element_text(face="italic")) +
+             theme(text=element_text(size=16))
+         )
+         ),
+  column(7, 
+         renderPlot(
+           plot_DetectionOverTime(mixLL2_list[[input$species_choice]], 
+                                  min.yr = 1900, 
+                                  legend_labels = c("BNM_LL1/Year_Effect", 
+                                                    "UKBMS", 
+                                                    "NHCs", 
+                                                    "BNM_LL5"), 
+                                  legend_title = "Data Type") +
+             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+             scale_x_continuous(expand = c(0, 0)) +
+             ggtitle(label = paste(input$species_choice, 
+                subtitle = "Model C") + 
+             theme(axis.title.y = element_blank(),
+                   axis.text.y = element_blank(),
+                   text=element_text(size=16))
+           )
+         ) 
+  )
+)
+ 
+```
