@@ -968,19 +968,35 @@ hist(modelVarSites_Summ$Bp)
 ```
 
 
+# Root-Mean-Square Error (RMSE)
+$$RMSE = \sqrt{\sum_{i=1}^{N} \frac{(Predicted_{i}-Actual_{i})^2}{N}}$$
 
 
+```{r RMSE, echo=FALSE}
+# Importing the required package
+library(Metrics)
+  
+# Taking two vectors
+#actual = c(1.5, 1.0, 2.0, 7.4, 5.8, 6.6)         
+#predicted = c(1.0, 1.1, 2.5, 7.3, 6.0, 6.2)      
+  
+# Calculating RMSE using rmse()         
+#result = rmse(actual, predicted)
+  
+# Printing the value
+#print(result)
+```
 
 
 
 # Dunn-Smyth residuals
 
-Here, we plot Dunn-Smyth residuals according to the methodology of [Warton *et al.* (2017)](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.12761). We only plot Dunn-Smyth (DS) residuals for one model (*A. urticae* model B) to demonstrate the plotting procedure, especially given that our data is formatted differently to that of Warton *et al.*, and we wish to plot residuals for multi-year occupancy models, whilst the authors used a single season example; hence, we had to make some alterations to the functions provided by the authors (namely residuals.occMod() and DS.resid.plot(); Supplementary Data 6). Dunn-Smyth residuals for all species and models can be found under 'species-wise summary'.    
-   
-    
-    
-Moreover, I just found a [2019 Warton *et al.* paper](https://scholarworks.montana.edu/xmlui/bitstream/handle/1/15486/Wright_Ecology_2019.pdf?sequence=1&isAllowed=y) titled "Identifying occupancy model inadequacies: can residuals separately assess detection and presence?" 
-   
+**Nick** - in contract to Wright et al, Warton uses 'absolute estimates' per visit rather than draws from the posterior distribution. Should I take the mean of (how many?) draws from the posterior distribution? 
+
+
+
+Here, we plot Dunn-Smyth residuals according to the methodology of [Warton *et al.* (2017)](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.12761). We only plot Dunn-Smyth (DS) residuals for one model (*A. urticae* model B) to demonstrate the plotting procedure, especially given that our data is formatted differently to that of Warton *et al.*, and we wish to plot residuals for multi-year occupancy models, whilst the authors used a single season example; hence, we had to make some alterations to the functions provided by the authors (namely residuals.occMod() and DS.resid.plot(); Supplementary Data 6 of Warton *et al.*, 2017). Dunn-Smyth residuals for all species and models can be found under 'species-wise summary'.    
+ 
    
    
    
@@ -990,8 +1006,325 @@ Examples of papers that have produced DS residuals for multi-year occupancy mode
 * https://doi.org/10.1016/j.biocon.2019.03.010   
 * https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6509396/   
 
- 
-# ENDED HERE
+
+## Equations for residuals 
+    
+    
+The occupancy residuals, $F_{occ}$, for site $i$ is expressed as:   
+
+
+$$
+F_{occ}(j_{i}) = \begin{cases} 1-\psi_{i} + \psi_{i} \prod_{v=1}^{V}- (1-p_{iv}) \ \ \ \ \ \ \ \ \ \ {\sf if} \ j_{i} = 0 \\1\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ {\sf if} \ j_{i} = 1\end{cases}
+
+$$
+      
+
+
+Where $z_{i}^{[n]}$ is drawn from the posterior distribution of the occupancy state at site $i$.   
+    
+    
+DS detection residuals, $F_{det}$, uses the total number of detdections at a site, $Y_{i}$, 
+
+
+> If the detection probability is not constant across surveys[, $F_{det}(Y_{i})$] is computed as a summation across all possible histories with $Y_{i}$ or fewer detections. The cumulative distribution function of $Y_{i}$ can be written as:
+
+also use the posterior distribution of the occupancy state. For posterior iteration $n$, the detection residuals for site $i$ and visit $v$ is expressed as: 
+$$F_{det}(Y_{i}|Y_{i}>1) =\left( \frac{1}{1-(1 - \prod_{v=1}^{V}(1-p_{in})} \right)\sum_{x|1≤n_{x}≤n_{x}}^{}) \prod_{v=1}^{V}-p_{iv}^{xv}(1-p_{iv})^{1- _{xv}}$$
+
+
+```{r squirrelExample, eval=FALSE}
+#source("S6residFunctions.r")
+require("mgcv")
+
+load("~/Documents/LepidopteraTrends/Resources/Warton2017/mee312761-sup-0002-datas2.rdata")
+
+y <- as.matrix(umf@y) # Extract the observed detections and convert to binary outcomes.
+s<-nrow(y)          # No. of sites (s).
+K<-ncol(y)          # No. of surveys/sampling occasions (K).
+
+
+ ## Label the covariates first and construct data in the RPresence format:
+
+elev<-umf@siteCovs$elev
+forest<-umf@siteCovs$forest
+dur<-matrix(umf@obsCovs$dur,ncol=K,byrow=T)
+date<-matrix(umf@obsCovs$date,ncol=K,byrow=T)
+
+unitcov<-data.frame(int=rep(1,s),elev=elev,forest=forest)
+survcov<-data.frame(int=rep(1,s*K),dur=c(dur),date=c(date))
+mydata<-create.pao(data=y,unitcov=unitcov,survcov=survcov)
+
+
+m1<-occ.mod(model=list(psi~elev+I(elev^2)+forest+I(forest^2)+elev:forest+elev:I(forest^2)+I(elev^2):forest,p~date+dur+I(dur^2)),data=mydata,type="so")
+```
+
+
+
+
+# Wright residuals
+    
+    
+    
+Here, we plot residuals according to the methodology of [Wright *et al.*, (2019)](https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/ecy.2703). We only plot Dunn-Smyth (DS) residuals for one model (*A. urticae* model B) to demonstrate the plotting procedure, especially given that our data is formatted differently to that of Wright *et al.*, and we wish to plot residuals for multi-year occupancy models, whilst the authors used a single season example. Wright residuals for all species and models can be found under 'species-wise summary'.    
+   
+
+    
+
+## Equations for residuals
+   
+The occupancy residuals for site $i$ and iteration $n$ is expressed as: 
+$$o_{i}^{[n]} = z_{i}^{[n]} - \psi_{i}^{[n]}$$
+Where $z_{i}^{[n]}$ is drawn from the posterior distribution of the occupancy state at site $i$.   
+    
+    
+The detection residuals also use the posterior distribution of the occupancy state. For posterior iteration $n$, the detection residuals for site $i$ and visit $v$ is expressed as: 
+$$[y_{iv}^{[n]}|z_{i}^{[n]} = 1] = y_{iv} - p_{iv}^{[n]}$$
+*These detection residuals are only defined for “occupied” sites based on the latent state $z_{i}^{[n]}$ for a given posterior draw $n$. By conditioning on a posterior draw of the occupancy state ($z_{i}^{[n]}$), sites without any detections ($y_{i}$ containing all zeros) still contribute detection residuals for some posterior draws because these sites might actually be occupied ($z_{i}^{[n]} = 1$ for some iterations. Additionally, the total number of detection residuals will vary across posterior draws because of the uncertainty in true occupancy at sites with no detections.* from [Wilson et al., 2019]()
+   
+   
+   
+**Note** that the above equations are for single-season occupancy models.
+   
+    
+#### Defining residuals for occupancy models requires:   
+* Estimates of probability of occurrence $\psi_{i}^{[n]}$ per site ($i$). Furthermore, as we used a multi-season occupancy model, we further need to separate estimates of probability of occurrence per survey **and** year.   
+* Estimates of detection probability $p_{iv}^{[n]}$ per survey ($v$) and site ($i$). Again, as we used a multi-season occupancy model, we further need to separate detection probability estimates per survey **and** year.  
+* Estimates of true occupancy $z_{i}^{[n]}$ per site ($i$). Furthermore, as we used a multi-season occupancy model, we further need to separate estimates of probability of occurrence per survey **and** year.   
+    
+    
+## Our model formulation
+   
+### State submodel
+    
+The true occupancy, $z_{it}$, at site $i$ in year $t$ has a Bernoulli distribution governed by the probability of occurrence $\psi_{it}$: 
+$$z_{it} \sim {\sf Bernoulli}(\psi_{it})$$
+where the logit of the probability of occurrence $\psi_{it}$ varies between sites and years:
+$${\sf logit}(\psi_{it}) = b_{t} + u_{i}$$
+where $b_{t}$ and $u_{i}$ denote the year and site effects, respectively
+    
+    
+    
+The JAGS code for the state submodel is as follows:  
+```{r seeStateJAGScode, eval=FALSE, echo=TRUE}
+for (i in 1:nsite){ 
+  for (t in 1:nyear){   
+    z[i,t] ~ dbern(muZ[i,t]) 
+    logit(muZ[i,t])<- a[t] + eta[i] 
+  }}
+```
+Hence, we want to extract the parameter 'muZ', denoting the probability of occurrence, $\psi_{it}$, and 'z', denoting the true occupancy $\psi_{it}. 
+   
+   
+   
+### Detection submodel
+   
+The true occupancy state $z_{iv}$, at site $i$ at visit $v$ is conditional on whether there has been an observation of the species ($y_{iv}$; i.e. the binary data) and is described as being drawn from a Bernoulli distribution governed by the detection probability, $p_{itv}$, and is conditional on the occupancy state ($z_{iv}$; i.e. the species being present at visits $v$ to site $i$)
+$$y_{iv}|z_{iv} = {\sf Bernoulli}(p_{itv} * z_{iv})$$
+   
+   
+Here, we use three formulations of the detection submodel. However, what we are interested in for all three is the detection probability, $p_{itv}$, at site $i$ in year $t$ at visit $v$. Below 
+    
+    
+    
+    
+##### Model A
+   
+where the logit of the detection probability, $p_{itv}$ varies between sites ($i$), years ($t$) and visits ($v$):
+$${\sf logit}(p_{itv}) = a_{t} + \beta_{1} * {\sf BMSdata}_{itv} +  \beta_{2} * {\sf NHCdata}_{itv} $$
+where $a_{t}$ is the year effect (and detection probability of BNM data), and $\beta_{1}$ and $\beta_{2}$ are the effects of BMS and NHC visits ($v$) to site ($i$) in year ($t$).    
+    
+    
+    
+The JAGS code for the observation submodel is as follows: 
+```{r seeObservationJAGScode, eval=FALSE, echo=TRUE}
+for(j in 1:nvisit) {
+  y[j] ~ dbern(Py[j])
+  Py[j]<- z[Site[j],Year[j]]*p[j]
+  logit(p[j]) <-  alpha.p[Year[j]] + LL.p*logL[j] + dtype2.p*DATATYPE2[j] + dtype3.p*DATATYPE3[j]
+} }
+```
+Hence, we want to extract the parameters 'p' and 'Py', denoting the detection probability, $p_{itv}$ and the true occupancy state $z_{iv}$ for visit $v$ to site $i$ (here denoted 'j').   
+    
+    
+    
+## Example *Aglais urticae*-Model B
+    
+We need to extract the following parameters from our models:    
+* Probability of occurrence $\psi_{i}^{[n]}$ = 'muZ'   
+* Detection probability $p_{iv}^{[n]}$ = 'p'   
+* True occupancy $z_{i}^{[n]}$ = 'z'   
+    
+    
+    
+Here, we show how we plot Wright residuals using *Aglais urticae*-Model B outputs as an example. We will use 99 iterations and start by ignoring year (i.e. plot residuals from all years on one plot)
+```{r exampleWrightResiduals, echo=TRUE, eval=FALSE}
+# Load required packages
+require("rjags")
+require("coda")
+require("reshape2")
+require("dplyr")
+require("sparta")
+require("lattice")
+require("LearnBayes")
+require("R2jags")
+
+# Read the model output
+results_Aglais_urticae_mixLL <- readRDS("../outputs/mixLL-outputs/results_Aglais_urticae_crick_mixLL.rds")
+
+# recompile the model
+results_Aglais_urticae_mixLL$model$recompile()
+
+# Sample 100 iterations of each of the 3 chains and thin by 3, giving 99 samples of "muZ", "z", "Py" and "p"
+samp <- rjags:::coda.samples(model=results_Aglais_urticae_mixLL$model, 
+                             parallel=TRUE, n.cores=3,
+                             variable.names=c("muZ", "z", "p", "Py"), 
+                             n.iter=100, # Define number of iterations to run
+                             thin=3)
+# This produced a mcmc.list of length three: one list per chain with column names in the format muZ[i,t], z[i,t], Py[j] and p[j] (where j denotes visit; v) with a total length of XXXXXXXXXXXX columns of samples estimates and 33 rows, easch, totalling 99 samples 
+
+
+
+### Separate colums station with "muZ", "z" and "p" (will also turn the mcmc.list to a 'regular' list)
+### As 'regular' lists, we can use the rehape2-function melt()
+muZ <- lapply(samp, function(x) x[, grepl("muZ", dimnames(x)[[2]])])
+muZ <- melt(muZ)
+z <- lapply(samp, function(x) x[, grepl("z", dimnames(x)[[2]])])
+z <- melt(z)
+p <- lapply(samp, function(x) x[, grepl("p", dimnames(x)[[2]])])
+p <- melt(p)
+Py <- lapply(samp, function(x) x[, grepl("Py", dimnames(x)[[2]])])
+Py <- melt(Py)
+
+
+
+#### Tidy data
+
+# Tidy VisitID column
+muZ$VisitID <- as.character(gsub(muZ$Var2, pa="muZ\\[", repl=""))
+muZ$VisitID <- as.numeric(gsub(muZ$VisitID, pa="\\]", repl=""))
+z$VisitID <- as.character(gsub(z$Var2, pa="z\\[", repl=""))
+z$VisitID <- as.numeric(gsub(p$VisitID, pa="\\]", repl=""))
+p$VisitID <- as.character(gsub(z$Var2, pa="p\\[", repl=""))
+p$VisitID <- as.numeric(gsub(p$VisitID, pa="\\]", repl=""))
+Py$VisitID <- as.character(gsub(z$Var2, pa="Py\\[", repl=""))
+Py$VisitID <- as.numeric(gsub(p$VisitID, pa="\\]", repl=""))
+
+# Tidy iteration
+muZ$iter <- with(muZ, Var1 + max(Var1)*(L1 - 1))
+z$iter <- with(z, Var1 + max(Var1)*(L1 - 1))
+p$iter <- with(p, Var1 + max(Var1)*(L1 - 1))
+Py$iter <- with(Py, Var1 + max(Var1)*(L1 - 1))
+
+
+
+### Include year, siteID and the actual observation (y)        
+
+# load the raw data
+temp_data <- results_Aglais_urticae_mixLL$model$data()
+# subset year, siteID ??????  and the actual observation (y)
+temp_data <- as.data.frame(with(temp_data, cbind(Site, Year, y)))  
+temp_data$VisitID <- 1:nrow(temp_data)
+
+
+# Fanally, merge with muZ, z and p dataframes
+muZ <- merge(muZ[,-c(1,2,4)], temp_data)
+z <- merge(zp[,-c(1,2,4)], temp_data)
+p <- merge(p[,-c(1,2,4)], temp_data)
+Py <- merge(Py[,-c(1,2,4)], temp_data)
+```
+muZ[i,t] and z[i,t] will be loner than p[j] (all combinations of sites (?????) and year (106) vs. the total numer of visits (for the species or only focal species??????))   
+   
+   
+   
+   
+## Wright occupancy residuals  
+    
+    
+    
+The occupancy residuals for site $i$ and iteration $n$ is expressed as: 
+$$o_{i}^{[n]} = z_{i}^{[n]} - \psi_{i}^{[n]}$$
+Where $z_{i}^{[n]}$ is drawn from the posterior distribution of the occupancy state at site $i$. 
+   
+   
+Making calculating the residuals as easy as:   
+```{r exampleWrightOccupancyResCalc, echo=TRUE, eval=FALSE}
+occuRes <- z
+
+occuRes <- (z$z - muZ)
+occuRes<- c(occuRes, (z$z - muZ))
+
+``` 
+   
+   
+   
+## Wright detection residuals
+    
+    
+The detection residuals also use the posterior distribution of the occupancy state. For posterior iteration $n$, the detection residuals for site $i$ and visit $v$ is expressed as: 
+$$[y_{iv}^{[n]}|z_{i}^{[n]} = 1] = y_{iv} - p_{iv}^{[n]}$$
+   
+
+   
+Calculating the residuals: 
+```{r exampleWrightDetectionResCalc, echo=TRUE, eval=FALSE}
+for(j in 1:???){
+  if(i in 1:??? = 1){
+    detResidW + (z$z - p(z))
+    detResidW <- c(detResidW, (z$z[i,] - p(z[,i])))
+  }
+}
+``` 
+     
+    
+   
+## Plot
+  
+```{r exampleWrightPlot, echo=TRUE, eval=FALSE}
+par(mfrow = c(2, 2))
+
+# Produce detection residual vs. fitted plot
+plot(Py$??????, occResidW$res, 
+     xlab="Occupancy $\psi_$", 
+     ylab="Residuals")
+abline(0,0) #add a horizontal line at 0 
+
+# Produce occupancy residual vs. fitted plot
+plot(Py$??????, detResidW$res, 
+     xlab="Detection Probability $p$", 
+     ylab="Residuals")
+abline(0,0) #add a horizontal line at 0 
+
+
+# Q-Q plot for occupancy residuals
+qqnorm(occuResidW$res, 
+       main="Occupancy", 
+       xlab="Theoretical Quantiles", 
+       ylab="Standardised Residuals")
+qqline(occuResidW$res) #add a straight dia)gonal lie to the plot
+
+# Q-Q plot for detection residuals
+qqnorm(detResidW$res, 
+       main="Occupancy", 
+       xlab="Theoretical Quantiles", 
+       ylab="Standardised Residuals")
+qqline(detResidW$res) #add a straight diagonal line to the plot
+```
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+
+
+
+
 
 # Species-wise summary
 
