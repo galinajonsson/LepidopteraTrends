@@ -1009,8 +1009,27 @@ Examples of papers that have produced DS residuals for multi-year occupancy mode
 
 ## Equations for residuals 
     
+
+**DS detection residual cumulative distribution function**, $F_{det}$, use the total number of detections at a site ($i$), denoted $Y_{i}$, conditional on there having been detections ($F_{det}(Y_{i}|Y_{i}>1)$). 
+
+
+> If the detection probability is not constant across surveys[, $F_{det}(Y_{i})$] is computed as a summation across all possible [detection] histories* with $Y_{i}$ or fewer detections. The cumulative distribution function of $Y_{i}$ can be written as:   
+
+*Recall: all possible detection histories to site $i$, which has been vistited ($v$) three times within year $t$ would be $2^3 = 8$ (2 for the two options present (1) or absent (0), and 3 for the number of visits, $v$): 010, 000, 001, 011, 111, 110, 100, 101   
+
+$$F_{det}(Y_{i}|Y_{i}>1) =\left( \frac{1}{1-(1 - \prod_{v=1}^{V}(1-p_{iv})} \right)\sum_{x|1≤Y_{x}≤Y_{i}}^{}  \prod_{v=1}^{V}-p_{iv}^{xv}(1-p_{iv})^{1- _{xv}}$$
+where $Y_x=\sum_{v=1}^{V} x_v$ is the total number of detections (i.e, 1s) in detection history $x$. In other words, the equation loops through all possible detection histories, $x$, (i.e. $2^V$) to site $i$, given that there has been detections ($F_{det}(Y_{i}|Y_{i}>1)$). This can become computationaly expensive when the total number or visits, $V$, and the total number of detections at a site, $Y_{i}$, aren't small since the possible number of detection histories, $x$, with $Y_{i}$ or fewer detection becomes big (e.g., 4 visits to site $i$ of which 2 were detections gives cumuulative probability 0.6875 & 16($2^4$) * 0.6875 == **11** possible detection histories, $x$, whilst 15 visits to site $i$ of which 7 were detections gives cumulative probability 0.69638061523 & **22819** possible detection histories).     
+   
+   
+   
+**In other words, what I need is:**    
+* The total number of detections at a site ($i$), $Y_{i}$ so the parameter y[j]. Then I'll need to sum the number of visits (j) to the same site within the same year      
+* The detection probability $p_{iv}$ at visit $v$ to site ($i$) so the parameter p[j]. Then I'll need to sum the number of visits (j) to the same site within the same year      
+
+
+
     
-The occupancy residuals, $F_{occ}$, for site $i$ is expressed as:   
+**The occupancy residual cumulative distribution function**, $F_{occ}$, uses a key piece of information: whether or not at least one detection has occured at site $i$ ($j_{i} = 1$)  or not ($j_{i} = 0$). If $j_{i} = 0$, the cumulative distribution function for a site is not soley a function of occupancy probability ($\psi_{i}$), but also detection probability ($p_{iv}$), and is expressed as following for site $i$:   
 
 
 $$
@@ -1018,45 +1037,19 @@ F_{occ}(j_{i}) = \begin{cases} 1-\psi_{i} + \psi_{i} \prod_{v=1}^{V}- (1-p_{iv})
 
 $$
       
+      
+      
+**Finally**, both DS detection residual cumulative distributions and occupancy residual cumulative distributions are transformed using the below equation, which introduces a bit of random noise to generate residuals from discrete binomial variables (occupancy) with a bit of "jitter" to remove their discreteness. Additionally, Dunn-Smyth proposed mapping these onto the standard normal distribution so that hey can be interpreted like residuals from a regular linear regression.   
 
-
-Where $z_{i}^{[n]}$ is drawn from the posterior distribution of the occupancy state at site $i$.   
     
-    
-DS detection residuals, $F_{det}$, uses the total number of detdections at a site, $Y_{i}$, 
+$$
+\Phi(z) = (1- u)F(x) + uF\_(x)
+$$
+where $\Phi(\cdot)$ is the cumulative distribution function of a standard normal variable, and $F(\cdot)$ is the cumulative distribution function found from the two above equations ($F_{det}(Y_{i}|Y_{i}>1)$ and $F_{occ}(j_{i})$). $F\_(\cdot)$ is the previous value of $F(\cdot)$ **????? FROM THE PREVIOUS SITE??** and $u$ is a randomly generated value from the standard uniform distribution (**????? EQUALLY LIKELY TO TAKE ANY VALUE BETWEEN 0 AND 1????**)
 
 
-> If the detection probability is not constant across surveys[, $F_{det}(Y_{i})$] is computed as a summation across all possible histories with $Y_{i}$ or fewer detections. The cumulative distribution function of $Y_{i}$ can be written as:
-
-also use the posterior distribution of the occupancy state. For posterior iteration $n$, the detection residuals for site $i$ and visit $v$ is expressed as: 
-$$F_{det}(Y_{i}|Y_{i}>1) =\left( \frac{1}{1-(1 - \prod_{v=1}^{V}(1-p_{in})} \right)\sum_{x|1≤n_{x}≤n_{x}}^{}) \prod_{v=1}^{V}-p_{iv}^{xv}(1-p_{iv})^{1- _{xv}}$$
 
 
-```{r squirrelExample, eval=FALSE}
-#source("S6residFunctions.r")
-require("mgcv")
-
-load("~/Documents/LepidopteraTrends/Resources/Warton2017/mee312761-sup-0002-datas2.rdata")
-
-y <- as.matrix(umf@y) # Extract the observed detections and convert to binary outcomes.
-s<-nrow(y)          # No. of sites (s).
-K<-ncol(y)          # No. of surveys/sampling occasions (K).
-
-
- ## Label the covariates first and construct data in the RPresence format:
-
-elev<-umf@siteCovs$elev
-forest<-umf@siteCovs$forest
-dur<-matrix(umf@obsCovs$dur,ncol=K,byrow=T)
-date<-matrix(umf@obsCovs$date,ncol=K,byrow=T)
-
-unitcov<-data.frame(int=rep(1,s),elev=elev,forest=forest)
-survcov<-data.frame(int=rep(1,s*K),dur=c(dur),date=c(date))
-mydata<-create.pao(data=y,unitcov=unitcov,survcov=survcov)
-
-
-m1<-occ.mod(model=list(psi~elev+I(elev^2)+forest+I(forest^2)+elev:forest+elev:I(forest^2)+I(elev^2):forest,p~date+dur+I(dur^2)),data=mydata,type="so")
-```
 
 
 
@@ -1065,7 +1058,7 @@ m1<-occ.mod(model=list(psi~elev+I(elev^2)+forest+I(forest^2)+elev:forest+elev:I(
     
     
     
-Here, we plot residuals according to the methodology of [Wright *et al.*, (2019)](https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/ecy.2703). We only plot Dunn-Smyth (DS) residuals for one model (*A. urticae* model B) to demonstrate the plotting procedure, especially given that our data is formatted differently to that of Wright *et al.*, and we wish to plot residuals for multi-year occupancy models, whilst the authors used a single season example. Wright residuals for all species and models can be found under 'species-wise summary'.    
+Here, we plot residuals according to the methodology of [Wright *et al.*, (2019)](https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/ecy.2703). We only plot Wright (W) residuals for one model output (*A. urticae* model B) to demonstrate the procedure, especially given that we wish to plot residuals for multi-year occupancy models, whilst the authors used single season examples. Wright residuals for all species and models can be found under 'species-wise summary'.    
    
 
     
@@ -1079,7 +1072,9 @@ Where $z_{i}^{[n]}$ is drawn from the posterior distribution of the occupancy st
     
 The detection residuals also use the posterior distribution of the occupancy state. For posterior iteration $n$, the detection residuals for site $i$ and visit $v$ is expressed as: 
 $$[y_{iv}^{[n]}|z_{i}^{[n]} = 1] = y_{iv} - p_{iv}^{[n]}$$
-*These detection residuals are only defined for “occupied” sites based on the latent state $z_{i}^{[n]}$ for a given posterior draw $n$. By conditioning on a posterior draw of the occupancy state ($z_{i}^{[n]}$), sites without any detections ($y_{i}$ containing all zeros) still contribute detection residuals for some posterior draws because these sites might actually be occupied ($z_{i}^{[n]} = 1$ for some iterations. Additionally, the total number of detection residuals will vary across posterior draws because of the uncertainty in true occupancy at sites with no detections.* from [Wilson et al., 2019]()
+> These detection residuals are only defined for “occupied” sites based on the latent state $z_{i}^{[n]}$ for a given posterior draw $n$. By conditioning on a posterior draw of the occupancy state ($z_{i}^{[n]}$), sites without any detection ($y_{i}$ containing all zeros) still contribute detection residuals for some posterior draws because these sites might actually be occupied ($z_{i}^{[n]} = 1$ for some iterations. Additionally, the total number of detection residuals will vary across posterior draws because of the uncertainty in true occupancy at sites with no detections. 
+
+from [Wright *et al.*, (2019)](https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/ecy.2703)
    
    
    
@@ -1167,6 +1162,7 @@ require("sparta")
 require("lattice")
 require("LearnBayes")
 require("R2jags")
+require("data.table")
 
 # Read the model output
 results_Aglais_urticae_mixLL <- readRDS("../outputs/mixLL-outputs/results_Aglais_urticae_crick_mixLL.rds")
@@ -1174,26 +1170,51 @@ results_Aglais_urticae_mixLL <- readRDS("../outputs/mixLL-outputs/results_Aglais
 # recompile the model
 results_Aglais_urticae_mixLL$model$recompile()
 
-# Sample 100 iterations of each of the 3 chains and thin by 3, giving 99 samples of "muZ", "z", "Py" and "p"
+# Sample 100 iterations of each of the 3 chains and thin by 3, giving 99 samples of "muZ", "z", "Py" and "y"
 samp <- rjags:::coda.samples(model=results_Aglais_urticae_mixLL$model, 
                              parallel=TRUE, n.cores=3,
-                             variable.names=c("muZ", "z", "p", "Py"), 
+                             variable.names=c("muZ", "z", "p", "y"), 
                              n.iter=100, # Define number of iterations to run
                              thin=3)
-# This produced a mcmc.list of length three: one list per chain with column names in the format muZ[i,t], z[i,t], Py[j] and p[j] (where j denotes visit; v) with a total length of XXXXXXXXXXXX columns of samples estimates and 33 rows, easch, totalling 99 samples 
+# This produced a mcmc.list of length three: one list per chain with column names in the format muZ[i,t], z[i,t], y[j] and p[j] (where j denotes visit; v) with a total length of 1366187 and XXXXXXXXXXXX columns for y[j] and p[j], and uZ[i,t], z[i,t], respectively, of samples estimates and 33 rows, each, totalling 99 samples 
 
 
 
-### Separate colums station with "muZ", "z" and "p" (will also turn the mcmc.list to a 'regular' list)
-### As 'regular' lists, we can use the rehape2-function melt()
-muZ <- lapply(samp, function(x) x[, grepl("muZ", dimnames(x)[[2]])])
-muZ <- melt(muZ)
-z <- lapply(samp, function(x) x[, grepl("z", dimnames(x)[[2]])])
-z <- melt(z)
+### Separate columns station with "muZ", "z", "Py" and "p" (will also turn the mcmc.list to a 'regular' list)
+### As 'regular' lists, we can use the data.table-function melt()
+
+# recall the format Py[j] and p[j] vs muZ[i,t] and z[i,t] (where j denotes visit)
+# This makes Py and p straight forward: 
 p <- lapply(samp, function(x) x[, grepl("p", dimnames(x)[[2]])])
+p <- rbindlist(lapply(p, as.data.frame))
 p <- melt(p)
-Py <- lapply(samp, function(x) x[, grepl("Py", dimnames(x)[[2]])])
-Py <- melt(Py)
+## Error in vector(type, length) : 
+## vector: cannot make a vector of mode 'NULL'.
+y <- lapply(samp, function(x) x[, grepl("y", dimnames(x)[[2]])])
+y <- melt(y)
+
+# However, we need to separate the years in muZ[i,t] and z[i,t] (where i denotes site, and t year)
+muZ <- lapply(samp, function(x) x[, grepl("muZ", dimnames(x)[[2]])])
+#muZ <- rbindlist(lapply(muZ, as.data.frame))
+
+# Separate the first year
+muZ_yr1 <- lapply(samp, function(x) x[, grepl(",1]", dimnames(x)[[2]])])
+muZ_yr1 <- rbindlist(lapply(muZ_yr1, as.data.frame))
+muZ_yr1 <- melt(muZ_yr1)
+
+z <- lapply(samp, function(x) x[, grepl("z", dimnames(x)[[2]])])
+# Separate the first year
+z_yr1 <- lapply(samp, function(x) x[, grepl(",1]", dimnames(x)[[2]])])
+z_yr1 <- melt(z_yr1)
+
+
+
+
+# Use the 99 sets of probabilities & sample a vector of simulated observations under the model, by treating each visit as a potential Bernoulli trial. Here, we use rbinom as Bernoulli trial 
+Y_rep <- lapply(Py, function(x) apply(x, 1:2, rbinom, n=1, size=1))
+
+Y_rep2 <- melt(Y_rep)
+
 
 
 
@@ -1204,7 +1225,7 @@ muZ$VisitID <- as.character(gsub(muZ$Var2, pa="muZ\\[", repl=""))
 muZ$VisitID <- as.numeric(gsub(muZ$VisitID, pa="\\]", repl=""))
 z$VisitID <- as.character(gsub(z$Var2, pa="z\\[", repl=""))
 z$VisitID <- as.numeric(gsub(p$VisitID, pa="\\]", repl=""))
-p$VisitID <- as.character(gsub(z$Var2, pa="p\\[", repl=""))
+p$VisitID <- as.character(gsub(p$variable, pa="p\\[", repl=""))
 p$VisitID <- as.numeric(gsub(p$VisitID, pa="\\]", repl=""))
 Py$VisitID <- as.character(gsub(z$Var2, pa="Py\\[", repl=""))
 Py$VisitID <- as.numeric(gsub(p$VisitID, pa="\\]", repl=""))
@@ -1212,7 +1233,8 @@ Py$VisitID <- as.numeric(gsub(p$VisitID, pa="\\]", repl=""))
 # Tidy iteration
 muZ$iter <- with(muZ, Var1 + max(Var1)*(L1 - 1))
 z$iter <- with(z, Var1 + max(Var1)*(L1 - 1))
-p$iter <- with(p, Var1 + max(Var1)*(L1 - 1))
+#p$iter <- with(p, Var1 + max(Var1)*(L1 - 1))
+p$iter <- rep(1:99, max(as.integer(p$VisitID))) 
 Py$iter <- with(Py, Var1 + max(Var1)*(L1 - 1))
 
 
@@ -1230,6 +1252,7 @@ temp_data$VisitID <- 1:nrow(temp_data)
 muZ <- merge(muZ[,-c(1,2,4)], temp_data)
 z <- merge(zp[,-c(1,2,4)], temp_data)
 p <- merge(p[,-c(1,2,4)], temp_data)
+p2 <- merge(p, temp_data)
 Py <- merge(Py[,-c(1,2,4)], temp_data)
 ```
 muZ[i,t] and z[i,t] will be loner than p[j] (all combinations of sites (?????) and year (106) vs. the total numer of visits (for the species or only focal species??????))   
