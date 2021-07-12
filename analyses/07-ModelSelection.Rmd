@@ -1165,70 +1165,83 @@ require("R2jags")
 require("data.table")
 
 # Read the model output
-results_Aglais_urticae_mixLL <- readRDS("../outputs/mixLL-outputs/results_Aglais_urticae_crick_mixLL.rds")
+Aglais_urticae_mixLL <- readRDS("../outputs/mixLL-outputs/results_Aglais_urticae_crick_mixLL.rds")
 
 # recompile the model
-results_Aglais_urticae_mixLL$model$recompile()
+Aglais_urticae_mixLL$model$recompile()
 
-# Sample 100 iterations of each of the 3 chains and thin by 3, giving 99 samples of "muZ", "z", "Py" and "y"
-samp <- rjags:::coda.samples(model=results_Aglais_urticae_mixLL$model, 
+# Sample 100 iterations of each of the 3 chains and thin by 3, giving 99 samples of "muZ", "z", and "p"
+samp <- rjags:::coda.samples(model=Aglais_urticae_mixLL$model, 
                              parallel=TRUE, n.cores=3,
-                             variable.names=c("muZ", "z", "p", "y"), 
+                             variable.names=c("muZ", "z", "p"), 
                              n.iter=100, # Define number of iterations to run
                              thin=3)
-# This produced a mcmc.list of length three: one list per chain with column names in the format muZ[i,t], z[i,t], y[j] and p[j] (where j denotes visit; v) with a total length of 1366187 and XXXXXXXXXXXX columns for y[j] and p[j], and uZ[i,t], z[i,t], respectively, of samples estimates and 33 rows, each, totalling 99 samples 
+# This produced a mcmc.list of length three: one list per chain with column names in the format muZ[i,t], z[i,t] and p[j] (where j denotes visit; v) with a total length of 1366187 columns for p[j], and XXXXXXXXXXXX columns for muZ[i,t] and z[i,t], of samples estimates and 33 rows, each, totalling 99 samples 
 
 
 
-### Separate columns station with "muZ", "z", "Py" and "p" (will also turn the mcmc.list to a 'regular' list)
+
+### Separate columns station with "muZ", "z" and "p" (will also turn the mcmc.list to a 'regular' list)
+# Define chain number
+chainID <- c(1,2,3)
+
 ### As 'regular' lists, we can use the data.table-function melt()
-
-# recall the format Py[j] and p[j] vs muZ[i,t] and z[i,t] (where j denotes visit)
-# This makes Py and p straight forward: 
+# recall the format p[j] vs muZ[i,t] and z[i,t] (where j denotes visit)
+# This makes p straight forward: 
 p <- lapply(samp, function(x) x[, grepl("p", dimnames(x)[[2]])])
+
+# Add Chain number to list
+#1
+#p2 <- mapply(cbind, p, "chain"=chainID, SIMPLIFY=F)
+#2
+#p2<-lapply(p, function(x) 
+#  cbind(x, chain = chainID))
+#3
+#p[[1]]$chain <- rep(1, 99)
+#p[[2]]$chain <- rep(2, 99)
+#p[[3]]$chain <- rep(3, 99)
+
 p <- rbindlist(lapply(p, as.data.frame))
 p <- melt(p)
-## Error in vector(type, length) : 
-## vector: cannot make a vector of mode 'NULL'.
-y <- lapply(samp, function(x) x[, grepl("y", dimnames(x)[[2]])])
-y <- melt(y)
 
-# However, we need to separate the years in muZ[i,t] and z[i,t] (where i denotes site, and t year)
+#### However, we need to separate the years in muZ[i,t] and z[i,t] (where i denotes site, and t year)
 muZ <- lapply(samp, function(x) x[, grepl("muZ", dimnames(x)[[2]])])
-#muZ <- rbindlist(lapply(muZ, as.data.frame))
+muZ <- rbindlist(lapply(muZ, as.data.frame))
+muZ <- melt(muZ)
 
 # Separate the first year
-muZ_yr1 <- lapply(samp, function(x) x[, grepl(",1]", dimnames(x)[[2]])])
-muZ_yr1 <- rbindlist(lapply(muZ_yr1, as.data.frame))
-muZ_yr1 <- melt(muZ_yr1)
+#muZ_yr1 <- lapply(muZ, function(x) x[, grepl(",1]", dimnames(x)[[2]])])
+#muZ_yr1 <- rbindlist(lapply(muZ_yr1, as.data.frame))
+#muZ_yr1 <- melt(muZ_yr1)
 
 z <- lapply(samp, function(x) x[, grepl("z", dimnames(x)[[2]])])
+z <- rbindlist(lapply(z, as.data.frame))
+z <- melt(z)
 # Separate the first year
-z_yr1 <- lapply(samp, function(x) x[, grepl(",1]", dimnames(x)[[2]])])
-z_yr1 <- melt(z_yr1)
-
-
-
-
-# Use the 99 sets of probabilities & sample a vector of simulated observations under the model, by treating each visit as a potential Bernoulli trial. Here, we use rbinom as Bernoulli trial 
-Y_rep <- lapply(Py, function(x) apply(x, 1:2, rbinom, n=1, size=1))
-
-Y_rep2 <- melt(Y_rep)
-
+#z_yr1 <- lapply(z, function(x) x[, grepl(",1]", dimnames(x)[[2]])])
+#z_yr1 <- rbindlist(lapply(z_yr1, as.data.frame))
+#z_yr1 <- melt(z_yr1)
 
 
 
 #### Tidy data
 
-# Tidy VisitID column
-muZ$VisitID <- as.character(gsub(muZ$Var2, pa="muZ\\[", repl=""))
-muZ$VisitID <- as.numeric(gsub(muZ$VisitID, pa="\\]", repl=""))
-z$VisitID <- as.character(gsub(z$Var2, pa="z\\[", repl=""))
-z$VisitID <- as.numeric(gsub(p$VisitID, pa="\\]", repl=""))
+# Tidy VisitID column for p
 p$VisitID <- as.character(gsub(p$variable, pa="p\\[", repl=""))
 p$VisitID <- as.numeric(gsub(p$VisitID, pa="\\]", repl=""))
-Py$VisitID <- as.character(gsub(z$Var2, pa="Py\\[", repl=""))
-Py$VisitID <- as.numeric(gsub(p$VisitID, pa="\\]", repl=""))
+
+# Tidy year and site columns for muZ and z
+muZ$Site <- as.character(gsub(muZ$variable, pa="muZ\\[", repl=""))
+muZ$Site <- as.numeric(gsub(muZ$Site, pa="\\,[:digit:]\\]", repl=""))
+muZ$Year <- as.character(gsub(muZ$variable, pa="muZ\\[[:digit:]\\,", repl=""))
+muZ$Year <- as.numeric(gsub(muZ$Year, pa="\\]", repl=""))
+
+
+z$VisitID <- as.character(gsub(z$Var2, pa="z\\[", repl=""))
+z$VisitID <- as.numeric(gsub(p$VisitID, pa="\\]", repl=""))
+
+
+
 
 # Tidy iteration
 muZ$iter <- with(muZ, Var1 + max(Var1)*(L1 - 1))
@@ -1255,7 +1268,7 @@ p <- merge(p[,-c(1,2,4)], temp_data)
 p2 <- merge(p, temp_data)
 Py <- merge(Py[,-c(1,2,4)], temp_data)
 ```
-muZ[i,t] and z[i,t] will be loner than p[j] (all combinations of sites (?????) and year (106) vs. the total numer of visits (for the species or only focal species??????))   
+muZ[i,t] and z[i,t] will be loner than p[j] (all combinations of sites (?????) and year (116) vs. the total numer of visits (for the species or only focal species??????))   
    
    
    
@@ -1271,7 +1284,8 @@ Where $z_{i}^{[n]}$ is drawn from the posterior distribution of the occupancy st
    
 Making calculating the residuals as easy as:   
 ```{r exampleWrightOccupancyResCalc, echo=TRUE, eval=FALSE}
-occuRes <- z
+
+occuRes <- merge(muZ_yr1, z_yr1)
 
 occuRes <- (z$z - muZ)
 occuRes<- c(occuRes, (z$z - muZ))
