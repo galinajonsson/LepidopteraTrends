@@ -993,9 +993,9 @@ library(Metrics)
 
 **Nick** - in contract to Wright et al, Warton uses 'absolute estimates' per visit rather than draws from the posterior distribution. Should I take the mean of (how many?) draws from the posterior distribution? 
 
+https://www.tandfonline.com/doi/abs/10.1080/10618600.1996.10474708
 
-
-Here, we plot Dunn-Smyth residuals according to the methodology of [Warton *et al.* (2017)](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.12761). We only plot Dunn-Smyth (DS) residuals for one model (*A. urticae* model B) to demonstrate the plotting procedure, especially given that our data is formatted differently to that of Warton *et al.*, and we wish to plot residuals for multi-year occupancy models, whilst the authors used a single season example; hence, we had to make some alterations to the functions provided by the authors (namely residuals.occMod() and DS.resid.plot(); Supplementary Data 6 of Warton *et al.*, 2017). Dunn-Smyth residuals for all species and models can be found under 'species-wise summary'.    
+Here, we plot Dunn-Smyth residuals ([Dunn & Smyth, 1997](https://www.tandfonline.com/doi/abs/10.1080/10618600.1996.10474708)) according to the methodology of [Warton *et al.* (2017)](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.12761). We only plot Dunn-Smyth (DS) residuals for one model (*A. urticae* model B) to demonstrate the plotting procedure, especially given that our data is formatted differently to that of Warton *et al.*, and we wish to plot residuals for multi-year occupancy models, whilst the authors used a single season example; hence, we had to make some alterations to the functions provided by the authors (namely residuals.occMod() and DS.resid.plot(); Supplementary Data 6 of Warton *et al.*, 2017). Dunn-Smyth residuals for all species and models can be found under 'species-wise summary'.    
  
    
    
@@ -1176,7 +1176,7 @@ samp <- rjags:::coda.samples(model=Aglais_urticae_mixLL$model,
                              variable.names=c("muZ", "z", "p"), 
                              n.iter=100, # Define number of iterations to run
                              thin=3)
-# This produced a mcmc.list of length three: one list per chain with column names in the format muZ[i,t], z[i,t] and p[j] (where j denotes visit; v) with a total length of 1366187 columns for p[j], and XXXXXXXXXXXX columns for muZ[i,t] and z[i,t], of samples estimates and 33 rows, each, totalling 99 samples 
+# This produced a mcmc.list of length three: one list per chain with column names in the format muZ[i,t], z[i,t] and p[j] (where j denotes visit; v) with a total length of 1366187 columns for p[j], and 319000 columns for muZ[i,t] and z[i,t], of samples estimates and 33 rows, each, totalling 99 samples 
 
 
 
@@ -1231,44 +1231,72 @@ p$VisitID <- as.character(gsub(p$variable, pa="p\\[", repl=""))
 p$VisitID <- as.numeric(gsub(p$VisitID, pa="\\]", repl=""))
 
 # Tidy year and site columns for muZ and z
-muZ$Site <- as.character(gsub(muZ$variable, pa="muZ\\[", repl=""))
-muZ$Site <- as.numeric(gsub(muZ$Site, pa="\\,[:digit:]\\]", repl=""))
-muZ$Year <- as.character(gsub(muZ$variable, pa="muZ\\[[:digit:]\\,", repl=""))
-muZ$Year <- as.numeric(gsub(muZ$Year, pa="\\]", repl=""))
-
-
-z$VisitID <- as.character(gsub(z$Var2, pa="z\\[", repl=""))
-z$VisitID <- as.numeric(gsub(p$VisitID, pa="\\]", repl=""))
-
-
+muZ$Site <- as.character(gsub(muZ$variable, pa="muZ\\[", repl="")) 
+muZ$Site <- as.numeric(gsub(muZ$Site, pa="\\,[0-9]*\\]", repl="")) # 2750 
+muZ$Year <- as.character(gsub(muZ$variable, pa="muZ\\[[0-9]*\\,", repl=""))
+muZ$Year <- as.numeric(gsub(muZ$Year, pa="\\]", repl="")) # 116 
+z$Site <- as.character(gsub(z$variable, pa="z\\[", repl="")) 
+z$Site <- as.numeric(gsub(z$Site, pa="\\,[0-9]*\\]", repl="")) # 2750 
+z$Year <- as.character(gsub(z$variable, pa="z\\[[0-9]*\\,", repl=""))
+z$Year <- as.numeric(gsub(z$Year, pa="\\]", repl="")) # 116 
 
 
 # Tidy iteration
-muZ$iter <- with(muZ, Var1 + max(Var1)*(L1 - 1))
-z$iter <- with(z, Var1 + max(Var1)*(L1 - 1))
+#muZ$iter <- with(muZ, Var1 + max(Var1)*(L1 - 1))
+#z$iter <- with(z, Var1 + max(Var1)*(L1 - 1))
 #p$iter <- with(p, Var1 + max(Var1)*(L1 - 1))
-p$iter <- rep(1:99, max(as.integer(p$VisitID))) 
-Py$iter <- with(Py, Var1 + max(Var1)*(L1 - 1))
 
+p <- p %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+muZ <- muZ %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+z <- z %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+
+# The above code output is a grouped data frame, so we convert it to a 'regular' data frame again
+muZ <- as.data.frame(muZ[,c("variable", "value", "Site", "Year", "iter")])
+z <- as.data.frame(z[,c("variable", "value", "Site", "Year", "iter")])
+p <- as.data.frame(p[,c("variable", "value", "VisitID", "iter")])
+
+
+# Remove site:year combinations where there have been no visits 
+# load the raw data
+temp_data <- results_Aglais_urticae_mixLL$model$data()
+
+# subset year, siteID and the actual observation (y)
+temp_data <- as.data.frame(with(temp_data, cbind(Site, Year, y)))  
+
+temp_data$VisitID <- 1:nrow(temp_data)
+
+# Finally, merge with p dataframe
+p <- merge(p, temp_data)
+
+# Create a replica of the variable column (i.e., muZ[i,t])
+#temp_data$variable <- paste(temp_data$Site, temp_data$Year, sep = ",")  
+#temp_data$variable <- paste("muZ[", temp_data$variable, sep = "")  
+#temp_data$variable <- as.factor(paste(temp_data$variable, "]", sep = ""))  
+
+#length(unique(temp_data$variable))     ## 73672 unique combinations
+
+
+### 
 
 
 ### Include year, siteID and the actual observation (y)        
 
-# load the raw data
-temp_data <- results_Aglais_urticae_mixLL$model$data()
-# subset year, siteID ??????  and the actual observation (y)
-temp_data <- as.data.frame(with(temp_data, cbind(Site, Year, y)))  
-temp_data$VisitID <- 1:nrow(temp_data)
 
+# Merge with muZ and z dataframes
+#muZ2 <- merge(muZ, temp_data[,-c(1,2,4)], by="variable", all.x = TRUE)
+#z2 <- merge(z, temp_data[,-c(1,2,4)], by="variable", all.x = FALSE, all.y = TRUE)
+#z <- merge(z[,-c(1,2,4)], temp_data)
 
-# Fanally, merge with muZ, z and p dataframes
-muZ <- merge(muZ[,-c(1,2,4)], temp_data)
-z <- merge(zp[,-c(1,2,4)], temp_data)
-p <- merge(p[,-c(1,2,4)], temp_data)
-p2 <- merge(p, temp_data)
-Py <- merge(Py[,-c(1,2,4)], temp_data)
 ```
 muZ[i,t] and z[i,t] will be loner than p[j] (all combinations of sites (?????) and year (116) vs. the total numer of visits (for the species or only focal species??????))   
+   
+   
+   
+   
+**Nick**    
+* I had to "rbindlist(lapply(PARAMETER, as.data.frame))" before running melt(), otherwise I got the error "*Error in vector(type, length) : vector: cannot make a vector of mode 'NULL'.*", probably because although "lapply(samp, function(x) x[, grepl("p", dimnames(x)[[2]])])" converts the mcmc.list to a 'regular' list, but the elements are still "'mcmc' num"     
+* melt() gives warning: "*id.vars and measure.vars are internally guessed when both are 'NULL'. All non-numeric/integer/logical type columns are considered id.vars, which in this case are columns []. Consider providing at least one of 'id' or 'measure' vars in future.*" - this isn't an issue right as the output is what I want...    
+* **BUT** I've tried three ways of adding a vector for chain number (i.e. 1,2 or 3) to the lists before melt()-ing but neither of my attempts have worked, do you reckon my shortcut for adding iteration numbers gives accurate results?     
    
    
    
@@ -1284,17 +1312,34 @@ Where $z_{i}^{[n]}$ is drawn from the posterior distribution of the occupancy st
    
 Making calculating the residuals as easy as:   
 ```{r exampleWrightOccupancyResCalc, echo=TRUE, eval=FALSE}
+#if(nrow(muZ)==nrow(z) && max(muZ$Year)==max(z$Year) && max(muZ$Site)==max(z$Site)){
+#  for(i in 1:max(muZ$Year)){
+#    for(j in 1:max(muZ$Site)){
+#      for(n in 1:99){
+#        if(i==1 && j==1 && n==1){
+#          occuRes <- 
+#        }
+#      }
+#    }
+#}
+#}
 
-occuRes <- merge(muZ_yr1, z_yr1)
+# Rename value and variable 
+names(muZ)[names(muZ) == "value"] <- "muZ_value"
+names(z)[names(z) == "value"] <- "z_value"
+names(muZ)[names(muZ) == "variable"] <- "muZ_variable"
+names(z)[names(z) == "variable"] <- "z_variable"
 
-occuRes <- (z$z - muZ)
-occuRes<- c(occuRes, (z$z - muZ))
+# merge 
+occuWright <- merge(muZ, z)
 
+# Find residuals
+occuWright$res <- (occuWright$z_value - occuWright$muZ_value)
 ``` 
    
    
    
-## Wright detection residuals
+## Wright Detection Residuals
     
     
 The detection residuals also use the posterior distribution of the occupancy state. For posterior iteration $n$, the detection residuals for site $i$ and visit $v$ is expressed as: 
@@ -1305,39 +1350,43 @@ $$[y_{iv}^{[n]}|z_{i}^{[n]} = 1] = y_{iv} - p_{iv}^{[n]}$$
 Calculating the residuals: 
 ```{r exampleWrightDetectionResCalc, echo=TRUE, eval=FALSE}
 for(j in 1:???){
-  if(i in 1:??? = 1){
-    detResidW + (z$z - p(z))
-    detResidW <- c(detResidW, (z$z[i,] - p(z[,i])))
+  if(i in 1:??? == 1){
+    detWright + (z$z - p(z))
+    detWright <- c(detResidW, (z$z[i,] - p(z[,i])))
   }
 }
 ``` 
      
     
-   
+# NOOOOO USE BINNED RESIDUAL PLOTS!!   
 ## Plot
   
 ```{r exampleWrightPlot, echo=TRUE, eval=FALSE}
 par(mfrow = c(2, 2))
 
 # Produce detection residual vs. fitted plot
-plot(Py$??????, occResidW$res, 
-     xlab="Occupancy $\psi_$", 
+plot(occuWright$muZ_value, occuWright$res, 
+     xlab="Occupancy", 
      ylab="Residuals")
 abline(0,0) #add a horizontal line at 0 
 
 # Produce occupancy residual vs. fitted plot
-plot(Py$??????, detResidW$res, 
+plot(detWright$p, detWright$res, 
      xlab="Detection Probability $p$", 
      ylab="Residuals")
 abline(0,0) #add a horizontal line at 0 
 
 
 # Q-Q plot for occupancy residuals
-qqnorm(occuResidW$res, 
+
+y <- qunif(ppoints(length(randu$x)))
+qqplot(randu$x,y)
+
+qqnorm(occuWright$res, 
        main="Occupancy", 
        xlab="Theoretical Quantiles", 
        ylab="Standardised Residuals")
-qqline(occuResidW$res) #add a straight dia)gonal lie to the plot
+qqline(occuWright$res) #add a straight dia)gonal lie to the plot
 
 # Q-Q plot for detection residuals
 qqnorm(detResidW$res, 
