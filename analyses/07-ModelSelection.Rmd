@@ -1242,10 +1242,6 @@ z$Year <- as.numeric(gsub(z$Year, pa="\\]", repl="")) # 116
 
 
 # Tidy iteration
-#muZ$iter <- with(muZ, Var1 + max(Var1)*(L1 - 1))
-#z$iter <- with(z, Var1 + max(Var1)*(L1 - 1))
-#p$iter <- with(p, Var1 + max(Var1)*(L1 - 1))
-
 p <- p %>% group_by(variable) %>% mutate(iter = seq_along(variable))
 muZ <- muZ %>% group_by(variable) %>% mutate(iter = seq_along(variable))
 z <- z %>% group_by(variable) %>% mutate(iter = seq_along(variable))
@@ -1262,30 +1258,10 @@ temp_data <- results_Aglais_urticae_mixLL$model$data()
 
 # subset year, siteID and the actual observation (y)
 temp_data <- as.data.frame(with(temp_data, cbind(Site, Year, y)))  
-
 temp_data$VisitID <- 1:nrow(temp_data)
 
 # Finally, merge with p dataframe
 p <- merge(p, temp_data)
-
-# Create a replica of the variable column (i.e., muZ[i,t])
-#temp_data$variable <- paste(temp_data$Site, temp_data$Year, sep = ",")  
-#temp_data$variable <- paste("muZ[", temp_data$variable, sep = "")  
-#temp_data$variable <- as.factor(paste(temp_data$variable, "]", sep = ""))  
-
-#length(unique(temp_data$variable))     ## 73672 unique combinations
-
-
-### 
-
-
-### Include year, siteID and the actual observation (y)        
-
-
-# Merge with muZ and z dataframes
-#muZ2 <- merge(muZ, temp_data[,-c(1,2,4)], by="variable", all.x = TRUE)
-#z2 <- merge(z, temp_data[,-c(1,2,4)], by="variable", all.x = FALSE, all.y = TRUE)
-#z <- merge(z[,-c(1,2,4)], temp_data)
 
 ```
 muZ[i,t] and z[i,t] will be loner than p[j] (all combinations of sites (?????) and year (116) vs. the total numer of visits (for the species or only focal species??????))   
@@ -1293,10 +1269,8 @@ muZ[i,t] and z[i,t] will be loner than p[j] (all combinations of sites (?????) a
    
    
    
-**Nick**    
-* I had to "rbindlist(lapply(PARAMETER, as.data.frame))" before running melt(), otherwise I got the error "*Error in vector(type, length) : vector: cannot make a vector of mode 'NULL'.*", probably because although "lapply(samp, function(x) x[, grepl("p", dimnames(x)[[2]])])" converts the mcmc.list to a 'regular' list, but the elements are still "'mcmc' num"     
-* melt() gives warning: "*id.vars and measure.vars are internally guessed when both are 'NULL'. All non-numeric/integer/logical type columns are considered id.vars, which in this case are columns []. Consider providing at least one of 'id' or 'measure' vars in future.*" - this isn't an issue right as the output is what I want...    
-* **BUT** I've tried three ways of adding a vector for chain number (i.e. 1,2 or 3) to the lists before melt()-ing but neither of my attempts have worked, do you reckon my shortcut for adding iteration numbers gives accurate results?     
+ 
+**To DO**  Double check iteratiosn are correct: I've tried three ways of adding a vector for chain number (i.e. 1,2 or 3) to the lists before melt()-ing but neither of my attempts have worked, do you reckon my shortcut for adding iteration numbers gives accurate results?     
    
    
    
@@ -1312,17 +1286,6 @@ Where $z_{i}^{[n]}$ is drawn from the posterior distribution of the occupancy st
    
 Making calculating the residuals as easy as:   
 ```{r exampleWrightOccupancyResCalc, echo=TRUE, eval=FALSE}
-#if(nrow(muZ)==nrow(z) && max(muZ$Year)==max(z$Year) && max(muZ$Site)==max(z$Site)){
-#  for(i in 1:max(muZ$Year)){
-#    for(j in 1:max(muZ$Site)){
-#      for(n in 1:99){
-#        if(i==1 && j==1 && n==1){
-#          occuRes <- 
-#        }
-#      }
-#    }
-#}
-#}
 
 # Rename value and variable 
 names(muZ)[names(muZ) == "value"] <- "muZ_value"
@@ -1335,6 +1298,9 @@ occuWright <- merge(muZ, z)
 
 # Find residuals
 occuWright$res <- (occuWright$z_value - occuWright$muZ_value)
+
+# Save file
+write.csv(occuWright, "../outputs/WrightResid/Aglais_urticae_occuWright.csv")
 ``` 
    
    
@@ -1349,47 +1315,100 @@ $$[y_{iv}^{[n]}|z_{i}^{[n]} = 1] = y_{iv} - p_{iv}^{[n]}$$
    
 Calculating the residuals: 
 ```{r exampleWrightDetectionResCalc, echo=TRUE, eval=FALSE}
-for(j in 1:???){
-  if(i in 1:??? == 1){
-    detWright + (z$z - p(z))
-    detWright <- c(detResidW, (z$z[i,] - p(z[,i])))
-  }
-}
+# Rename value and variable 
+names(p)[names(p) == "value"] <- "p_value"
+names(p)[names(p) == "variable"] <- "p_variable"
+
+# merge but specify to only include z values for sites and years where there actually was a visit ie p[j]
+detWright <- merge(p, z, all.x=TRUE, all.y=FALSE)
+
+# Check the number of estimated occupancy (i.e. 1s) 
+#summary(as.factor(detWright$z_value)) 
+# 131842110 1s
+# 3410403 0s
+
+# Subset the visits where estimated occupancy is 1 (as these are the visits used to find residuals)
+detWright <- subset(detWright, z_value == 1) 
+
+# Find residuals
+detWright$res <- (detWright$y - detWright$p_value)
+
+# Save file
+write.csv(detWright, "../outputs/WrightResid/Aglais_urticae_detWright.csv")
 ``` 
      
     
-# NOOOOO USE BINNED RESIDUAL PLOTS!!   
-## Plot
+
+## Plot binned residuals
+Binned residuals are plotted according to the methodology of from [Gelman *et al*., (2000)](https://doi.org/10.1111/1467-9876.00190) 
   
-```{r exampleWrightPlot, echo=TRUE, eval=FALSE}
-par(mfrow = c(2, 2))
+```{r exampleWrightPlot, echo=TRUE, eval=TRUE}
+# Read files
+detWright <- read.csv("../outputs/WrightResid/Aglais_urticae_detWright.csv")
+occWright <- read.csv("../outputs/WrightResid/Aglais_urticae_occWright.csv")
 
-# Produce detection residual vs. fitted plot
-plot(occuWright$muZ_value, occuWright$res, 
-     xlab="Occupancy", 
-     ylab="Residuals")
-abline(0,0) #add a horizontal line at 0 
+# Load required packages
+require(arm)
 
-# Produce occupancy residual vs. fitted plot
-plot(detWright$p, detWright$res, 
-     xlab="Detection Probability $p$", 
-     ylab="Residuals")
-abline(0,0) #add a horizontal line at 0 
+# Set up 3 rows 2 columns
+par(mfrow = c(3, 2))
+
+
+
+# Plot
+# 31581000/116 = 272250
+
+
+occuWright_yr1to6 <- subset(occuWright, Year <= 6) # 544500
+occuWright_yr76to82 <- subset((subset(occuWright, Year >= 76)), Year < 82)
+
+# NAs produced by integer overflowError in if (any(breaks.index == 0)) nclass <- 1 : missing value where TRUE/FALSE needed
+binnedplot(occuWright_yr1to6$muZ_value, 
+           occuWright_yr1to6$res,
+           xlab="Occupancy", 
+           ylab="Binned residuals",
+           main = "Binned residual plot:1900-1905")
+
+binnedplot(occuWright_yr76to82$muZ_value, 
+           occuWright_yr76to82$res,
+           xlab="Occupancy", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1975-1981")
+
+# gray lines indicate plus and minus 2 standard-error bounds, within which one would expect about 95% of the binned residuals to fall, if the model were actually true.
+
+
+detWright_yr1to6 <- subset(detWright, Year <= 6) 
+detWright_yr76to82 <- subset((subset(detWright, Year >= 76)), Year < 82)
+
+
+binnedplot(detWright_yr1to6$p_value, 
+           detWright_yr1to6$res,
+           xlab="Detection Probability", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1900-1905")
+
+binnedplot(detWright_yr76to82$p_value, 
+           detWright_yr76to82$res,
+           xlab="Detection Probability", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1975-1981")
+
+
 
 
 # Q-Q plot for occupancy residuals
-
-y <- qunif(ppoints(length(randu$x)))
-qqplot(randu$x,y)
 
 qqnorm(occuWright$res, 
        main="Occupancy", 
        xlab="Theoretical Quantiles", 
        ylab="Standardised Residuals")
-qqline(occuWright$res) #add a straight dia)gonal lie to the plot
+qqline(occuWright$res) #add a straight diagonal line to the plot
+
+
 
 # Q-Q plot for detection residuals
-qqnorm(detResidW$res, 
+qqnorm(detWright$res, 
        main="Occupancy", 
        xlab="Theoretical Quantiles", 
        ylab="Standardised Residuals")
