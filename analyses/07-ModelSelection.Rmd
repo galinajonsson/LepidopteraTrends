@@ -1072,6 +1072,7 @@ Where $z_{i}^{[n]}$ is drawn from the posterior distribution of the occupancy st
     
 The detection residuals also use the posterior distribution of the occupancy state. For posterior iteration $n$, the detection residuals for site $i$ and visit $v$ is expressed as: 
 $$[y_{iv}^{[n]}|z_{i}^{[n]} = 1] = y_{iv} - p_{iv}^{[n]}$$
+
 > These detection residuals are only defined for “occupied” sites based on the latent state $z_{i}^{[n]}$ for a given posterior draw $n$. By conditioning on a posterior draw of the occupancy state ($z_{i}^{[n]}$), sites without any detection ($y_{i}$ containing all zeros) still contribute detection residuals for some posterior draws because these sites might actually be occupied ($z_{i}^{[n]} = 1$ for some iterations. Additionally, the total number of detection residuals will vary across posterior draws because of the uncertainty in true occupancy at sites with no detections. 
 
 from [Wright *et al.*, (2019)](https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/ecy.2703)
@@ -1340,9 +1341,26 @@ write.csv(detWright, "../outputs/WrightResid/Aglais_urticae_detWright.csv")
     
 
 ## Plot binned residuals
-Binned residuals are plotted according to the methodology of from [Gelman *et al*., (2000)](https://doi.org/10.1111/1467-9876.00190) 
+We plot the Wright residuals as binned residuals according to the methodology of [Gelman *et al*., (2000)](https://doi.org/10.1111/1467-9876.00190), who state that binned residuals work well for *plots of binned or smoothed residuals versus predictors and specific discrepancy variables created on the basis of the particular concerns arising in an application* whilst [Wright *et al.*, (2019)](https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/ecy.2703) state that *the values of a covariate are used to form approximately equally sized groups. Plotting the averages of the residuals in each group vs. the corresponding average covariate values can reveal unexplained structure in fitted probabilities. Examining such residual plots from multiple posterior draws characterizes variation over the posterior distribution*. Here, we use the default number of categories (bins) based on their fitted values in which the data are divided. Default=NULL and will take the value of nclass according to the $n$ such that if $n >=100$, nclass=floor(sqrt(length(x))); if $10<n<100$, nclass=10; if $n<10$, nclass=floor(n/2). However, the authors note *There is typically some arbitrariness in choosing the number of bins: each bin should contain enough points so that the averaged residuals are not too noisy, but it helps to have also many bins so as to see more local patterns in the residuals (see Gelman and Hill, Data Analysis Using Regression and Multilevel/Hierarchical Models, page 97).*       
+
+
+[Gelman *et al*., (2000)](https://doi.org/10.1111/1467-9876.00190) state that quantile–quantile plots of these binned residuals does not work well, whilst [Wright *et al.*, (2019)](https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/ecy.2703) don't mention quantile–quantile plots of their residuals.    
+   
+   
+**Nick**   
+* What are your thoughts on quantile–quantile plots of "unbinned" residuals?    
+
+
+**To do**   
+* Gelman and Hill, Data Analysis Using Regression and Multilevel/Hierarchical Models, page 97    
+
+
+    
+    
+    
+    
   
-```{r exampleWrightPlot, echo=TRUE, eval=TRUE}
+```{r exampleWrightPlot, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE}
 # Read files
 detWright <- read.csv("../outputs/WrightResid/Aglais_urticae_detWright.csv")
 occWright <- read.csv("../outputs/WrightResid/Aglais_urticae_occWright.csv")
@@ -1350,24 +1368,29 @@ occWright <- read.csv("../outputs/WrightResid/Aglais_urticae_occWright.csv")
 # Load required packages
 require(arm)
 
-# Set up 3 rows 2 columns
-par(mfrow = c(3, 2))
+# Set up 2 rows 2 columns
+par(mfrow = c(2, 2))
 
 
 
-# Plot
-# 31581000/116 = 272250
+### Plot
+
+# It seems like the function can't handle the number of residuals since I get the following error when attempting to apply it to the whole data:
+# NAs produced by integer overflowError in if (any(breaks.index == 0)) nclass <- 1 : missing value where TRUE/FALSE needed
+
+# I therefore subset years
+# 31581000/116 = 272250 observations per year
 
 
-occuWright_yr1to6 <- subset(occuWright, Year <= 6) # 544500
+occuWright_yr1to6 <- subset(occuWright, Year <= 6) 
 occuWright_yr76to82 <- subset((subset(occuWright, Year >= 76)), Year < 82)
 
-# NAs produced by integer overflowError in if (any(breaks.index == 0)) nclass <- 1 : missing value where TRUE/FALSE needed
+
 binnedplot(occuWright_yr1to6$muZ_value, 
            occuWright_yr1to6$res,
            xlab="Occupancy", 
            ylab="Binned residuals",
-           main = "Binned residual plot:1900-1905")
+           main = "Binned residual plot: 1900-1905")
 
 binnedplot(occuWright_yr76to82$muZ_value, 
            occuWright_yr76to82$res,
@@ -1397,22 +1420,21 @@ binnedplot(detWright_yr76to82$p_value,
 
 
 
-# Q-Q plot for occupancy residuals
+### Q-Q plots
 
-qqnorm(occuWright$res, 
-       main="Occupancy", 
-       xlab="Theoretical Quantiles", 
-       ylab="Standardised Residuals")
-qqline(occuWright$res) #add a straight diagonal line to the plot
+# occupancy residuals
+#qqnorm(occuWright$res, 
+#       main="Occupancy", 
+#       xlab="Theoretical Quantiles", 
+#       ylab="Standardised Residuals")
+#qqline(occuWright$res) #add a straight diagonal line to the plot
 
-
-
-# Q-Q plot for detection residuals
-qqnorm(detWright$res, 
-       main="Occupancy", 
-       xlab="Theoretical Quantiles", 
-       ylab="Standardised Residuals")
-qqline(detResidW$res) #add a straight diagonal line to the plot
+# detection residuals
+#qqnorm(detWright$res, 
+#       main="Occupancy", 
+#       xlab="Theoretical Quantiles", 
+#       ylab="Standardised Residuals")
+#qqline(detResidW$res)
 ```
       
       
