@@ -1039,6 +1039,16 @@ $$
       
       
       
+      
+Hence, we need to extract the following parameters from our models to calculate occupancy and detection residual cumulative distribution functions:    
+* Probability of occurrence $\psi_{i}^{[n]}$ = 'muZ'   
+* Detection probability $p_{iv}^{[n]}$ = 'p'   
+* True occupancy $z_{i}^{[n]}$ = 'z'   
+* Estimated occupancy $y_{i}^{[n]}$ = 'y'         
+      
+      
+      
+      
 **Finally**, both DS detection residual cumulative distributions and occupancy residual cumulative distributions are transformed using the below equation, which introduces a bit of random noise to generate residuals from discrete binomial variables (occupancy) with a bit of "jitter" to remove their discreteness. Additionally, Dunn-Smyth proposed mapping these onto the standard normal distribution so that hey can be interpreted like residuals from a regular linear regression.   
 
     
@@ -1148,7 +1158,8 @@ Hence, we want to extract the parameters 'p' and 'Py', denoting the detection pr
 We need to extract the following parameters from our models:    
 * Probability of occurrence $\psi_{i}^{[n]}$ = 'muZ'   
 * Detection probability $p_{iv}^{[n]}$ = 'p'   
-* True occupancy $z_{i}^{[n]}$ = 'z'   
+* Estimated true occupancy $z_{i}^{[n]}$ = 'z'   
+* Detection histories (1 or 0; detected or not) $y_{i}^{[n]}$ = 'y'   
     
     
     
@@ -1360,16 +1371,15 @@ We plot the Wright residuals as binned residuals according to the methodology of
     
     
   
-```{r exampleWrightPlot, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE}
+```{r example-occWrightPlot, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE}
 # Read files
-detWright <- read.csv("../outputs/WrightResid/Aglais_urticae_detWright.csv")
 occWright <- read.csv("../outputs/WrightResid/Aglais_urticae_occWright.csv")
 
 # Load required packages
 require(arm)
 
 # Set up 2 rows 2 columns
-par(mfrow = c(2, 2))
+#par(mfrow = c(2, 3))
 
 
 
@@ -1381,7 +1391,7 @@ par(mfrow = c(2, 2))
 # I therefore subset years
 # 31581000/116 = 272250 observations per year
 
-
+occuWright_5iter <- subset(occuWright, iter <= 5) 
 occuWright_yr1to6 <- subset(occuWright, Year <= 6) 
 occuWright_yr76to82 <- subset((subset(occuWright, Year >= 76)), Year < 82)
 
@@ -1392,13 +1402,56 @@ binnedplot(occuWright_yr1to6$muZ_value,
            ylab="Binned residuals",
            main = "Binned residual plot: 1900-1905")
 
+
 binnedplot(occuWright_yr76to82$muZ_value, 
            occuWright_yr76to82$res,
            xlab="Occupancy", 
            ylab="Binned residuals",
            main = "Binned residual plot: 1975-1981")
 
+binnedplot((occuWright_5iter$Year+1899), 
+           occuWright_5iter$res,
+           xlab="Year", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 5 iterations")
 # gray lines indicate plus and minus 2 standard-error bounds, within which one would expect about 95% of the binned residuals to fall, if the model were actually true.
+
+
+### Q-Q plots
+
+# occupancy residuals
+#qqnorm(occuWright$res, 
+#       main="Occupancy", 
+#       xlab="Theoretical Quantiles", 
+#       ylab="Standardised Residuals")
+#qqline(occuWright$res) #add a straight diagonal line to the plot
+
+# detection residuals
+#qqnorm(detWright$res, 
+#       main="Occupancy", 
+#       xlab="Theoretical Quantiles", 
+#       ylab="Standardised Residuals")
+#qqline(detResidW$res)
+```
+   
+   
+Gray lines indicate plus and minus 2 standard-error bounds, within which one would expect about 95% of the binned residuals to fall, if the model were actually true.
+
+
+
+```{r example-detWrightPlot, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE}
+# Read files
+detWright <- read.csv("../outputs/WrightResid/Aglais_urticae_detWright.csv")
+
+# Load required packages
+require(arm)
+
+
+### Plot
+
+# It seems like the function can't handle the number of residuals since I get the following error when attempting to apply it to the whole data:
+# NAs produced by integer overflowError in if (any(breaks.index == 0)) nclass <- 1 : missing value where TRUE/FALSE needed
+
 
 
 detWright_yr1to6 <- subset(detWright, Year <= 6) 
@@ -1411,12 +1464,24 @@ binnedplot(detWright_yr1to6$p_value,
            ylab="Binned residuals",
            main = "Binned residual plot: 1900-1905")
 
+binnedplot((detWright_yr1to6$Year+1899), 
+           detWright_yr1to6$res,
+           xlab="Year", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1900-1905")
+
 binnedplot(detWright_yr76to82$p_value, 
            detWright_yr76to82$res,
            xlab="Detection Probability", 
            ylab="Binned residuals",
            main = "Binned residual plot: 1975-1981")
 
+binnedplot((detWright_yr76to82$Year+1899), 
+           detWright_yr76to82$res,
+           xlab="Year", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1975-1981")
+# gray lines indicate plus and minus 2 standard-error bounds, within which one would expect about 95% of the binned residuals to fall, if the model were actually true.
 
 
 
