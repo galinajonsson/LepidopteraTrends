@@ -235,7 +235,7 @@ write.csv(detWright, "../outputs/DSResid/Aglais_urticae_ModelB_detDS.csv")
     
     
     
-Here, we plot residuals according to the methodology of [Wright *et al.*, (2019)](https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/ecy.2703). We only plot Wright (W) residuals for one model output (*A. urticae* model B) to demonstrate the procedure, especially given that we wish to plot residuals for multi-year occupancy models, whilst the authors used single season examples. Wright residuals for all species and models can be found under 'species-wise summary'.    
+Here, we plot residuals according to the methodology of [Wright *et al.*, (2019)](https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/ecy.2703). We only plot Wright (W) residuals for one model output (Model **B** of *Aglais urticae* (Small Tortoiseshell)) to demonstrate the procedure, especially given that we wish to plot residuals for multi-year occupancy models, whilst the authors used single season examples. Wright residuals for all species and models can be found under 'species-wise summary'.    
    
 
     
@@ -631,7 +631,7 @@ Aglais_urticae_ModelC <- readRDS("../outputs/mixLL2-outputs/results_Aglais_urtic
 
 
 plot.occDet_G(Aglais_urticae_ModelA, Aglais_urticae_ModelB, Aglais_urticae_ModelC) +
-  ggtitle(label = "*Aglais urticae* - Occupancy", 
+  ggtitle(label = "Aglais urticae", 
           subtitle = "(Small Tortoiseshell)") + 
   theme(plot.title=element_text(face="italic")) +
   theme(text=element_text(size=15)) 
@@ -649,6 +649,69 @@ plot.occDet_G(Aglais_urticae_ModelA, Aglais_urticae_ModelB, Aglais_urticae_Model
    
    
    
+
+
+
+
+### Detection Probability
+```{r plot-detprob-outputs-A-urticae, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE, fig.width=7, fig.height=3}
+require("sparta")
+
+# Read the model output
+Aglais_urticae_ModelA <- readRDS("../outputs/catLL-outputs/results_Aglais_urticae_watson_catLL.rds")
+Aglais_urticae_ModelB <- readRDS("../outputs/mixLL-outputs/results_Aglais_urticae_crick_mixLL.rds")
+Aglais_urticae_ModelC <- readRDS("../outputs/mixLL2-outputs/results_Aglais_urticae_crick_mixLL2.rds")
+
+plot_DetectionOverTime(Aglais_urticae_ModelA,
+                              min.yr = 1900, 
+                                    legend_labels =
+                         c("BNM/Year_Effect", 
+                                                    "UKBMS", 
+                                                   "NHCs"),
+                                  legend_title = "Data Type") +
+             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+             scale_x_continuous(expand = c(0, 0)) +
+  ggtitle("Model A") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank()) +
+  #ggtitle(label = (expression(paste(italic("Aglais urticae"), " - Model A")))) #, 
+  #        subtitle = paste(lama_translate_("Aglais urticae", dict, "common_names"))) + 
+  #theme(plot.title=element_text(face="italic")) +
+  theme(text=element_text(size=12)) 
+
+plot_DetectionOverTime(Aglais_urticae_ModelB, 
+                       min.yr = 1900, 
+                       legend_labels = c("BNM_LL1/Year effect", 
+                                         "UKBMS", 
+                                         "NHCs", 
+                                         "BNM_LL5"), 
+                       legend_title = "Data Type") +
+  scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  ggtitle("Model B") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank()) +
+  theme(text=element_text(size=12))
+
+plot_DetectionOverTime(Aglais_urticae_ModelC,
+                              min.yr = 1900, 
+                       legend_labels = c("BNM_LL1/Year effect", 
+                                         "UKBMS", 
+                                         "NHCs", 
+                                         "BNM_LL5"), 
+                       mixLL2 = TRUE,                  ### Important: specify its mixLL2
+                       legend_title = "Data Type") +
+  scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  ggtitle("Model C") +
+  theme(text=element_text(size=12))
+```
+
+
+
+
+
+
 
 ### *A. urticae* - Model A
     
@@ -1213,6 +1276,34 @@ binnedplot(detWright$p_value,
            ylab="Binned residuals",
            main = "Binned residual plot: 1975-1981 - *Aglais urticae* Model C")
 ```
+     
+     
+     
+     
+     
+     
+     
+   
+   
+   
+   
+   
+### Conclusions 30 July 2021  
+    
+    
+Conclusions thus far:   
+
+* We do not believe in the estimated occupancy trends from either model formulation for this species   
+* Residuals suggest that the problem lies in the detection sub-model, particularly in the later part of the time series    
+* Moreover, it appears that the detection sub-model of Models B and C do better than Model A, particularly in the later part of the time series   
+* **Nick**, it looks like model C is slightly beter for early part of time series than Model B, or how do you interpret that dense clump of plotted binned residuals (Model C, year 1900-1905)?   
+* **MUST** plot entire time series for detection submodel   
+   
+   
+   
+   
+
+
 ##  Results: *Carterocephalus palaemon* (Chequered skipper)
 
 ### Occupancy
@@ -1229,7 +1320,7 @@ Carterocephalus_palaemon_ModelC <- readRDS("../outputs/mixLL2-outputs/results_Ca
 plot.occDet_G(Carterocephalus_palaemon_ModelA,
               Carterocephalus_palaemon_ModelB,
               Carterocephalus_palaemon_ModelC) +
-  ggtitle(label = "*Carterocephalus palaemon* Occupancy", 
+  ggtitle(label = "Carterocephalus palaemon", 
           subtitle = "(Chequered skipper)") + 
   theme(plot.title=element_text(face="italic")) +
   scale_y_continuous(limits=c(0, 0.1), expand = c(0, 0)) +
@@ -1246,6 +1337,68 @@ The Chequered Skipper is confined to north-west Scotland where it was first disc
 **Occupancy estimates are in line with anecdotal evidence for historic distribution changes and very similar across models**   
     
    
+   
+   
+   
+
+  theme(plot.title=element_text(face="italic")) +
+
+
+
+### Detection probability
+```{r plot-detprob-outputs-C-palaemon, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE, fig.width=7, fig.height=3}
+
+require("sparta")
+
+# Read the model output
+Carterocephalus_palaemon_ModelA <- readRDS("../outputs/catLL-outputs/results_Carterocephalus_palaemon_watson_catLL.rds")
+Carterocephalus_palaemon_ModelB <- readRDS("../outputs/mixLL-outputs/results_Carterocephalus_palaemon_ctag_mixLL.rds")
+Carterocephalus_palaemon_ModelC <- readRDS("../outputs/mixLL2-outputs/results_Carterocephalus_palaemon_watson_mixLL2.rds")
+
+plot_DetectionOverTime(Carterocephalus_palaemon_ModelA,
+                              min.yr = 1900, 
+                                    legend_labels =
+                         c("    BNM/Year_Effect  ", 
+                                                    "UKBMS", 
+                                                   "NHCs"),
+                                  legend_title = "Data Type") +
+             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+             scale_x_continuous(expand = c(0, 0)) +
+  ggtitle("Model A") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank()) +
+  theme(text=element_text(size=12)) 
+
+plot_DetectionOverTime(Carterocephalus_palaemon_ModelB, 
+                       min.yr = 1900, 
+                       legend_labels = c("BNM_LL1/Year effect", 
+                                         "UKBMS", 
+                                         "NHCs", 
+                                         "BNM_LL5"), 
+                       legend_title = "Data Type") +
+  scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  ggtitle("Model B") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank()) +
+  theme(text=element_text(size=12))
+
+plot_DetectionOverTime(Carterocephalus_palaemon_ModelC,
+                              min.yr = 1900, 
+                       legend_labels = c("BNM_LL1/Year effect", 
+                                         "UKBMS", 
+                                         "NHCs", 
+                                         "BNM_LL5"), 
+                       mixLL2 = TRUE,                  ### Important: specify its mixLL2
+                       legend_title = "Data Type") +
+  scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  ggtitle("Model C") +
+  theme(text=element_text(size=12))
+
+```
+
+
 ### *C. palaemon* - Model A
     
     
@@ -1412,7 +1565,7 @@ binnedplot(occuWright_yr1to6$muZ_value,
            nclass = 116,
            xlab="Occupancy", 
            ylab="Binned residuals",
-           main = "Binned residual plot: 1900-1905 - C. palaemon* Model A")
+           main = "Model A: 1900-1905")
 
 
 binnedplot(occuWright_yr76to82$muZ_value, 
@@ -1420,14 +1573,14 @@ binnedplot(occuWright_yr76to82$muZ_value,
            nclass = 116,
            xlab="Occupancy", 
            ylab="Binned residuals",
-           main = "Binned residual plot: 1975-1981 - *C. palaemon* Model A")
+           main = "Model A: 1975-1981")
 
 binnedplot((occuWright_5iter$Year+1899), 
            occuWright_5iter$res,
            nclass = 116,
            xlab="Year", 
            ylab="Binned residuals",
-           main = "Binned residual plot: 5 iterations - *C. palaemon* Model A")
+           main = "Observation: 5 iter Model A")
 
 # Clear environment as these are long vectors and rmarkdown cannot handle these 
 rm(list = ls())
@@ -1446,7 +1599,7 @@ binnedplot(detWright$p_value,
            nclass = 116,
            xlab="Detection Probability", 
            ylab="Binned residuals",
-           main = "Binned residual plot: 1900-1905 - *C. palaemon* Model A")
+           main = "Model A: 1900-1905")
 
 # Clear environment as these are long vectors and rmarkdown cannot handle these 
 rm(list = ls())
@@ -1462,7 +1615,21 @@ binnedplot(detWright$p_value,
            nclass = 116,
            xlab="Detection Probability", 
            ylab="Binned residuals",
-           main = "Binned residual plot: 1975-1981 - *C. palaemon* Model A")
+           main = "Model A: 1975-1981")
+
+# Clear environment as these are long vectors and rmarkdown cannot handle these 
+rm(list = ls())
+
+# Read detection probability file again
+detWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelA_detWright.csv")
+
+detWright_5iter <- subset(detWright, iter <= 5) 
+
+binnedplot((detWright_5iter$Year+1899), 
+           detWright_5iter$res,
+           xlab="Year", 
+           ylab="Binned residuals",
+           main = "Detection: 5 iter Model A")
 ```
       
       
@@ -1478,7 +1645,7 @@ binnedplot(detWright$p_value,
 ### *C. palaemon* - Model B
     
 #### Extract resuduals
-```{r WrightResiduals-Cpalaemon-ModelB, echo=FALSE, eval=FALSE, cache=TRUE}
+```{r WrightResiduals-Cpalaemon-ModelB, eval=FALSE, echo=FALSE, cache=TRUE}
 # Load required packages
 require("rjags")
 require("coda")
@@ -1507,7 +1674,6 @@ samp <- rjags:::coda.samples(model=Carterocephalus_palaemon_mixLL$model,
 
 
 ### Separate columns station with "muZ", "z" and "p" 
-
 ### As 'regular' lists, we can use the data.table-function melt()
 # recall the format p[j] vs muZ[i,t] and z[i,t] (where j denotes visit)
 # This makes p straight forward: 
@@ -1636,7 +1802,7 @@ Compared to, for instance, *Aglais urticae*, which is a much more common species
     
     
   
-```{r WrightPlot-Cpalaemon-ModelB, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE}
+```{r WrightPlot-Cpalaemon-ModelB, echo=FALSE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE}
 # Read file
 occuWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelB_occuWright.csv")
 
@@ -1659,20 +1825,20 @@ binnedplot(occuWright_yr1to6$muZ_value,
            occuWright_yr1to6$res,
            xlab="Occupancy", 
            ylab="Binned residuals",
-           main = "Binned residual plot: 1900-1905 - C. palaemon* Model B")
+           main = "Model B: 1900-1905")
 
 
 binnedplot(occuWright_yr76to82$muZ_value, 
            occuWright_yr76to82$res,
            xlab="Occupancy", 
            ylab="Binned residuals",
-           main = "Binned residual plot: 1975-1981 - C. palaemon* Model B")
+           main = "Model B: 1975-1981")
 
 binnedplot((occuWright_5iter$Year+1899), 
            occuWright_5iter$res,
            xlab="Year", 
            ylab="Binned residuals",
-           main = "Binned residual plot: 5 iterations - C. palaemon* Model B")
+           main = "Occupancy: 5 iter Model B")
 
 # Clear environment as these are long vectors and rmarkdown cannot handle these 
 rm(list = ls())
@@ -1690,7 +1856,7 @@ binnedplot(detWright$p_value,
            detWright$res,
            xlab="Detection Probability", 
            ylab="Binned residuals",
-           main = "Binned residual plot: 1900-1905 - C. palaemon* Model B")
+           main = "Model B: 1900-1905")
 
 # Clear environment as these are long vectors and rmarkdown cannot handle these 
 rm(list = ls())
@@ -1705,7 +1871,21 @@ binnedplot(detWright$p_value,
            detWright$res,
            xlab="Detection Probability", 
            ylab="Binned residuals",
-           main = "Binned residual plot: 1975-1981 - C. palaemon* Model B")
+           main = "Model B: 1975-1981")
+
+# Clear environment as these are long vectors and rmarkdown cannot handle these 
+rm(list = ls())
+
+# Read detection probability file again
+detWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelB_detWright.csv")
+
+detWright_5iter <- subset(detWright, iter <= 5) 
+
+binnedplot((detWright_5iter$Year+1899), 
+           detWright_5iter$res,
+           xlab="Year", 
+           ylab="Binned residuals",
+           main = "Detection: 5 iter Model B")
 ```
       
       
@@ -1736,7 +1916,7 @@ binnedplot(detWright$p_value,
    
    
 #### Extract resuduals
-```{r WrightResiduals-Cpalaemon-ModelC, echo=FALSE, eval=FALSE, cache=TRUE}
+```{r WrightResiduals-Cpalaemon-ModelC, eval=FALSE, echo=FALSE, cache=TRUE}
 # Load required packages
 require("rjags")
 require("coda")
@@ -1769,7 +1949,6 @@ samp <- rjags:::coda.samples(model=Carterocephalus_palaemon_ModelC$model,
 p <- lapply(samp, function(x) x[, grepl("p", dimnames(x)[[2]])])
 p <- rbindlist(lapply(p, as.data.frame))
 p <- melt(p)
-
 #### However, we need to separate the years in muZ[i,t] and z[i,t] (where i denotes site, and t year)
 muZ <- lapply(samp, function(x) x[, grepl("muZ", dimnames(x)[[2]])])
 muZ <- rbindlist(lapply(muZ, as.data.frame))
@@ -1888,7 +2067,7 @@ write.csv(detWright, "../outputs/WrightResid/Carterocephalus_palaemon_ModelC_det
 
 #### Plot binned residuals
 
-```{r WrightPlot-Cpalaemon-ModelC, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE}
+```{r WrightPlot-Cpalaemon-ModelC, echo=FALSE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE}
 # Read file
 occuWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelC_occuWright.csv")
 
@@ -1911,20 +2090,20 @@ binnedplot(occuWright_yr1to6$muZ_value,
            occuWright_yr1to6$res,
            xlab="Occupancy", 
            ylab="Binned residuals",
-           main = "Binned residual plot: 1900-1905 - *C. palaemon* Model C")
+           main = "Model C: 1900-1905")
 
 
 binnedplot(occuWright_yr76to82$muZ_value, 
            occuWright_yr76to82$res,
            xlab="Occupancy", 
            ylab="Binned residuals",
-           main = "Binned residual plot: 1975-1981 - *C. palaemon* Model C")
+           main = "Model C: 1975-1981")
 
 binnedplot((occuWright_5iter$Year+1899), 
            occuWright_5iter$res,
            xlab="Year", 
            ylab="Binned residuals",
-           main = "Binned residual plot: 5 iterations - *C. palaemon* Model C")
+           main = "Occupancy: 5 iter Model C")
 
 # Clear environment as these are long vectors and rmarkdown cannot handle these 
 rm(list = ls())
@@ -1942,7 +2121,7 @@ binnedplot(detWright$p_value,
            detWright$res,
            xlab="Detection Probability", 
            ylab="Binned residuals",
-           main = "Binned residual plot: 1900-1905 - *C. palaemon* Model C")
+           main = "Model C: 1900-1905")
 
 # Clear environment as these are long vectors and rmarkdown cannot handle these 
 rm(list = ls())
@@ -1957,7 +2136,21 @@ binnedplot(detWright$p_value,
            detWright$res,
            xlab="Detection Probability", 
            ylab="Binned residuals",
-           main = "Binned residual plot: 1975-1981 - *C. palaemon* Model C")
+           main = "Model C: 1975-1981")
+
+# Clear environment as these are long vectors and rmarkdown cannot handle these 
+rm(list = ls())
+
+# Read detection probability file again
+detWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelC_detWright.csv")
+
+detWright_5iter <- subset(detWright, iter <= 5) 
+
+binnedplot((detWright_5iter$Year+1899), 
+           detWright_5iter$res,
+           xlab="Year", 
+           ylab="Binned residuals",
+           main = "Detection: 5 iter Model C")
 ```
 
 
