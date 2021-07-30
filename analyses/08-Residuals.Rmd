@@ -1,0 +1,3441 @@
+---
+title: "08 Residuals"
+author: "Galina M. Jönsson"
+date: "23/07/2021"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+---
+
+# Dunn-Smyth residuals
+
+**Nick** - in contract to Wright et al, Warton uses 'absolute estimates' per visit rather than draws from the posterior distribution. Should I take the mean of (how many?) draws from the posterior distribution? 
+
+https://www.tandfonline.com/doi/abs/10.1080/10618600.1996.10474708
+
+Here, we plot Dunn-Smyth residuals ([Dunn & Smyth, 1997](https://www.tandfonline.com/doi/abs/10.1080/10618600.1996.10474708)) according to the methodology of [Warton *et al.* (2017)](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.12761). We only plot Dunn-Smyth (DS) residuals for one model (*A. urticae* model B) to demonstrate the plotting procedure, especially given that our data is formatted differently to that of Warton *et al.*, and we wish to plot residuals for multi-year occupancy models, whilst the authors used a single season example; hence, we had to make some alterations to the functions provided by the authors (namely residuals.occMod() and DS.resid.plot(); Supplementary Data 6 of Warton *et al.*, 2017). Dunn-Smyth residuals for all species and models can be found under 'species-wise summary'.    
+ 
+   
+   
+   
+Examples of papers that have produced DS residuals for multi-year occupancy models:   
+
+* https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0245973#pone-0245973-g004   
+* https://doi.org/10.1016/j.biocon.2019.03.010   
+* https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6509396/   
+
+
+## Equations for residuals 
+    
+
+**DS detection residual cumulative distribution function**, $F_{det}$, use the total number of detections at a site ($i$), denoted $Y_{i}$, conditional on there having been detections ($F_{det}(Y_{i}|Y_{i}>1)$). 
+
+
+> If the detection probability is not constant across surveys[, $F_{det}(Y_{i})$] is computed as a summation across all possible [detection] histories* with $Y_{i}$ or fewer detections. The cumulative distribution function of $Y_{i}$ can be written as:   
+
+*Recall: all possible detection histories to site $i$, which has been vistited ($v$) three times within year $t$ would be $2^3 = 8$ (2 for the two options present (1) or absent (0), and 3 for the number of visits, $v$): 010, 000, 001, 011, 111, 110, 100, 101   
+
+$$F_{det}(Y_{i}|Y_{i}>1) =\left( \frac{1}{1-(1 - \prod_{v=1}^{V}(1-p_{iv})} \right)\sum_{x|1≤Y_{x}≤Y_{i}}^{}  \prod_{v=1}^{V}-p_{iv}^{xv}(1-p_{iv})^{1- _{xv}}$$
+where $Y_x=\sum_{v=1}^{V} x_v$ is the total number of detections (i.e, 1s) in detection history $x$. In other words, the equation loops through all possible detection histories, $x$, (i.e. $2^V$) to site $i$, given that there has been detections ($F_{det}(Y_{i}|Y_{i}>1)$). This can become computationaly expensive when the total number or visits, $V$, and the total number of detections at a site, $Y_{i}$, aren't small since the possible number of detection histories, $x$, with $Y_{i}$ or fewer detection becomes big (e.g., 4 visits to site $i$ of which 2 were detections gives cumuulative probability 0.6875 & 16($2^4$) * 0.6875 == **11** possible detection histories, $x$, whilst 15 visits to site $i$ of which 7 were detections  gives cumulative probability 0.69638061523 & **22819** possible detection histories).     
+   
+   
+   
+**In other words, what I need is:**    
+* The total number of detections at site ($i$), $Y_{i}$, which is the sum of the parameter y[j]. Then I'll need to sum the number of visits (v) to the same site within the same year      
+* The detection probability $p_{iv}$ at visit $v$ to site ($i$) so the parameter p[j]. Then I'll need to sum the number of visits (j) to the same site within the same year      
+   
+**Note**, that we will take the median value for each parameter across 99 iterations as this residual formulation only takes one value into consideration (i.e. not formulated for Bayesian modelling methods). The reason for taking the median across iterations rather than the mean is that .... something to do with that the mean will not produce binary data when this is what we're often working with in occupancy models. However, detection probability $p_{iv}$ and probability of occurrence $\psi_{i}$ are not binary..    
+**Nick**, should I use the menas for these parameters instead of the median? This method of producing residuals does not use the estimated occupancy state $z$, which is binary.          
+   
+   
+   
+    
+**The occupancy residual cumulative distribution function**, $F_{occ}$, uses a key piece of information: whether or not at least one detection has occured at site $i$ ($y_{i} = 1$)  or not ($y_{i} = 0$). If $y_{i} = 0$, the cumulative distribution function for a site is not soley a function of occupancy probability ($\psi_{i}$), but also detection probability ($p_{iv}$), and is expressed as following for site $i$:   
+
+
+$$
+F_{occ}(y_{i}) = \begin{cases} 1-\psi_{i} + \psi_{i} \prod_{v=1}^{V}- (1-p_{iv}) \ \ \ \ \ \ \ \ \ \ {\sf if} \ y_{i} = 0 \\1\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ {\sf if} \ y_{i} = 1\end{cases}
+
+$$
+      
+      
+      
+      
+**In other words, what I need is:**    
+* The detection histories (1 or 0; detected or not) $y_{i}$ at site $i$, which is the parameter y[j]. In our case, we first want to separate all visits $v$ to site $i$ by year to produce time-scales of residuals. We then check whether there is at least one detection (1) to site $i$         
+* The detection probability $p_{iv}$ at visit $v$ to site ($i$) so the parameter p[j]. Again, in our case, we first want to separate all visits $v$ to site $i$ by year to produce time-scales of residuals       
+* The probability of occurrence $\psi_{i}$ per site ($i$) so the parameter psi[i,t]. For this parameter, we first want to separate all sites $i$ by year to produce time-scales of residuals.             
+
+      
+      
+    
+      
+**Finally**, both DS detection residual cumulative distributions and occupancy residual cumulative distributions are transformed using the below equation, which introduces a bit of random noise to generate residuals from discrete binomial variables (occupancy) with a bit of "jitter" to remove their discreteness. Additionally, Dunn-Smyth proposed mapping these onto the standard normal distribution so that hey can be interpreted like residuals from a regular linear regression.   
+
+    
+$$
+\Phi(z) = (1- u)F(x) + uF\_(x)
+$$
+where $\Phi(\cdot)$ is the cumulative distribution function of a standard normal variable, and $F(\cdot)$ is the cumulative distribution function found from the two above equations ($F_{det}(Y_{i}|Y_{i}>1)$ and $F_{occ}(j_{i})$). $F\_(\cdot)$ is the previous value of $F(\cdot)$ **????? FROM THE PREVIOUS SITE??** and $u$ is a randomly generated value from the standard uniform distribution (**????? EQUALLY LIKELY TO TAKE ANY VALUE BETWEEN 0 AND 1????**)
+
+
+
+
+
+## Dunn-Smyth occupancy residuals  
+    
+    
+    
+**The occupancy residual cumulative distribution function**, $F_{occ}$, uses a key piece of information: whether or not at least one detection has occured at site $i$ ($y_{i} = 1$)  or not ($y_{i} = 0$). If $y_{i} = 0$, the cumulative distribution function for a site is not soley a function of occupancy probability ($\psi_{i}$), but also detection probability ($p_{iv}$), and is expressed as following for site $i$:   
+
+
+$$
+F_{occ}(y_{i}) = \begin{cases} 1-\psi_{i} + \psi_{i} \prod_{v=1}^{V}- (1-p_{iv}) \ \ \ \ \ \ \ \ \ \ {\sf if} \ y_{i} = 0 \\1\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ {\sf if} \ y_{i} = 1\end{cases}
+$$
+   
+   
+Arguments that the function, used by, and, published in [Warton *et al.* (2017)](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.12761), require are:
+1.  object, the occMod object which must contain the following:  
+2.  $psi, fitted probabilities of occupancy, assuming a vector.  
+3.  $p, fitted probabilities of detection.   
+4. 
+```{r DSoccupancyResCalc-Aurticae-ModelB, echo=TRUE, eval=FALSE, cache=TRUE}
+# Load required packages 
+library(dplyr)
+library(reshape2)
+
+
+# Read the raw data found for Wright residuals (above)
+detDS <- read.csv("../outputs/WrightResid/Aglais_urticae_ModelB_detWright.csv")
+str(detDS)
+
+nyear <- length(unique(detDS$Year))
+nsite<- length(unique(detDS$Site))
+nvisit <- length(unique(detDS$Visit))
+
+# Tidy data frames to only include relevant columns
+detDS <- detDS[, c("Site", "Year", "VisitID", "p_variable", "p_value", "y")]
+
+### Find mean values across the 99 iterations for 'p' in detDS 
+detDS2 <- detDS %>% 
+  group_by(p_variable) %>%
+  summarise_at(vars("Site", "Year", "VisitID", "p_value", "y"), mean)
+nrow(detDS2) # =
+
+
+detDS <- detDS %>% 
+  group_by(as.factor(as.character(VisitID))) %>%
+  summarise_at(.vars = c("Site", "Year", "p_value", "y"), .funs = mean)
+# nrow(detDS) = 1361103
+
+
+### Repeat above for Wright occupancy residuals
+# Read the raw data
+occDS <-read.csv("../outputs/WrightResid/Aglais_urticae_ModelB_occuWright.csv")
+# Tidy data frames to only include relevant columns
+occDS <- occDS[, c("Site", "Year", "muZ_variable", "muZ_value")]
+### Find mean values across the 99 iterations for 'muZ' in occDS
+# nrow(occDS) = 31581000 so expect outcome to be 31581000/99 = 319,000
+occDS <- occDS %>% 
+  group_by(muZ_variable) %>%
+  summarise_at(vars("Site", "Year", "muZ_value"), mean)
+# nrow(occDS2) = 319000
+
+
+# 
+residDat_DS <- merge(detDS, occDS, by= c("Site", "Year"), all.y=TRUE)
+#nrow(residDat_DS)  = 1606800
+
+
+# Rename 
+names(residDat_DS)[names(residDat_DS) == "muZ_value"] <- "psi"
+names(residDat_DS)[names(residDat_DS) == "p_value"] <- "p"
+
+
+
+### Split into lists by year
+# Year as a factor
+residDat_DS$Year <- as.factor(as.character(residDat_DS$Year))
+residDat_DS <- split(residDat_DS, residDat_DS$Year)
+
+
+
+### $data$det.data, binary matrix of defections, sites in rows and visits in columns. NA for missing values.
+det.data <- list()
+for(i in 1:116){
+  det.data[[i]] <- reshape2::acast(residDat_DS[[i]] , Site~VisitID, value.var="y")
+}
+  
+
+# Save files
+#saveRDS(residDat_DS, "../outputs/DS_Resid/Aglais_urticae_ModelB_residDat_perYear_DS.rds")
+#saveRDS(det.data, "../outputs/DS_Resid/Aglais_urticae_ModelB_detData_perYear_DS.rds")
+
+
+################################################################
+### All years in one
+################################################################
+saveRDS(detDS, "../outputs/DS_Resid/Aglais_urticae_ModelB_detDS_temp.rds")
+saveRDS(occDS, "../outputs/DS_Resid/Aglais_urticae_ModelB_occDS_temp.rds")
+#
+detDS$Year_VisitID <- paste(detDS$Year, detDS$VisitID, sep = "_")
+
+#
+residDat_DS_all <- merge(detDS, occDS, by= c("Site", "Year"), all.y=TRUE)
+#nrow(residDat_DS_all)  = 1606800
+
+# Rename 
+names(residDat_DS_all)[names(residDat_DS_all) == "muZ_value"] <- "psi"
+names(residDat_DS_all)[names(residDat_DS_all) == "p_value"] <- "p"
+
+
+### $data$det.data, binary matrix of detections, sites in rows and visits in columns. NA for missing values.
+det.data_all <- reshape2::acast(residDat_DS_all , Site~Year_VisitID, value.var="y")
+
+# Save files
+saveRDS(residDat_DS_all, "../outputs/DS_Resid/Aglais_urticae_ModelB_residDat_DS_all.rds")
+saveRDS(det.data_all, "../outputs/DS_Resid/Aglais_urticae_ModelB_detData_all_DS.rds")
+``` 
+   
+   
+   
+## Dunn-Smyth Detection Residuals
+    
+    
+The detection residuals also use the posterior distribution of the occupancy state. For posterior iteration $n$, the detection residuals for site $i$ and visit $v$ is expressed as: 
+$$[y_{iv}^{[n]}|z_{i}^{[n]} = 1] = y_{iv} - p_{iv}^{[n]}$$
+   
+
+   
+Calculating the residuals: 
+```{r DSDetectionResCalc-Aurticae-ModelB, echo=TRUE, eval=FALSE, cache=TRUE}
+
+
+# The data frame 'occDS' contains all variables needed for finsing the detection probability so lets first load that data
+detDS <- read.csv("../outputs/DS_Resid/Aglais_urticae_ModelB_occDS.csv")
+
+# Then get rid of unnecessary columns
+detDS <- detDS(, c(XXXXX))
+
+
+## Arguments:
+## $data$det.data, binary matrix of detections, sites in rows and visits in columns. NA for missing values.
+
+# Find residuals
+detWright$res <- 
+
+# Save file
+write.csv(detWright, "../outputs/DSResid/Aglais_urticae_ModelB_detDS.csv")
+``` 
+
+
+# Wright residuals
+    
+    
+    
+Here, we plot residuals according to the methodology of [Wright *et al.*, (2019)](https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/ecy.2703). We only plot Wright (W) residuals for one model output (*A. urticae* model B) to demonstrate the procedure, especially given that we wish to plot residuals for multi-year occupancy models, whilst the authors used single season examples. Wright residuals for all species and models can be found under 'species-wise summary'.    
+   
+
+    
+
+## Equations for residuals
+   
+The occupancy residuals for site $i$ and iteration $n$ is expressed as: 
+$$o_{i}^{[n]} = z_{i}^{[n]} - \psi_{i}^{[n]}$$
+Where $z_{i}^{[n]}$ is drawn from the posterior distribution of the occupancy state at site $i$.   
+    
+    
+The detection residuals also use the posterior distribution of the occupancy state. For posterior iteration $n$, the detection residuals for site $i$ and visit $v$ is expressed as: 
+$$[y_{iv}^{[n]}|z_{i}^{[n]} = 1] = y_{iv} - p_{iv}^{[n]}$$
+
+> These detection residuals are only defined for “occupied” sites based on the latent state $z_{i}^{[n]}$ for a given posterior draw $n$. By conditioning on a posterior draw of the occupancy state ($z_{i}^{[n]}$), sites without any detection ($y_{i}$ containing all zeros) still contribute detection residuals for some posterior draws because these sites might actually be occupied ($z_{i}^{[n]} = 1$ for some iterations. Additionally, the total number of detection residuals will vary across posterior draws because of the uncertainty in true occupancy at sites with no detections. 
+
+from [Wright *et al.*, (2019)](https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/ecy.2703)
+   
+   
+   
+   
+    
+#### Defining Wright detection and occupancy residuals requires:   
+* Estimates of probability of occurrence $\psi_{i}^{[n]}$ per site ($i$).    
+* Estimates of detection probability $p_{iv}^{[n]}$ per survey ($v$) and site ($i$).   
+* Estimates of true occupancy $z_{i}^{[n]}$ per site ($i$).    
+* Detection histories (1 or 0; detected or not) $y_{i}^{[n]}$ per survey ($v$)   
+    
+    
+## Our model formulation
+   
+### State submodel
+    
+The true occupancy, $z_{it}$, at site $i$ in year $t$ has a Bernoulli distribution governed by the probability of occurrence $\psi_{it}$: 
+$$z_{it} \sim {\sf Bernoulli}(\psi_{it})$$
+where the logit of the probability of occurrence $\psi_{it}$ varies between sites and years:
+$${\sf logit}(\psi_{it}) = b_{t} + u_{i}$$
+where $b_{t}$ and $u_{i}$ denote the year and site effects, respectively
+    
+    
+    
+The JAGS code for the state submodel is as follows:  
+```{r seeStateJAGScode, eval=FALSE, echo=TRUE, cache=TRUE}
+for (i in 1:nsite){ 
+  for (t in 1:nyear){   
+    z[i,t] ~ dbern(muZ[i,t]) 
+    logit(muZ[i,t])<- a[t] + eta[i] 
+  }}
+```
+Hence, we want to extract the parameter 'muZ', denoting the probability of occurrence, $\psi_{it}$, and 'z', denoting the true occupancy $\psi_{it}. 
+   
+   
+   
+### Detection submodel
+   
+The true occupancy state $z_{iv}$, at site $i$ at visit $v$ is conditional on whether there has been an observation of the species ($y_{iv}$; i.e. the binary data) and is described as being drawn from a Bernoulli distribution governed by the detection probability, $p_{itv}$, and is conditional on the occupancy state ($z_{iv}$; i.e. the species being present at visits $v$ to site $i$)
+$$y_{iv}|z_{iv} = {\sf Bernoulli}(p_{itv} * z_{iv})$$
+   
+   
+Here, we use three formulations of the detection submodel. However, what we are interested in for all three is the detection probability, $p_{itv}$, at site $i$ in year $t$ at visit $v$. Below 
+    
+    
+    
+    
+##### Model A
+   
+where the logit of the detection probability, $p_{itv}$ varies between sites ($i$), years ($t$) and visits ($v$):
+$${\sf logit}(p_{itv}) = a_{t} + \beta_{1} * {\sf BMSdata}_{itv} +  \beta_{2} * {\sf NHCdata}_{itv} $$
+where $a_{t}$ is the year effect (and detection probability of BNM data), and $\beta_{1}$ and $\beta_{2}$ are the effects of BMS and NHC visits ($v$) to site ($i$) in year ($t$).    
+    
+    
+    
+The JAGS code for the observation submodel is as follows: 
+```{r seeObservationJAGScode, eval=FALSE, echo=TRUE, cache=TRUE}
+for(j in 1:nvisit) {
+  y[j] ~ dbern(Py[j])
+  Py[j]<- z[Site[j],Year[j]]*p[j]
+  logit(p[j]) <-  alpha.p[Year[j]] + LL.p*logL[j] + dtype2.p*DATATYPE2[j] + dtype3.p*DATATYPE3[j]
+} }
+```
+Hence, we want to extract the following parameters from our models:    
+* Probability of occurrence $\psi_{i}^{[n]}$ = 'muZ'   
+* Detection probability $p_{iv}^{[n]}$ = 'p'   
+* Estimated true occupancy $z_{i}^{[n]}$ = 'z'   
+* Detection histories (1 or 0; detected or not) $y_{i}^{[n]}$ = 'y'   
+
+
+
+
+## Example code
+    
+We need to extract the following parameters from our models:    
+* Probability of occurrence $\psi_{i}^{[n]}$ = 'muZ'   
+* Detection probability $p_{iv}^{[n]}$ = 'p'   
+* True occupancy $z_{i}^{[n]}$ = 'z'   
+* Detection histories $y_{v}$ = 'y'   
+    
+    
+    
+Here, we show how we extract and plot Wright residuals using *Aglais urticae*-Model B outputs as an example. All model outputs for all 12 species are extracted using these methods but the code for no other species is not shown in this html document. Note that the number of bins plotted may vary between species based on the number of residuals. We use 99 iterations for all species and models.   
+   
+### Extract required data
+```{r WrightResiduals-Aurticae-ModelB, echo=TRUE, eval=FALSE, cache=TRUE}
+# Load required packages
+require("rjags")
+require("coda")
+require("reshape2")
+require("dplyr")
+require("sparta")
+require("lattice")
+require("LearnBayes")
+require("R2jags")
+require("data.table")
+
+# Read the model output
+Aglais_urticae_mixLL <- readRDS("../outputs/mixLL-outputs/results_Aglais_urticae_crick_mixLL.rds")
+
+# recompile the model
+Aglais_urticae_mixLL$model$recompile()
+
+# Sample 100 iterations of each of the 3 chains and thin by 3, giving 99 samples of "muZ", "z", and "p"
+samp <- rjags:::coda.samples(model=Aglais_urticae_mixLL$model, 
+                             parallel=TRUE, n.cores=3,
+                             variable.names=c("muZ", "z", "p"), 
+                             n.iter=100, # Define number of iterations to run
+                             thin=3)
+# This produced a mcmc.list of length three: one list per chain with column names in the format muZ[i,t], z[i,t] and p[j] (where j denotes visit; v) with a total length of 1366187 columns for p[j], and 319000 columns for muZ[i,t] and z[i,t], of samples estimates and 33 rows, each, totalling 99 samples 
+
+
+
+
+### Separate columns station with "muZ", "z" and "p" (will also turn the mcmc.list to a 'regular' list)
+
+### As 'regular' lists, we can use the data.table-function melt()
+# recall the format p[j] vs muZ[i,t] and z[i,t] (where j denotes visit)
+# This makes p straight forward: 
+p <- lapply(samp, function(x) x[, grepl("p", dimnames(x)[[2]])])
+p <- rbindlist(lapply(p, as.data.frame))
+p <- melt(p)
+
+#### However, we need to separate the years in muZ[i,t] and z[i,t] (where i denotes site, and t year)
+muZ <- lapply(samp, function(x) x[, grepl("muZ", dimnames(x)[[2]])])
+muZ <- rbindlist(lapply(muZ, as.data.frame))
+muZ <- melt(muZ)
+z <- lapply(samp, function(x) x[, grepl("z", dimnames(x)[[2]])])
+z <- rbindlist(lapply(z, as.data.frame))
+z <- melt(z)
+
+
+
+#### Tidy data
+
+# Tidy VisitID column for p
+p$VisitID <- as.character(gsub(p$variable, pa="p\\[", repl=""))
+p$VisitID <- as.numeric(gsub(p$VisitID, pa="\\]", repl=""))
+
+# Tidy year and site columns for muZ and z
+muZ$Site <- as.character(gsub(muZ$variable, pa="muZ\\[", repl="")) 
+muZ$Site <- as.numeric(gsub(muZ$Site, pa="\\,[0-9]*\\]", repl="")) # 2750 
+muZ$Year <- as.character(gsub(muZ$variable, pa="muZ\\[[0-9]*\\,", repl=""))
+muZ$Year <- as.numeric(gsub(muZ$Year, pa="\\]", repl="")) # 116 
+z$Site <- as.character(gsub(z$variable, pa="z\\[", repl="")) 
+z$Site <- as.numeric(gsub(z$Site, pa="\\,[0-9]*\\]", repl="")) # 2750 
+z$Year <- as.character(gsub(z$variable, pa="z\\[[0-9]*\\,", repl=""))
+z$Year <- as.numeric(gsub(z$Year, pa="\\]", repl="")) # 116 
+
+
+# Tidy iteration
+p <- p %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+muZ <- muZ %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+z <- z %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+
+# The above code output is a grouped data frame, so we convert it to a 'regular' data frame again
+muZ <- as.data.frame(muZ[,c("variable", "value", "Site", "Year", "iter")])
+z <- as.data.frame(z[,c("variable", "value", "Site", "Year", "iter")])
+p <- as.data.frame(p[,c("variable", "value", "VisitID", "iter")])
+
+
+# Remove site:year combinations where there have been no visits 
+# load the raw data
+temp_data <- results_Aglais_urticae_mixLL$model$data()
+
+# subset year, siteID and the actual observation (y)
+temp_data <- as.data.frame(with(temp_data, cbind(Site, Year, y)))  
+temp_data$VisitID <- 1:nrow(temp_data)
+
+# Finally, merge with p dataframe
+p <- merge(p, temp_data)
+
+```
+muZ[i,t] and z[i,t] will be loner than p[j] (all combinations of sites (2750) and year (116) vs. the total number of visits (i.e. not only for the focal species; 1,361,103)   
+   
+   
+   
+**Note**, I have checked that the correct iteration number is assigned when running the code "iter = seq_along(variable)" by checking the value of four specified iteration number of specific variables for each of p, muZ and z throughout the above code chunk. specifically p[1], iter 1&40 and p[76] iter 30&60, as well as iter 1 of muZ[1,1], z[1,1], muZ[47,1], z[147,1] and iter 33 of muZ[50,1] and z[50,1]   
+   
+   
+   
+   
+### Wright occupancy residuals  
+    
+    
+    
+The occupancy residuals for site $i$ and iteration $n$ is expressed as: 
+$$o_{i}^{[n]} = z_{i}^{[n]} - \psi_{i}^{[n]}$$
+Where $z_{i}^{[n]}$ is drawn from the posterior distribution of the occupancy state at site $i$. 
+   
+   
+Making calculating the residuals as simple as:   
+```{r WrightOccupancyResCalc-Aurticae-ModelB, echo=TRUE, eval=FALSE, cache=TRUE}
+# Rename value and variable 
+names(muZ)[names(muZ) == "value"] <- "muZ_value"
+names(z)[names(z) == "value"] <- "z_value"
+names(muZ)[names(muZ) == "variable"] <- "muZ_variable"
+names(z)[names(z) == "variable"] <- "z_variable"
+
+# merge 
+occuWright <- merge(muZ, z)
+
+# Find residuals
+occuWright$res <- (occuWright$z_value - occuWright$muZ_value)
+
+# Save file
+write.csv(occuWright, "../outputs/WrightResid/Aglais_urticae_ModelB_occuWright.csv")
+``` 
+   
+   
+   
+### Wright Detection Residuals
+    
+    
+The detection residuals also use the posterior distribution of the occupancy state. For posterior iteration $n$, the detection residuals for site $i$ and visit $v$ is expressed as: 
+$$[y_{iv}^{[n]}|z_{i}^{[n]} = 1] = y_{iv} - p_{iv}^{[n]}$$
+   
+
+   
+Calculating the residuals: 
+```{r WrightDetectionResCalc-Aurticae-ModelB, echo=TRUE, eval=FALSE, cache=TRUE}
+# Rename value and variable 
+names(p)[names(p) == "value"] <- "p_value"
+names(p)[names(p) == "variable"] <- "p_variable"
+
+# merge but specify to only include z values for sites and years where there actually was a visit ie p[j]
+detWright <- merge(p, z, all.x=TRUE, all.y=FALSE)
+
+# Check the number of estimated occupancy (i.e. 1s) 
+#summary(as.factor(detWright$z_value)) 
+# 131842110 1s
+# 3410403 0s
+
+# Subset the visits where estimated occupancy is 1 (as these are the visits used to find residuals)
+detWright <- subset(detWright, z_value == 1) 
+
+# Find residuals
+detWright$res <- (detWright$y - detWright$p_value)
+
+# Save file
+write.csv(detWright, "../outputs/WrightResid/Aglais_urticae_ModelB_detWright.csv")
+``` 
+     
+    
+
+### Plot binned residuals
+
+We plot the Wright residuals as binned residuals according to the methodology of [Gelman *et al*., (2000)](https://doi.org/10.1111/1467-9876.00190), who state that binned residuals work well for *plots of binned or smoothed residuals versus predictors and specific discrepancy variables created on the basis of the particular concerns arising in an application* whilst [Wright *et al.*, (2019)](https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/ecy.2703) state that *the values of a covariate are used to form approximately equally sized groups. Plotting the averages of the residuals in each group vs. the corresponding average covariate values can reveal unexplained structure in fitted probabilities. Examining such residual plots from multiple posterior draws characterizes variation over the posterior distribution*. Here, we use the default number of categories (bins) based on their fitted values in which the data are divided. Default=NULL and will take the value of nclass according to the $n$ such that if $n >=100$, nclass=floor(sqrt(length(x))); if $10<n<100$, nclass=10; if $n<10$, nclass=floor(n/2). However, the authors note *There is typically some arbitrariness in choosing the number of bins: each bin should contain enough points so that the averaged residuals are not too noisy, but it helps to have also many bins so as to see more local patterns in the residuals (see Gelman and Hill, Data Analysis Using Regression and Multilevel/Hierarchical Models, page 97).*       
+
+
+[Gelman *et al*., (2000)](https://doi.org/10.1111/1467-9876.00190) state that quantile–quantile plots of these binned residuals does not work well, whilst [Wright *et al.*, (2019)](https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/ecy.2703) don't mention quantile–quantile plots of their residuals.    
+   
+   
+**Nick**   
+* What are your thoughts on quantile–quantile plots of "unbinned" residuals?    
+
+
+**To do**   
+* Gelman and Hill, Data Analysis Using Regression and Multilevel/Hierarchical Models, page 97    
+
+
+    
+    
+
+    
+    
+  
+```{r WrightPlot-Aurticae-ModelB, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE}
+# Read file
+occuWright <- read.csv("../outputs/WrightResid/Aglais_urticae_ModelB_occuWright.csv")
+
+# Load required packages
+require(arm)
+
+# Set up 2 rows 2 columns
+par(mfrow = c(2, 3))
+
+
+
+### Plot
+
+# It seems like the function can't handle the number of residuals since I get the following error when attempting to apply it to the whole data:
+# NAs produced by integer overflowError in if (any(breaks.index == 0)) nclass <- 1 : missing value where TRUE/FALSE needed
+
+# I therefore subset years
+# 31581000/116 = 272250 observations per year
+
+occuWright_5iter <- subset(occuWright, iter <= 5) 
+occuWright_yr1to6 <- subset(occuWright, Year <= 6) 
+occuWright_yr76to82 <- subset((subset(occuWright, Year >= 76)), Year < 82)
+
+
+binnedplot(occuWright_yr1to6$muZ_value, 
+           occuWright_yr1to6$res,
+           nclass = 116,
+           xlab="Occupancy", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1900-1905 - *Aglais urticae* Model B")
+
+
+binnedplot(occuWright_yr76to82$muZ_value, 
+           occuWright_yr76to82$res,
+           nclass = 116,
+           xlab="Occupancy", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1975-1981 - *Aglais urticae* Model B")
+
+binnedplot((occuWright_5iter$Year+1899), 
+           occuWright_5iter$res,
+           nclass = 116,
+           xlab="Year", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 5 iterations - *Aglais urticae* Model B")
+
+# Clear environment as these are long vectors and rmarkdown cannot handle these 
+rm(list = ls())
+
+# gray lines indicate plus and minus 2 standard-error bounds, within which one would expect about 95% of the binned residuals to fall, if the model were actually true.
+
+# Read detection probability file
+detWright <- read.csv("../outputs/WrightResid/Aglais_urticae_ModelB_detWright.csv")
+
+
+detWright <- subset(detWright, Year <= 6) 
+
+# PLot
+binnedplot(detWright$p_value, 
+           detWright$res,
+           nclass = 116,
+           xlab="Detection Probability", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1900-1905 - *Aglais urticae* Model B")
+
+# Clear environment as these are long vectors and rmarkdown cannot handle these 
+rm(list = ls())
+
+# Read detection probability file again
+detWright <- read.csv("../outputs/WrightResid/Aglais_urticae_ModelB_detWright.csv")
+
+detWright <- subset((subset(detWright, Year >= 76)), Year < 82)
+
+# Plot
+binnedplot(detWright$p_value, 
+           detWright$res,
+           nclass = 116,
+           xlab="Detection Probability", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1975-1981 - *Aglais urticae* Model B")
+```
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+
+
+
+##  Results: *Aglais urticae* (Small Tortoiseshell)     
+
+### Occupancy
+```{r plot-occu-outputs-A-urticae, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+### Source plotting function
+source("./fig-plot.Occdet_G.R")
+
+# Read the model output
+Aglais_urticae_ModelA <- readRDS("../outputs/catLL-outputs/results_Aglais_urticae_watson_catLL.rds")
+Aglais_urticae_ModelB <- readRDS("../outputs/mixLL-outputs/results_Aglais_urticae_crick_mixLL.rds")
+Aglais_urticae_ModelC <- readRDS("../outputs/mixLL2-outputs/results_Aglais_urticae_crick_mixLL2.rds")
+
+
+
+plot.occDet_G(Aglais_urticae_ModelA, Aglais_urticae_ModelB, Aglais_urticae_ModelC) +
+  ggtitle(label = "*Aglais urticae* - Occupancy", 
+          subtitle = "(Small Tortoiseshell)") + 
+  theme(plot.title=element_text(face="italic")) +
+  theme(text=element_text(size=15)) 
+```      
+   
+   
+   
+   
+*Aglais urticae* (Small Tortoiseshell) is one of the UKs most widespread butterflies, occurring throughout the British Isles, which is in line with the latter part of the time series (post 1976; but note it has declined by approx 15% since). Nonetheless, there is no anecdotal evidence for a 100% increase between the 1960s and 1980s indicating that the occupancy is underestimated in the early part of the time series.   
+   
+   
+   
+**In other words it appears neither of the model formulations are accurately explaining early trends for this species**
+   
+   
+   
+   
+
+### *A. urticae* - Model A
+    
+    
+#### Extract residuals
+```{r WrightResiduals-Aurticae-ModelA, echo=FALSE, eval=FALSE, cache=TRUE}
+# Load required packages
+require("rjags")
+require("coda")
+require("reshape2")
+require("dplyr")
+require("sparta")
+require("lattice")
+require("LearnBayes")
+require("R2jags")
+require("data.table")
+
+# Read the model output
+Aglais_urticae_ModelA <- readRDS("../outputs/catLL-outputs/results_Aglais_urticae_watson_catLL.rds")
+
+# recompile the model
+Aglais_urticae_ModelA$model$recompile()
+
+# Sample 100 iterations of each of the 3 chains and thin by 3, giving 99 samples of "muZ", "z", and "p"
+samp <- rjags:::coda.samples(model=Aglais_urticae_ModelA$model, 
+                             parallel=TRUE, n.cores=3,
+                             variable.names=c("muZ", "z", "p"), 
+                             n.iter=100, # Define number of iterations to run
+                             thin=3)
+
+
+
+### Separate columns station with "muZ", "z" and "p" 
+
+### As 'regular' lists, we can use the data.table-function melt()
+# recall the format p[j] vs muZ[i,t] and z[i,t] (where j denotes visit)
+# This makes p straight forward: 
+p <- lapply(samp, function(x) x[, grepl("p", dimnames(x)[[2]])])
+p <- rbindlist(lapply(p, as.data.frame))
+p <- melt(p)
+#### However, we need to separate the years in muZ[i,t] and z[i,t] (where i denotes site, and t year)
+muZ <- lapply(samp, function(x) x[, grepl("muZ", dimnames(x)[[2]])])
+muZ <- rbindlist(lapply(muZ, as.data.frame))
+muZ <- melt(muZ)
+z <- lapply(samp, function(x) x[, grepl("z", dimnames(x)[[2]])])
+z <- rbindlist(lapply(z, as.data.frame))
+z <- melt(z)
+
+
+
+#### Tidy data
+
+# Tidy VisitID column for p
+p$VisitID <- as.character(gsub(p$variable, pa="p\\[", repl=""))
+p$VisitID <- as.numeric(gsub(p$VisitID, pa="\\]", repl=""))
+
+# Tidy year and site columns for muZ and z
+muZ$Site <- as.character(gsub(muZ$variable, pa="muZ\\[", repl="")) 
+muZ$Site <- as.numeric(gsub(muZ$Site, pa="\\,[0-9]*\\]", repl="")) # 2750 
+muZ$Year <- as.character(gsub(muZ$variable, pa="muZ\\[[0-9]*\\,", repl=""))
+muZ$Year <- as.numeric(gsub(muZ$Year, pa="\\]", repl="")) # 116 
+z$Site <- as.character(gsub(z$variable, pa="z\\[", repl="")) 
+z$Site <- as.numeric(gsub(z$Site, pa="\\,[0-9]*\\]", repl="")) # 2750 
+z$Year <- as.character(gsub(z$variable, pa="z\\[[0-9]*\\,", repl=""))
+z$Year <- as.numeric(gsub(z$Year, pa="\\]", repl="")) # 116 
+
+
+# Tidy iteration
+p <- p %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+muZ <- muZ %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+z <- z %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+
+# The above code output is a grouped data frame, so we convert it to a 'regular' data frame again
+p <- as.data.frame(p[,c("variable", "value", "VisitID", "iter")])
+muZ <- as.data.frame(muZ[,c("variable", "value", "Site", "Year", "iter")])
+z <- as.data.frame(z[,c("variable", "value", "Site", "Year", "iter")])
+
+
+# add the y (observations per visit) to the p dataframe
+# load the raw data
+temp_data <- Aglais_urticae_ModelA$model$data()
+
+# subset year, siteID and the actual observation (y)
+temp_data <- as.data.frame(with(temp_data, cbind(Site, Year, y)))  
+temp_data$VisitID <- 1:nrow(temp_data)
+
+# Merge with p dataframe
+p <- merge(p, temp_data)
+
+
+   
+ 
+
+ 
+################################################################
+### Wright occupancy residuals 
+################################################################
+
+# Rename value and variable 
+names(muZ)[names(muZ) == "value"] <- "muZ_value"
+names(z)[names(z) == "value"] <- "z_value"
+names(muZ)[names(muZ) == "variable"] <- "muZ_variable"
+names(z)[names(z) == "variable"] <- "z_variable"
+
+# merge 
+occuWright <- merge(muZ, z)
+
+# Find residuals
+occuWright$res <- (occuWright$z_value - occuWright$muZ_value)
+
+# Save file
+write.csv(occuWright, "../outputs/WrightResid/Aglais_urticae_ModelA_occuWright.csv")
+
+
+
+
+
+################################################################
+### Wright Detection Residuals
+################################################################
+
+# Rename value and variable 
+names(p)[names(p) == "value"] <- "p_value"
+names(p)[names(p) == "variable"] <- "p_variable"
+
+# merge but specify to only include z values for sites and years where there actually was a visit ie p[j]
+detWright <- merge(p, z, all.x=TRUE, all.y=FALSE)
+
+# Check the number of estimated occupancy (i.e. 1s) 
+summary(as.factor(detWright$z_value)) 
+# 131659680 1s
+# 3592833 0s
+
+# Subset the visits where estimated occupancy is 1 (as these are the visits used to find residuals)
+detWright <- subset(detWright, z_value == 1) 
+
+# Find residuals
+detWright$res <- (detWright$y - detWright$p_value)
+
+# Save file
+write.csv(detWright, "../outputs/WrightResid/Aglais_urticae_ModelA_detWright.csv")
+``` 
+     
+    
+    
+    
+    
+    
+    
+    
+
+#### Plot binned residuals
+
+  
+```{r WrightPlot-Aurticae-ModelA, echo=FALSE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE}
+# Read file
+occuWright <- read.csv("../outputs/WrightResid/Aglais_urticae_ModelA_occuWright.csv")
+
+# Load required packages
+require(arm)
+
+# Set up 2 rows 2 columns
+par(mfrow = c(2, 3))
+
+
+
+### Plot
+
+occuWright_5iter <- subset(occuWright, iter <= 5) 
+occuWright_yr1to6 <- subset(occuWright, Year <= 6) 
+occuWright_yr76to82 <- subset((subset(occuWright, Year >= 76)), Year < 82)
+
+
+binnedplot(occuWright_yr1to6$muZ_value, 
+           occuWright_yr1to6$res,
+           nclass = 116,
+           xlab="Occupancy", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1900-1905 - *Aglais urticae* Model A")
+
+
+binnedplot(occuWright_yr76to82$muZ_value, 
+           occuWright_yr76to82$res,
+           nclass = 116,
+           xlab="Occupancy", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1975-1981 - *Aglais urticae* Model A")
+
+binnedplot((occuWright_5iter$Year+1899), 
+           occuWright_5iter$res,
+           nclass = 116,
+           xlab="Year", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 5 iterations - *Aglais urticae* Model A")
+
+# Clear environment as these are long vectors and rmarkdown cannot handle these 
+rm(list = ls())
+
+# gray lines indicate plus and minus 2 standard-error bounds, within which one would expect about 95% of the binned residuals to fall, if the model were actually true.
+
+# Read detection probability file
+detWright <- read.csv("../outputs/WrightResid/Aglais_urticae_ModelA_detWright.csv")
+
+
+detWright <- subset(detWright, Year <= 6) 
+
+# PLot
+binnedplot(detWright$p_value, 
+           detWright$res,
+           nclass = 116,
+           xlab="Detection Probability", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1900-1905 - *Aglais urticae* Model A")
+
+# Clear environment as these are long vectors and rmarkdown cannot handle these 
+rm(list = ls())
+
+# Read detection probability file again
+detWright <- read.csv("../outputs/WrightResid/Aglais_urticae_ModelA_detWright.csv")
+
+detWright <- subset((subset(detWright, Year >= 76)), Year < 82)
+
+# Plot
+binnedplot(detWright$p_value, 
+           detWright$res,
+           nclass = 116,
+           xlab="Detection Probability", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1975-1981 - *Aglais urticae* Model A")
+```
+      
+      
+      
+      
+      
+      
+      
+      
+      
+
+
+### *A. urticae* - Model B
+  
+```{r WrightPlot-Aurticae-ModelB-2, echo=FALSE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE}
+# Read file
+occuWright <- read.csv("../outputs/WrightResid/Aglais_urticae_ModelB_occuWright.csv")
+
+# Load required packages
+require(arm)
+
+# Set up 2 rows 2 columns
+par(mfrow = c(2, 3))
+
+
+
+### Plot
+
+# It seems like the function can't handle the number of residuals since I get the following error when attempting to apply it to the whole data:
+# NAs produced by integer overflowError in if (any(breaks.index == 0)) nclass <- 1 : missing value where TRUE/FALSE needed
+
+# I therefore subset years
+# 31581000/116 = 272250 observations per year
+
+occuWright_5iter <- subset(occuWright, iter <= 5) 
+occuWright_yr1to6 <- subset(occuWright, Year <= 6) 
+occuWright_yr76to82 <- subset((subset(occuWright, Year >= 76)), Year < 82)
+
+
+binnedplot(occuWright_yr1to6$muZ_value, 
+           occuWright_yr1to6$res,
+           nclass = 116,
+           xlab="Occupancy", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1900-1905 - *Aglais urticae* Model B")
+
+
+binnedplot(occuWright_yr76to82$muZ_value, 
+           occuWright_yr76to82$res,
+           nclass = 116,
+           xlab="Occupancy", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1975-1981 - *Aglais urticae* Model B")
+
+binnedplot((occuWright_5iter$Year+1899), 
+           occuWright_5iter$res,
+           nclass = 116,
+           xlab="Year", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 5 iterations - *Aglais urticae* Model B")
+
+# Clear environment as these are long vectors and rmarkdown cannot handle these 
+rm(list = ls())
+
+# gray lines indicate plus and minus 2 standard-error bounds, within which one would expect about 95% of the binned residuals to fall, if the model were actually true.
+
+# Read detection probability file
+detWright <- read.csv("../outputs/WrightResid/Aglais_urticae_ModelB_detWright.csv")
+
+
+detWright <- subset(detWright, Year <= 6) 
+
+# PLot
+binnedplot(detWright$p_value, 
+           detWright$res,
+           nclass = 116,
+           xlab="Detection Probability", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1900-1905 - *Aglais urticae* Model B")
+
+# Clear environment as these are long vectors and rmarkdown cannot handle these 
+rm(list = ls())
+
+# Read detection probability file again
+detWright <- read.csv("../outputs/WrightResid/Aglais_urticae_ModelB_detWright.csv")
+
+detWright <- subset((subset(detWright, Year >= 76)), Year < 82)
+
+# Plot
+binnedplot(detWright$p_value, 
+           detWright$res,
+           nclass = 116,
+           xlab="Detection Probability", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1975-1981 - *Aglais urticae* Model B")
+```
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+### *A. urticae* - Model C
+    
+    
+#### Extract resuduals
+```{r WrightResiduals-Aurticae-ModelC, echo=FALSE, eval=FALSE, cache=TRUE}
+# Load required packages
+require("rjags")
+require("coda")
+require("reshape2")
+require("dplyr")
+require("sparta")
+require("lattice")
+require("LearnBayes")
+require("R2jags")
+require("data.table")
+
+# Read the model output
+Aglais_urticae_ModelC <- readRDS("../outputs/mixLL2-outputs/results_Aglais_urticae_crick_mixLL2.rds")
+
+# recompile the model
+Aglais_urticae_ModelC$model$recompile()
+
+# Sample 100 iterations of each of the 3 chains and thin by 3, giving 99 samples of "muZ", "z", and "p"
+samp <- rjags:::coda.samples(model=Aglais_urticae_ModelC$model, 
+                             parallel=TRUE, n.cores=3,
+                             variable.names=c("muZ", "z", "p"), 
+                             n.iter=100, # Define number of iterations to run
+                             thin=3)
+
+
+### Separate columns station with "muZ", "z" and "p" 
+### As 'regular' lists, we can use the data.table-function melt()
+# recall the format p[j] vs muZ[i,t] and z[i,t] (where j denotes visit)
+# This makes p straight forward: 
+p <- lapply(samp, function(x) x[, grepl("p", dimnames(x)[[2]])])
+p <- rbindlist(lapply(p, as.data.frame))
+p <- melt(p)
+
+#### However, we need to separate the years in muZ[i,t] and z[i,t] (where i denotes site, and t year)
+muZ <- lapply(samp, function(x) x[, grepl("muZ", dimnames(x)[[2]])])
+muZ <- rbindlist(lapply(muZ, as.data.frame))
+muZ <- melt(muZ)
+z <- lapply(samp, function(x) x[, grepl("z", dimnames(x)[[2]])])
+z <- rbindlist(lapply(z, as.data.frame))
+z <- melt(z)
+
+
+
+#### Tidy data
+
+# Tidy VisitID column for p
+p$VisitID <- as.character(gsub(p$variable, pa="p\\[", repl=""))
+p$VisitID <- as.numeric(gsub(p$VisitID, pa="\\]", repl=""))
+
+# Tidy year and site columns for muZ and z
+muZ$Site <- as.character(gsub(muZ$variable, pa="muZ\\[", repl="")) 
+muZ$Site <- as.numeric(gsub(muZ$Site, pa="\\,[0-9]*\\]", repl="")) # 2750 
+muZ$Year <- as.character(gsub(muZ$variable, pa="muZ\\[[0-9]*\\,", repl=""))
+muZ$Year <- as.numeric(gsub(muZ$Year, pa="\\]", repl="")) # 116 
+z$Site <- as.character(gsub(z$variable, pa="z\\[", repl="")) 
+z$Site <- as.numeric(gsub(z$Site, pa="\\,[0-9]*\\]", repl="")) # 2750 
+z$Year <- as.character(gsub(z$variable, pa="z\\[[0-9]*\\,", repl=""))
+z$Year <- as.numeric(gsub(z$Year, pa="\\]", repl="")) # 116 
+
+# Tidy iteration
+p <- p %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+muZ <- muZ %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+z <- z %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+
+# The above code output is a grouped data frame, so we convert it to a 'regular' data frame again
+p <- as.data.frame(p[,c("variable", "value", "VisitID", "iter")])
+muZ <- as.data.frame(muZ[,c("variable", "value", "Site", "Year", "iter")])
+z <- as.data.frame(z[,c("variable", "value", "Site", "Year", "iter")])
+
+# add the y (observations per visit) to the p dataframe
+# load the raw data
+temp_data <- Aglais_urticae_ModelC$model$data()
+
+# subset year, siteID and the actual observation (y)
+temp_data <- as.data.frame(with(temp_data, cbind(Site, Year, y)))  
+temp_data$VisitID <- 1:nrow(temp_data)
+
+# Merge with p dataframe
+p <- merge(p, temp_data)
+
+
+
+ 
+################################################################
+### Wright occupancy residuals 
+################################################################
+
+# Rename value and variable 
+names(muZ)[names(muZ) == "value"] <- "muZ_value"
+names(z)[names(z) == "value"] <- "z_value"
+names(muZ)[names(muZ) == "variable"] <- "muZ_variable"
+names(z)[names(z) == "variable"] <- "z_variable"
+
+# merge 
+occuWright <- merge(muZ, z)
+
+# Find residuals
+occuWright$res <- (occuWright$z_value - occuWright$muZ_value)
+
+# Save file
+write.csv(occuWright, "../outputs/WrightResid/Aglais_urticae_ModelC_occuWright.csv")
+
+
+
+
+
+################################################################
+### Wright Detection Residuals
+################################################################
+
+# Rename value and variable 
+names(p)[names(p) == "value"] <- "p_value"
+names(p)[names(p) == "variable"] <- "p_variable"
+
+# merge but specify to only include z values for sites and years where there actually was a visit ie p[j]
+detWright <- merge(p, z, all.x=TRUE, all.y=FALSE)
+
+# Check the number of estimated occupancy (i.e. 1s) 
+summary(as.factor(detWright$z_value)) 
+# XXXXX 1s
+# 3410403 0s
+
+# Subset the visits where estimated occupancy is 1 (as these are the visits used to find residuals)
+detWright <- subset(detWright, z_value == 1) 
+
+# Find residuals
+detWright$res <- (detWright$y - detWright$p_value)
+
+# Save file
+write.csv(detWright, "../outputs/WrightResid/Aglais_urticae_ModelC_detWright.csv")
+```      
+      
+      
+
+
+
+
+
+      
+
+#### Plot  
+```{r WrightPlot-Aurticae-ModelC, echo=FALSE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE}
+# Read file
+occuWright <- read.csv("../outputs/WrightResid/Aglais_urticae_ModelC_occuWright.csv")
+
+# Load required packages
+require(arm)
+
+# Set up 2 rows 2 columns
+par(mfrow = c(2, 3))
+
+
+
+### Plot
+
+# It seems like the function can't handle the number of residuals since I get the following error when attempting to apply it to the whole data:
+# NAs produced by integer overflowError in if (any(breaks.index == 0)) nclass <- 1 : missing value where TRUE/FALSE needed
+
+# I therefore subset years
+# 31581000/116 = 272250 observations per year
+
+occuWright_5iter <- subset(occuWright, iter <= 5) 
+occuWright_yr1to6 <- subset(occuWright, Year <= 6) 
+occuWright_yr76to82 <- subset((subset(occuWright, Year >= 76)), Year < 82)
+
+
+binnedplot(occuWright_yr1to6$muZ_value, 
+           occuWright_yr1to6$res,
+           nclass = 116,
+           xlab="Occupancy", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1900-1905 - *Aglais urticae* Model C")
+
+
+binnedplot(occuWright_yr76to82$muZ_value, 
+           occuWright_yr76to82$res,
+           nclass = 116,
+           xlab="Occupancy", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1975-1981 - *Aglais urticae* Model C")
+
+binnedplot((occuWright_5iter$Year+1899), 
+           occuWright_5iter$res,
+           nclass = 116,
+           xlab="Year", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 5 iterations - *Aglais urticae* Model C")
+
+# Clear environment as these are long vectors and rmarkdown cannot handle these 
+rm(list = ls())
+
+# gray lines indicate plus and minus 2 standard-error bounds, within which one would expect about 95% of the binned residuals to fall, if the model were actually true.
+
+# Read detection probability file
+detWright <- read.csv("../outputs/WrightResid/Aglais_urticae_ModelC_detWright.csv")
+
+
+detWright <- subset(detWright, Year <= 6) 
+
+# PLot
+binnedplot(detWright$p_value, 
+           detWright$res,
+           nclass = 116,
+           xlab="Detection Probability", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1900-1905 - *Aglais urticae* Model C")
+
+# Clear environment as these are long vectors and rmarkdown cannot handle these 
+rm(list = ls())
+
+# Read detection probability file again
+detWright <- read.csv("../outputs/WrightResid/Aglais_urticae_ModelC_detWright.csv")
+
+detWright <- subset((subset(detWright, Year >= 76)), Year < 82)
+
+# Plot
+binnedplot(detWright$p_value, 
+           detWright$res,
+           nclass = 116,
+           xlab="Detection Probability", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1975-1981 - *Aglais urticae* Model C")
+```
+##  Results: *Carterocephalus palaemon* (Chequered skipper)
+
+### Occupancy
+```{r plot-occu-outputs-C-palaemon, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+### Source plotting function
+source("./fig-plot.Occdet_G.R")
+
+# Read the model output
+Carterocephalus_palaemon_ModelA <- readRDS("../outputs/catLL-outputs/results_Carterocephalus_palaemon_watson_catLL.rds")
+Carterocephalus_palaemon_ModelB <- readRDS("../outputs/mixLL-outputs/results_Carterocephalus_palaemon_ctag_mixLL.rds")
+Carterocephalus_palaemon_ModelC <- readRDS("../outputs/mixLL2-outputs/results_Carterocephalus_palaemon_watson_mixLL2.rds")
+
+
+plot.occDet_G(Carterocephalus_palaemon_ModelA,
+              Carterocephalus_palaemon_ModelB,
+              Carterocephalus_palaemon_ModelC) +
+  ggtitle(label = "*Carterocephalus palaemon* Occupancy", 
+          subtitle = "(Chequered skipper)") + 
+  theme(plot.title=element_text(face="italic")) +
+  scale_y_continuous(limits=c(0, 0.1), expand = c(0, 0)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  theme(text=element_text(size=15))  
+```
+   
+   
+   
+   
+The Chequered Skipper is confined to north-west Scotland where it was first discovered in 1939 (distribution is centered on Fort William). It formerly occurred in central and east England, but started to decline in "the early  part of the 20th century" (Millennium atlas) with East Midlands as the last English stronghold where it was "fairly abundant until the 1950s". Thereafter remaining English populations suffered rapid declines and it was declared extinct in England in 1976. 
+   
+   
+**Occupancy estimates are in line with anecdotal evidence for historic distribution changes and very similar across models**   
+    
+   
+### *C. palaemon* - Model A
+    
+    
+####  Extract resuduals
+```{r WrightResiduals-Cpalaemon-ModelA, echo=FALSE, eval=FALSE, cache=TRUE}
+# Load required packages
+require("rjags")
+require("coda")
+require("reshape2")
+require("dplyr")
+require("sparta")
+require("lattice")
+require("LearnBayes")
+require("R2jags")
+require("data.table")
+
+# Read the model output
+Carterocephalus_palaemon_ModelA <- readRDS("../outputs/catLL-outputs/results_Carterocephalus_palaemon_watson_catLL.rds")
+
+# recompile the model
+Carterocephalus_palaemon_ModelA$model$recompile()
+
+# Sample 100 iterations of each of the 3 chains and thin by 3, giving 99 samples of "muZ", "z", and "p"
+samp <- rjags:::coda.samples(model=Carterocephalus_palaemon_ModelA$model, 
+                             parallel=TRUE, n.cores=3,
+                             variable.names=c("muZ", "z", "p"), 
+                             n.iter=100, # Define number of iterations to run
+                             thin=3)
+
+
+### Separate columns station with "muZ", "z" and "p" 
+### As 'regular' lists, we can use the data.table-function melt()
+# recall the format p[j] vs muZ[i,t] and z[i,t] (where j denotes visit)
+# This makes p straight forward: 
+p <- lapply(samp, function(x) x[, grepl("p", dimnames(x)[[2]])])
+p <- rbindlist(lapply(p, as.data.frame))
+p <- melt(p)
+
+#### However, we need to separate the years in muZ[i,t] and z[i,t] (where i denotes site, and t year)
+muZ <- lapply(samp, function(x) x[, grepl("muZ", dimnames(x)[[2]])])
+muZ <- rbindlist(lapply(muZ, as.data.frame))
+muZ <- melt(muZ)
+z <- lapply(samp, function(x) x[, grepl("z", dimnames(x)[[2]])])
+z <- rbindlist(lapply(z, as.data.frame))
+z <- melt(z)
+
+
+
+#### Tidy data
+
+# Tidy VisitID column for p
+p$VisitID <- as.character(gsub(p$variable, pa="p\\[", repl=""))
+p$VisitID <- as.numeric(gsub(p$VisitID, pa="\\]", repl=""))
+
+# Tidy year and site columns for muZ and z
+muZ$Site <- as.character(gsub(muZ$variable, pa="muZ\\[", repl="")) 
+muZ$Site <- as.numeric(gsub(muZ$Site, pa="\\,[0-9]*\\]", repl="")) # 2750 
+muZ$Year <- as.character(gsub(muZ$variable, pa="muZ\\[[0-9]*\\,", repl=""))
+muZ$Year <- as.numeric(gsub(muZ$Year, pa="\\]", repl="")) # 116 
+z$Site <- as.character(gsub(z$variable, pa="z\\[", repl="")) 
+z$Site <- as.numeric(gsub(z$Site, pa="\\,[0-9]*\\]", repl="")) # 2750 
+z$Year <- as.character(gsub(z$variable, pa="z\\[[0-9]*\\,", repl=""))
+z$Year <- as.numeric(gsub(z$Year, pa="\\]", repl="")) # 116 
+
+# Tidy iteration
+p <- p %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+muZ <- muZ %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+z <- z %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+
+# The above code output is a grouped data frame, so we convert it to a 'regular' data frame again
+p <- as.data.frame(p[,c("variable", "value", "VisitID", "iter")])
+muZ <- as.data.frame(muZ[,c("variable", "value", "Site", "Year", "iter")])
+z <- as.data.frame(z[,c("variable", "value", "Site", "Year", "iter")])
+
+# add the y (observations per visit) to the p dataframe
+# load the raw data
+temp_data <- Carterocephalus_palaemon_ModelA$model$data()
+
+# subset year, siteID and the actual observation (y)
+temp_data <- as.data.frame(with(temp_data, cbind(Site, Year, y)))  
+temp_data$VisitID <- 1:nrow(temp_data)
+
+# Merge with p dataframe
+p <- merge(p, temp_data)
+
+
+
+ 
+################################################################
+### Wright occupancy residuals 
+################################################################
+
+# Rename value and variable 
+names(muZ)[names(muZ) == "value"] <- "muZ_value"
+names(z)[names(z) == "value"] <- "z_value"
+names(muZ)[names(muZ) == "variable"] <- "muZ_variable"
+names(z)[names(z) == "variable"] <- "z_variable"
+
+# merge 
+occuWright <- merge(muZ, z)
+
+# Find residuals
+occuWright$res <- (occuWright$z_value - occuWright$muZ_value)
+
+# Save file
+write.csv(occuWright, "../outputs/WrightResid/Carterocephalus_palaemon_ModelA_occuWright.csv")
+
+
+
+
+
+################################################################
+### Wright Detection Residuals
+################################################################
+
+# Rename value and variable 
+names(p)[names(p) == "value"] <- "p_value"
+names(p)[names(p) == "variable"] <- "p_variable"
+
+# merge but specify to only include z values for sites and years where there actually was a visit ie p[j]
+detWright <- merge(p, z, all.x=TRUE, all.y=FALSE)
+
+# Check the number of estimated occupancy (i.e. 1s) 
+summary(as.factor(detWright$z_value)) 
+# 412398 1s
+# 134840115 0s
+
+# Subset the visits where estimated occupancy is 1 (as these are the visits used to find residuals)
+detWright <- subset(detWright, z_value == 1) 
+
+# Find residuals
+detWright$res <- (detWright$y - detWright$p_value)
+
+# Save file
+write.csv(detWright, "../outputs/WrightResid/Carterocephalus_palaemon_ModelA_detWright.csv")
+```  
+
+
+
+#### Plot binned residuals
+
+  
+```{r WrightPlot-Cpalaemon-ModelA, echo=FALSE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE}
+# Read file
+occuWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelA_occuWright.csv")
+
+# Load required packages
+require(arm)
+
+# Set up 2 rows 2 columns
+par(mfrow = c(2, 3))
+
+
+
+### Plot
+
+occuWright_5iter <- subset(occuWright, iter <= 5) 
+occuWright_yr1to6 <- subset(occuWright, Year <= 6) 
+occuWright_yr76to82 <- subset((subset(occuWright, Year >= 76)), Year < 82)
+
+
+binnedplot(occuWright_yr1to6$muZ_value, 
+           occuWright_yr1to6$res,
+           nclass = 116,
+           xlab="Occupancy", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1900-1905 - C. palaemon* Model A")
+
+
+binnedplot(occuWright_yr76to82$muZ_value, 
+           occuWright_yr76to82$res,
+           nclass = 116,
+           xlab="Occupancy", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1975-1981 - *C. palaemon* Model A")
+
+binnedplot((occuWright_5iter$Year+1899), 
+           occuWright_5iter$res,
+           nclass = 116,
+           xlab="Year", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 5 iterations - *C. palaemon* Model A")
+
+# Clear environment as these are long vectors and rmarkdown cannot handle these 
+rm(list = ls())
+
+# gray lines indicate plus and minus 2 standard-error bounds, within which one would expect about 95% of the binned residuals to fall, if the model were actually true.
+
+# Read detection probability file
+detWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelA_detWright.csv")
+
+
+detWright <- subset(detWright, Year <= 6) 
+
+# PLot
+binnedplot(detWright$p_value, 
+           detWright$res,
+           nclass = 116,
+           xlab="Detection Probability", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1900-1905 - *C. palaemon* Model A")
+
+# Clear environment as these are long vectors and rmarkdown cannot handle these 
+rm(list = ls())
+
+# Read detection probability file again
+detWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelA_detWright.csv")
+
+detWright <- subset((subset(detWright, Year >= 76)), Year < 82)
+
+# Plot
+binnedplot(detWright$p_value, 
+           detWright$res,
+           nclass = 116,
+           xlab="Detection Probability", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1975-1981 - *C. palaemon* Model A")
+```
+      
+      
+      
+      
+      
+      
+      
+      
+    
+
+    
+### *C. palaemon* - Model B
+    
+#### Extract resuduals
+```{r WrightResiduals-Cpalaemon-ModelB, echo=FALSE, eval=FALSE, cache=TRUE}
+# Load required packages
+require("rjags")
+require("coda")
+require("reshape2")
+require("dplyr")
+require("sparta")
+require("lattice")
+require("LearnBayes")
+require("R2jags")
+require("data.table")
+
+# Read the model output
+Carterocephalus_palaemon_mixLL <- readRDS("../outputs/mixLL-outputs/results_Carterocephalus_palaemon_ctag_mixLL.rds")
+
+# recompile the model
+Carterocephalus_palaemon_mixLL$model$recompile()
+
+# Sample 100 iterations of each of the 3 chains and thin by 3, giving 99 samples of "muZ", "z", and "p"
+samp <- rjags:::coda.samples(model=Carterocephalus_palaemon_mixLL$model, 
+                             parallel=TRUE, n.cores=3,
+                             variable.names=c("muZ", "z", "p"), 
+                             n.iter=100, # Define number of iterations to run
+                             thin=3)
+# This produced a mcmc.list of length three: one list per chain with a total length of XXXX columns for p[j], and 319000 columns for muZ[i,t] and z[i,t]
+
+
+
+### Separate columns station with "muZ", "z" and "p" 
+
+### As 'regular' lists, we can use the data.table-function melt()
+# recall the format p[j] vs muZ[i,t] and z[i,t] (where j denotes visit)
+# This makes p straight forward: 
+p <- lapply(samp, function(x) x[, grepl("p", dimnames(x)[[2]])])
+p <- rbindlist(lapply(p, as.data.frame))
+p <- melt(p)
+
+#### However, we need to separate the years in muZ[i,t] and z[i,t] (where i denotes site, and t year)
+muZ <- lapply(samp, function(x) x[, grepl("muZ", dimnames(x)[[2]])])
+muZ <- rbindlist(lapply(muZ, as.data.frame))
+muZ <- melt(muZ)
+z <- lapply(samp, function(x) x[, grepl("z", dimnames(x)[[2]])])
+z <- rbindlist(lapply(z, as.data.frame))
+z <- melt(z)
+
+
+
+#### Tidy data
+
+# Tidy VisitID column for p
+p$VisitID <- as.character(gsub(p$variable, pa="p\\[", repl=""))
+p$VisitID <- as.numeric(gsub(p$VisitID, pa="\\]", repl=""))
+
+# Tidy year and site columns for muZ and z
+muZ$Site <- as.character(gsub(muZ$variable, pa="muZ\\[", repl="")) 
+muZ$Site <- as.numeric(gsub(muZ$Site, pa="\\,[0-9]*\\]", repl="")) # 2750 
+muZ$Year <- as.character(gsub(muZ$variable, pa="muZ\\[[0-9]*\\,", repl=""))
+muZ$Year <- as.numeric(gsub(muZ$Year, pa="\\]", repl="")) # 116 
+z$Site <- as.character(gsub(z$variable, pa="z\\[", repl="")) 
+z$Site <- as.numeric(gsub(z$Site, pa="\\,[0-9]*\\]", repl="")) # 2750 
+z$Year <- as.character(gsub(z$variable, pa="z\\[[0-9]*\\,", repl=""))
+z$Year <- as.numeric(gsub(z$Year, pa="\\]", repl="")) # 116 
+
+
+# Tidy iteration
+p <- p %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+muZ <- muZ %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+z <- z %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+
+# The above code output is a grouped data frame, so we convert it to a 'regular' data frame again
+p <- as.data.frame(p[,c("variable", "value", "VisitID", "iter")])
+muZ <- as.data.frame(muZ[,c("variable", "value", "Site", "Year", "iter")])
+z <- as.data.frame(z[,c("variable", "value", "Site", "Year", "iter")])
+
+
+
+# add the y (observations per visit) to the p dataframe
+# load the raw data
+temp_data <- Carterocephalus_palaemon_mixLL$model$data()
+
+# subset year, siteID and the actual observation (y)
+temp_data <- as.data.frame(with(temp_data, cbind(Site, Year, y)))  
+temp_data$VisitID <- 1:nrow(temp_data)
+
+# Finally, merge with p dataframe
+p <- merge(p, temp_data)
+
+
+
+
+
+
+################################################################
+### Wright Occupancy Residuals
+################################################################
+
+# Rename value and variable 
+names(muZ)[names(muZ) == "value"] <- "muZ_value"
+names(z)[names(z) == "value"] <- "z_value"
+names(muZ)[names(muZ) == "variable"] <- "muZ_variable"
+names(z)[names(z) == "variable"] <- "z_variable"
+
+# merge 
+occuWright <- merge(muZ, z)
+
+# Find residuals
+occuWright$res <- (occuWright$z_value - occuWright$muZ_value)
+
+# Save file
+write.csv(occuWright, "../outputs/WrightResid/Carterocephalus_palaemon_ModelB_occuWright.csv")
+
+
+
+
+
+################################################################
+### Wright Detection Residuals
+################################################################
+
+# Rename value and variable 
+names(p)[names(p) == "value"] <- "p_value"
+names(p)[names(p) == "variable"] <- "p_variable"
+
+# merge but specify to only include z values for sites and years where there actually was a visit ie p[j]
+detWright <- merge(p, z, all.x=TRUE, all.y=FALSE)
+
+# Check the number of estimated occupancy (i.e. 1s) 
+#summary(as.factor(detWright$z_value)) 
+# 409860 1s
+# 134842653 0s
+
+# Subset the visits where estimated occupancy is 1 (as these are the visits used to find residuals)
+detWright <- subset(detWright, z_value == 1) 
+
+# Find residuals
+detWright$res <- (detWright$y - detWright$p_value)
+
+# Save file
+write.csv(detWright, "../outputs/WrightResid/Carterocephalus_palaemon_ModelB_detWright.csv")
+``` 
+     
+     
+Compared to, for instance, *Aglais urticae*, which is a much more common species, there are fewer detection residuals for *Carterocephalus palaemon* as 131,842,110 and 409860 out of a total of 135,252,513 (99 samples for each of 4,098,561) visits had detected each of the two species, respectively.
+    
+    
+    
+    
+    
+    
+    
+
+#### Plot binned residuals
+ 
+
+
+    
+    
+  
+```{r WrightPlot-Cpalaemon-ModelB, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE}
+# Read file
+occuWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelB_occuWright.csv")
+
+# Load required packages
+require(arm)
+
+# Set up 2 rows 2 columns
+par(mfrow = c(2, 3))
+
+
+
+### Plot
+
+occuWright_5iter <- subset(occuWright, iter <= 5) 
+occuWright_yr1to6 <- subset(occuWright, Year <= 6) 
+occuWright_yr76to82 <- subset((subset(occuWright, Year >= 76)), Year < 82)
+
+
+binnedplot(occuWright_yr1to6$muZ_value, 
+           occuWright_yr1to6$res,
+           xlab="Occupancy", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1900-1905 - C. palaemon* Model B")
+
+
+binnedplot(occuWright_yr76to82$muZ_value, 
+           occuWright_yr76to82$res,
+           xlab="Occupancy", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1975-1981 - C. palaemon* Model B")
+
+binnedplot((occuWright_5iter$Year+1899), 
+           occuWright_5iter$res,
+           xlab="Year", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 5 iterations - C. palaemon* Model B")
+
+# Clear environment as these are long vectors and rmarkdown cannot handle these 
+rm(list = ls())
+
+# gray lines indicate plus and minus 2 standard-error bounds, within which one would expect about 95% of the binned residuals to fall, if the model were actually true.
+
+# Read detection probability file
+detWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelB_detWright.csv")
+
+
+detWright <- subset(detWright, Year <= 6) 
+
+# PLot
+binnedplot(detWright$p_value, 
+           detWright$res,
+           xlab="Detection Probability", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1900-1905 - C. palaemon* Model B")
+
+# Clear environment as these are long vectors and rmarkdown cannot handle these 
+rm(list = ls())
+
+# Read detection probability file again
+detWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelB_detWright.csv")
+
+detWright <- subset((subset(detWright, Year >= 76)), Year < 82)
+
+# Plot
+binnedplot(detWright$p_value, 
+           detWright$res,
+           xlab="Detection Probability", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1975-1981 - C. palaemon* Model B")
+```
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+
+
+
+
+
+      
+
+
+
+
+
+
+    
+### *C. palaemon* - Model C   
+   
+   
+#### Extract resuduals
+```{r WrightResiduals-Cpalaemon-ModelC, echo=FALSE, eval=FALSE, cache=TRUE}
+# Load required packages
+require("rjags")
+require("coda")
+require("reshape2")
+require("dplyr")
+require("sparta")
+require("lattice")
+require("LearnBayes")
+require("R2jags")
+require("data.table")
+
+# Read the model output
+Carterocephalus_palaemon_ModelC <- readRDS("../outputs/mixLL2-outputs/results_Carterocephalus_palaemon_watson_mixLL2.rds")
+
+# recompile the model
+Carterocephalus_palaemon_ModelC$model$recompile()
+
+# Sample 100 iterations of each of the 3 chains and thin by 3, giving 99 samples of "muZ", "z", and "p"
+samp <- rjags:::coda.samples(model=Carterocephalus_palaemon_ModelC$model, 
+                             parallel=TRUE, n.cores=3,
+                             variable.names=c("muZ", "z", "p"), 
+                             n.iter=100, # Define number of iterations to run
+                             thin=3)
+
+
+### Separate columns station with "muZ", "z" and "p" 
+### As 'regular' lists, we can use the data.table-function melt()
+# recall the format p[j] vs muZ[i,t] and z[i,t] (where j denotes visit)
+# This makes p straight forward: 
+p <- lapply(samp, function(x) x[, grepl("p", dimnames(x)[[2]])])
+p <- rbindlist(lapply(p, as.data.frame))
+p <- melt(p)
+
+#### However, we need to separate the years in muZ[i,t] and z[i,t] (where i denotes site, and t year)
+muZ <- lapply(samp, function(x) x[, grepl("muZ", dimnames(x)[[2]])])
+muZ <- rbindlist(lapply(muZ, as.data.frame))
+muZ <- melt(muZ)
+z <- lapply(samp, function(x) x[, grepl("z", dimnames(x)[[2]])])
+z <- rbindlist(lapply(z, as.data.frame))
+z <- melt(z)
+
+
+
+#### Tidy data
+
+# Tidy VisitID column for p
+p$VisitID <- as.character(gsub(p$variable, pa="p\\[", repl=""))
+p$VisitID <- as.numeric(gsub(p$VisitID, pa="\\]", repl=""))
+
+# Tidy year and site columns for muZ and z
+muZ$Site <- as.character(gsub(muZ$variable, pa="muZ\\[", repl="")) 
+muZ$Site <- as.numeric(gsub(muZ$Site, pa="\\,[0-9]*\\]", repl="")) # 2750 
+muZ$Year <- as.character(gsub(muZ$variable, pa="muZ\\[[0-9]*\\,", repl=""))
+muZ$Year <- as.numeric(gsub(muZ$Year, pa="\\]", repl="")) # 116 
+z$Site <- as.character(gsub(z$variable, pa="z\\[", repl="")) 
+z$Site <- as.numeric(gsub(z$Site, pa="\\,[0-9]*\\]", repl="")) # 2750 
+z$Year <- as.character(gsub(z$variable, pa="z\\[[0-9]*\\,", repl=""))
+z$Year <- as.numeric(gsub(z$Year, pa="\\]", repl="")) # 116 
+
+# Tidy iteration
+p <- p %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+muZ <- muZ %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+z <- z %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+
+# The above code output is a grouped data frame, so we convert it to a 'regular' data frame again
+p <- as.data.frame(p[,c("variable", "value", "VisitID", "iter")])
+muZ <- as.data.frame(muZ[,c("variable", "value", "Site", "Year", "iter")])
+z <- as.data.frame(z[,c("variable", "value", "Site", "Year", "iter")])
+
+# add the y (observations per visit) to the p dataframe
+# load the raw data
+temp_data <- Carterocephalus_palaemon_ModelC$model$data()
+
+# subset year, siteID and the actual observation (y)
+temp_data <- as.data.frame(with(temp_data, cbind(Site, Year, y)))  
+temp_data$VisitID <- 1:nrow(temp_data)
+
+# Merge with p dataframe
+p <- merge(p, temp_data)
+
+
+
+ 
+################################################################
+### Wright occupancy residuals 
+################################################################
+
+# Rename value and variable 
+names(muZ)[names(muZ) == "value"] <- "muZ_value"
+names(z)[names(z) == "value"] <- "z_value"
+names(muZ)[names(muZ) == "variable"] <- "muZ_variable"
+names(z)[names(z) == "variable"] <- "z_variable"
+
+# merge 
+occuWright <- merge(muZ, z)
+
+# Find residuals
+occuWright$res <- (occuWright$z_value - occuWright$muZ_value)
+
+# Save file
+write.csv(occuWright, "../outputs/WrightResid/Carterocephalus_palaemon_ModelC_occuWright.csv")
+
+
+
+
+
+################################################################
+### Wright Detection Residuals
+################################################################
+
+# Rename value and variable 
+names(p)[names(p) == "value"] <- "p_value"
+names(p)[names(p) == "variable"] <- "p_variable"
+
+
+# merge but specify to only include z values for sites and years where there actually was a visit ie p[j]
+################################################################
+### subset into two data sets because p is too big too big
+################################################################
+z96to116 <- subset(z, Year > 95)
+p96to116 <- subset(p, Year > 95)
+detWright96to116  <- merge(p96to116 , z96to116 , all.x=TRUE, all.y=FALSE)
+
+z1to95 <- subset(z, Year < 96)
+p1to95 <- subset(p, Year < 96)
+detWright1to95 <- merge(p1to95, z1to95, all.x=TRUE, all.y=FALSE)
+
+# rbind
+detWright <- rbind(detWright1to95, detWright96to116)
+
+# Check that above has 'worked'
+isTRUE(nrow(p) == nrow(detWright))
+
+# Check the number of estimated occupancy (i.e. 1s) 
+summary(as.factor(detWright$z_value)) 
+# 411411 1s
+# 134841102 0s
+
+# Subset the visits where estimated occupancy is 1 (as these are the visits used to find residuals)
+detWright <- subset(detWright, z_value == 1) 
+
+# Find residuals
+detWright$res <- (detWright$y - detWright$p_value)
+
+# Save file
+write.csv(detWright, "../outputs/WrightResid/Carterocephalus_palaemon_ModelC_detWright.csv")
+```  
+
+
+#### Plot binned residuals
+
+```{r WrightPlot-Cpalaemon-ModelC, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE}
+# Read file
+occuWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelC_occuWright.csv")
+
+# Load required packages
+require(arm)
+
+# Set up 2 rows 2 columns
+par(mfrow = c(2, 3))
+
+
+
+### Plot
+
+occuWright_5iter <- subset(occuWright, iter <= 5) 
+occuWright_yr1to6 <- subset(occuWright, Year <= 6) 
+occuWright_yr76to82 <- subset((subset(occuWright, Year >= 76)), Year < 82)
+
+
+binnedplot(occuWright_yr1to6$muZ_value, 
+           occuWright_yr1to6$res,
+           xlab="Occupancy", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1900-1905 - *C. palaemon* Model C")
+
+
+binnedplot(occuWright_yr76to82$muZ_value, 
+           occuWright_yr76to82$res,
+           xlab="Occupancy", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1975-1981 - *C. palaemon* Model C")
+
+binnedplot((occuWright_5iter$Year+1899), 
+           occuWright_5iter$res,
+           xlab="Year", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 5 iterations - *C. palaemon* Model C")
+
+# Clear environment as these are long vectors and rmarkdown cannot handle these 
+rm(list = ls())
+
+# gray lines indicate plus and minus 2 standard-error bounds, within which one would expect about 95% of the binned residuals to fall, if the model were actually true.
+
+# Read detection probability file
+detWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelC_detWright.csv")
+
+
+detWright <- subset(detWright, Year <= 6) 
+
+# PLot
+binnedplot(detWright$p_value, 
+           detWright$res,
+           xlab="Detection Probability", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1900-1905 - *C. palaemon* Model C")
+
+# Clear environment as these are long vectors and rmarkdown cannot handle these 
+rm(list = ls())
+
+# Read detection probability file again
+detWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelC_detWright.csv")
+
+detWright <- subset((subset(detWright, Year >= 76)), Year < 82)
+
+# Plot
+binnedplot(detWright$p_value, 
+           detWright$res,
+           xlab="Detection Probability", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1975-1981 - *C. palaemon* Model C")
+```
+
+
+
+    
+
+
+##  Results: *Erebia aethiops* (Scotch argus)
+
+### Occupancy
+```{r plot-occu-outputs-E-aethiops, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+### Source plotting function
+source("./fig-plot.Occdet_G.R")
+
+# Read the model output
+Erebia_aethiops_ModelA <- readRDS("../outputs/catLL-outputs/results_Erebia_aethiops_watson_catLL.rds")
+Erebia_aethiops_ModelB <- readRDS("../outputs/mixLL-outputs/results_Erebia_aethiops_crick_mixLL.rds")
+Erebia_aethiops_ModelC <- readRDS("../outputs/mixLL2-outputs/results_Erebia_aethiops_crick_mixLL2.rds")
+
+
+
+plot.occDet_G(Erebia_aethiops_ModelA, Erebia_aethiops_ModelB, Erebia_aethiops_ModelC) +
+  ggtitle(label = "*Erebia_aethiops* occupancy", 
+          subtitle = "(Scotch argus)") +
+  scale_y_continuous(limits=c(0, 0.25), expand = c(0, 0)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  theme(text=element_text(size=15))  
+```      
+   
+
+
+
+
+### *E. aethiops* - Model A
+    
+    
+#### Extract resuduals
+```{r WrightResiduals-Eaethiops-ModelA, echo=FALSE, eval=FALSE, cache=TRUE}
+# Load required packages
+require("rjags")
+require("coda")
+require("reshape2")
+require("dplyr")
+require("sparta")
+require("lattice")
+require("LearnBayes")
+require("R2jags")
+require("data.table")
+
+# Read the model output
+Erebia_aethiops_ModelA <- readRDS("../outputs/catLL-outputs/results_Erebia_aethiops_watson_catLL.rds")
+
+# recompile the model
+Erebia_aethiops_ModelA$model$recompile()
+
+# Sample 100 iterations of each of the 3 chains and thin by 3, giving 99 samples of "muZ", "z", and "p"
+samp <- rjags:::coda.samples(model=Erebia_aethiops_ModelA$model, 
+                             parallel=TRUE, n.cores=3,
+                             variable.names=c("muZ", "z", "p"), 
+                             n.iter=100, # Define number of iterations to run
+                             thin=3)
+
+
+### Separate columns station with "muZ", "z" and "p" 
+### As 'regular' lists, we can use the data.table-function melt()
+# recall the format p[j] vs muZ[i,t] and z[i,t] (where j denotes visit)
+# This makes p straight forward: 
+p <- lapply(samp, function(x) x[, grepl("p", dimnames(x)[[2]])])
+p <- rbindlist(lapply(p, as.data.frame))
+p <- melt(p)
+
+#### However, we need to separate the years in muZ[i,t] and z[i,t] (where i denotes site, and t year)
+muZ <- lapply(samp, function(x) x[, grepl("muZ", dimnames(x)[[2]])])
+muZ <- rbindlist(lapply(muZ, as.data.frame))
+muZ <- melt(muZ)
+z <- lapply(samp, function(x) x[, grepl("z", dimnames(x)[[2]])])
+z <- rbindlist(lapply(z, as.data.frame))
+z <- melt(z)
+
+
+
+#### Tidy data
+
+# Tidy VisitID column for p
+p$VisitID <- as.character(gsub(p$variable, pa="p\\[", repl=""))
+p$VisitID <- as.numeric(gsub(p$VisitID, pa="\\]", repl=""))
+
+# Tidy year and site columns for muZ and z
+muZ$Site <- as.character(gsub(muZ$variable, pa="muZ\\[", repl="")) 
+muZ$Site <- as.numeric(gsub(muZ$Site, pa="\\,[0-9]*\\]", repl="")) # 2750 
+muZ$Year <- as.character(gsub(muZ$variable, pa="muZ\\[[0-9]*\\,", repl=""))
+muZ$Year <- as.numeric(gsub(muZ$Year, pa="\\]", repl="")) # 116 
+z$Site <- as.character(gsub(z$variable, pa="z\\[", repl="")) 
+z$Site <- as.numeric(gsub(z$Site, pa="\\,[0-9]*\\]", repl="")) # 2750 
+z$Year <- as.character(gsub(z$variable, pa="z\\[[0-9]*\\,", repl=""))
+z$Year <- as.numeric(gsub(z$Year, pa="\\]", repl="")) # 116 
+
+# Tidy iteration
+p <- p %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+muZ <- muZ %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+z <- z %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+
+# The above code output is a grouped data frame, so we convert it to a 'regular' data frame again
+p <- as.data.frame(p[,c("variable", "value", "VisitID", "iter")])
+muZ <- as.data.frame(muZ[,c("variable", "value", "Site", "Year", "iter")])
+z <- as.data.frame(z[,c("variable", "value", "Site", "Year", "iter")])
+
+# add the y (observations per visit) to the p dataframe
+# load the raw data
+temp_data <- Erebia_aethiops_ModelA$model$data()
+
+# subset year, siteID and the actual observation (y)
+temp_data <- as.data.frame(with(temp_data, cbind(Site, Year, y)))  
+temp_data$VisitID <- 1:nrow(temp_data)
+
+# Merge with p dataframe
+p <- merge(p, temp_data)
+
+
+
+ 
+################################################################
+### Wright occupancy residuals 
+################################################################
+
+# Rename value and variable 
+names(muZ)[names(muZ) == "value"] <- "muZ_value"
+names(z)[names(z) == "value"] <- "z_value"
+names(muZ)[names(muZ) == "variable"] <- "muZ_variable"
+names(z)[names(z) == "variable"] <- "z_variable"
+
+# merge 
+occuWright <- merge(muZ, z)
+
+# Find residuals
+occuWright$res <- (occuWright$z_value - occuWright$muZ_value)
+
+# Save file
+write.csv(occuWright, "../outputs/WrightResid/Erebia_aethiops_ModelA_occuWright.csv")
+
+
+
+
+
+################################################################
+### Wright Detection Residuals
+################################################################
+
+# Rename value and variable 
+names(p)[names(p) == "value"] <- "p_value"
+names(p)[names(p) == "variable"] <- "p_variable"
+
+# merge but specify to only include z values for sites and years where there actually was a visit ie p[j]
+detWright <- merge(p, z, all.x=TRUE, all.y=FALSE)
+
+# Check the number of estimated occupancy (i.e. 1s) 
+summary(as.factor(detWright$z_value)) 
+# 4309874 1s
+# 130942639 0s
+
+# Subset the visits where estimated occupancy is 1 (as these are the visits used to find residuals)
+detWright <- subset(detWright, z_value == 1) 
+
+# Find residuals
+detWright$res <- (detWright$y - detWright$p_value)
+
+# Save file
+write.csv(detWright, "../outputs/WrightResid/Erebia_aethiops_ModelA_detWright.csv")
+```  
+
+
+
+
+
+    
+    
+    
+#### Plot binned residuals
+
+    
+  
+```{r WrightPlot-Eaethiops-ModelA, echo=FALSE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE}
+rm(list = ls())
+
+
+# Read file
+occuWright <- read.csv("../outputs/WrightResid/Erebia_aethiops_ModelA_occuWright.csv")
+
+# Load required packages
+require(arm)
+
+# Set up 2 rows 2 columns
+par(mfrow = c(2, 3))
+
+
+
+### Plot
+
+# It seems like the function can't handle the number of residuals since I get the following error when attempting to apply it to the whole data:
+# NAs produced by integer overflowError in if (any(breaks.index == 0)) nclass <- 1 : missing value where TRUE/FALSE needed
+
+# I therefore subset years
+# 31581000/116 = 272250 observations per year
+
+occuWright_5iter <- subset(occuWright, iter <= 5) 
+occuWright_yr1to6 <- subset(occuWright, Year <= 6) 
+occuWright_yr76to82 <- subset((subset(occuWright, Year >= 76)), Year < 82)
+
+
+binnedplot(occuWright_yr1to6$muZ_value, 
+           occuWright_yr1to6$res,
+           xlab="Occupancy", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1900-1905")
+
+
+binnedplot(occuWright_yr76to82$muZ_value, 
+           occuWright_yr76to82$res,
+           xlab="Occupancy", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1975-1981")
+
+binnedplot((occuWright_5iter$Year+1899), 
+           occuWright_5iter$res,
+           xlab="Year", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 5 iterations")
+
+# Clear environment as these are long vectors and rmarkdown cannot handle these 
+rm(list = ls())
+
+# gray lines indicate plus and minus 2 standard-error bounds, within which one would expect about 95% of the binned residuals to fall, if the model were actually true.
+
+# Read detection probability file
+detWright <- read.csv("../outputs/WrightResid/Erebia_aethiops_ModelA_detWright.csv")
+
+
+detWright <- subset(detWright, Year <= 6) 
+
+# PLot
+binnedplot(detWright$p_value, 
+           detWright$res,
+           xlab="Detection Probability", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1900-1905")
+
+# Clear environment as these are long vectors and rmarkdown cannot handle these 
+rm(list = ls())
+
+# Read detection probability file again
+detWright <- read.csv("../outputs/WrightResid/Erebia_aethiops_ModelA_detWright.csv")
+
+detWright <- subset((subset(detWright, Year >= 76)), Year < 82)
+
+# Plot
+binnedplot(detWright$p_value, 
+           detWright$res,
+           xlab="Detection Probability", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1975-1981")
+```
+      
+      
+      
+      
+      
+      
+      
+      
+      
+
+### *E. aethiops* - Model B
+    
+    
+#### Extract resuduals
+```{r WrightResiduals-Eaethiops-ModelB, echo=FALSE, eval=FALSE, cache=TRUE}
+# Load required packages
+require("rjags")
+require("coda")
+require("reshape2")
+require("dplyr")
+require("sparta")
+require("lattice")
+require("LearnBayes")
+require("R2jags")
+require("data.table")
+
+# Read the model output
+Erebia_aethiops_ModelB <- readRDS("../outputs/mixLL-outputs/results_Erebia_aethiops_crick_mixLL.rds")
+
+# recompile the model
+Erebia_aethiops_ModelB$model$recompile()
+
+# Sample 100 iterations of each of the 3 chains and thin by 3, giving 99 samples of "muZ", "z", and "p"
+samp <- rjags:::coda.samples(model=Erebia_aethiops_ModelB$model, 
+                             parallel=TRUE, n.cores=3,
+                             variable.names=c("muZ", "z", "p"), 
+                             n.iter=100, # Define number of iterations to run
+                             thin=3)
+# This produced a mcmc.list of length three: one list per chain with a total length of XXXX columns for p[j], and 319000 columns for muZ[i,t] and z[i,t]
+
+
+
+### Separate columns station with "muZ", "z" and "p" 
+
+### As 'regular' lists, we can use the data.table-function melt()
+# recall the format p[j] vs muZ[i,t] and z[i,t] (where j denotes visit)
+# This makes p straight forward: 
+p <- lapply(samp, function(x) x[, grepl("p", dimnames(x)[[2]])])
+p <- rbindlist(lapply(p, as.data.frame))
+p <- melt(p)
+
+#### However, we need to separate the years in muZ[i,t] and z[i,t] (where i denotes site, and t year)
+muZ <- lapply(samp, function(x) x[, grepl("muZ", dimnames(x)[[2]])])
+muZ <- rbindlist(lapply(muZ, as.data.frame))
+muZ <- melt(muZ)
+z <- lapply(samp, function(x) x[, grepl("z", dimnames(x)[[2]])])
+z <- rbindlist(lapply(z, as.data.frame))
+z <- melt(z)
+
+
+
+#### Tidy data
+
+# Tidy VisitID column for p
+p$VisitID <- as.character(gsub(p$variable, pa="p\\[", repl=""))
+p$VisitID <- as.numeric(gsub(p$VisitID, pa="\\]", repl=""))
+
+# Tidy year and site columns for muZ and z
+muZ$Site <- as.character(gsub(muZ$variable, pa="muZ\\[", repl="")) 
+muZ$Site <- as.numeric(gsub(muZ$Site, pa="\\,[0-9]*\\]", repl="")) # 2750 
+muZ$Year <- as.character(gsub(muZ$variable, pa="muZ\\[[0-9]*\\,", repl=""))
+muZ$Year <- as.numeric(gsub(muZ$Year, pa="\\]", repl="")) # 116 
+z$Site <- as.character(gsub(z$variable, pa="z\\[", repl="")) 
+z$Site <- as.numeric(gsub(z$Site, pa="\\,[0-9]*\\]", repl="")) # 2750 
+z$Year <- as.character(gsub(z$variable, pa="z\\[[0-9]*\\,", repl=""))
+z$Year <- as.numeric(gsub(z$Year, pa="\\]", repl="")) # 116 
+
+
+# Tidy iteration
+p <- p %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+muZ <- muZ %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+z <- z %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+
+# The above code output is a grouped data frame, so we convert it to a 'regular' data frame again
+p <- as.data.frame(p[,c("variable", "value", "VisitID", "iter")])
+muZ <- as.data.frame(muZ[,c("variable", "value", "Site", "Year", "iter")])
+z <- as.data.frame(z[,c("variable", "value", "Site", "Year", "iter")])
+
+
+
+# add the y (observations per visit) to the p dataframe
+# load the raw data
+temp_data <- Erebia_aethiops_ModelB$model$data()
+
+# subset year, siteID and the actual observation (y)
+temp_data <- as.data.frame(with(temp_data, cbind(Site, Year, y)))  
+temp_data$VisitID <- 1:nrow(temp_data)
+
+# Finally, merge with p dataframe
+p <- merge(p, temp_data)
+
+
+
+
+
+
+
+
+
+################################################################
+### Wright occupancy residuals 
+################################################################
+
+# Rename value and variable 
+names(muZ)[names(muZ) == "value"] <- "muZ_value"
+names(z)[names(z) == "value"] <- "z_value"
+names(muZ)[names(muZ) == "variable"] <- "muZ_variable"
+names(z)[names(z) == "variable"] <- "z_variable"
+
+# merge 
+occuWright <- merge(muZ, z)
+
+# Find residuals
+occuWright$res <- (occuWright$z_value - occuWright$muZ_value)
+
+# Save file
+write.csv(occuWright, "../outputs/WrightResid/Erebia_aethiops_ModelB_occuWright.csv")
+
+
+
+
+
+################################################################
+### Wright Detection Residuals
+################################################################
+
+# Rename value and variable 
+names(p)[names(p) == "value"] <- "p_value"
+names(p)[names(p) == "variable"] <- "p_variable"
+
+
+# merge but specify to only include z values for sites and years where there actually was a visit ie p[j]
+detWright <- merge(p, z, all.x=TRUE, all.y=FALSE)
+
+# Check the number of estimated occupancy (i.e. 1s) 
+summary(as.factor(detWright$z_value)) 
+# XXXXX 1s
+# XXXXX 0s
+
+# Subset the visits where estimated occupancy is 1 (as these are the visits used to find residuals)
+detWright <- subset(detWright, z_value == 1) 
+
+# Find residuals
+detWright$res <- (detWright$y - detWright$p_value)
+
+# Save file
+write.csv(detWright, "../outputs/WrightResid/Erebia_aethiops_ModelB_detWright.csv")
+``` 
+     
+     
+    
+    
+    
+    
+    
+    
+
+#### Plot binned residuals
+
+    
+  
+```{r WrightPlot-Eaethiops-ModelB, echo=FALSE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE}
+rm(list = ls())
+
+
+# Read file
+occuWright <- read.csv("../outputs/WrightResid/Erebia_aethiops_ModelB_occuWright.csv")
+
+# Load required packages
+require(arm)
+
+# Set up 2 rows 2 columns
+par(mfrow = c(2, 3))
+
+
+
+### Plot
+
+# It seems like the function can't handle the number of residuals since I get the following error when attempting to apply it to the whole data:
+# NAs produced by integer overflowError in if (any(breaks.index == 0)) nclass <- 1 : missing value where TRUE/FALSE needed
+
+# I therefore subset years
+# 31581000/116 = 272250 observations per year
+
+occuWright_5iter <- subset(occuWright, iter <= 5) 
+occuWright_yr1to6 <- subset(occuWright, Year <= 6) 
+occuWright_yr76to82 <- subset((subset(occuWright, Year >= 76)), Year < 82)
+
+
+binnedplot(occuWright_yr1to6$muZ_value, 
+           occuWright_yr1to6$res,
+           xlab="Occupancy", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1900-1905")
+
+
+binnedplot(occuWright_yr76to82$muZ_value, 
+           occuWright_yr76to82$res,
+           xlab="Occupancy", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1975-1981")
+
+binnedplot((occuWright_5iter$Year+1899), 
+           occuWright_5iter$res,
+           xlab="Year", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 5 iterations")
+
+# Clear environment as these are long vectors and rmarkdown cannot handle these 
+rm(list = ls())
+
+# gray lines indicate plus and minus 2 standard-error bounds, within which one would expect about 95% of the binned residuals to fall, if the model were actually true.
+
+# Read detection probability file
+detWright <- read.csv("../outputs/WrightResid/Erebia_aethiops_ModelB_detWright.csv")
+
+
+detWright <- subset(detWright, Year <= 6) 
+
+# PLot
+binnedplot(detWright$p_value, 
+           detWright$res,
+           xlab="Detection Probability", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1900-1905")
+
+# Clear environment as these are long vectors and rmarkdown cannot handle these 
+rm(list = ls())
+
+# Read detection probability file again
+detWright <- read.csv("../outputs/WrightResid/Erebia_aethiops_ModelB_detWright.csv")
+
+detWright <- subset((subset(detWright, Year >= 76)), Year < 82)
+
+# Plot
+binnedplot(detWright$p_value, 
+           detWright$res,
+           xlab="Detection Probability", 
+           ylab="Binned residuals",
+           main = "Binned residual plot: 1975-1981")
+```
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+
+
+
+
+
+      
+
+
+
+
+
+### *E. aethiops* - Model C **(not run)**
+   
+   
+#### Extract resuduals
+```{r WrightResiduals-Eaethiops-ModelC, echo=FALSE, eval=FALSE, cache=TRUE}
+# Load required packages
+require("rjags")
+require("coda")
+require("reshape2")
+require("dplyr")
+require("sparta")
+require("lattice")
+require("LearnBayes")
+require("R2jags")
+require("data.table")
+
+# Read the model output
+Erebia_aethiops_ModelC <- readRDS("../outputs/mixLL2-outputs/results_Erebia_aethiops_crick_mixLL2.rds")
+
+# recompile the model
+Erebia_aethiops_ModelC$model$recompile()
+
+# Sample 100 iterations of each of the 3 chains and thin by 3, giving 99 samples of "muZ", "z", and "p"
+samp <- rjags:::coda.samples(model=Erebia_aethiops_ModelC$model, 
+                             parallel=TRUE, n.cores=3,
+                             variable.names=c("muZ", "z", "p"), 
+                             n.iter=100, # Define number of iterations to run
+                             thin=3)
+
+
+### Separate columns station with "muZ", "z" and "p" 
+### As 'regular' lists, we can use the data.table-function melt()
+# recall the format p[j] vs muZ[i,t] and z[i,t] (where j denotes visit)
+# This makes p straight forward: 
+p <- lapply(samp, function(x) x[, grepl("p", dimnames(x)[[2]])])
+p <- rbindlist(lapply(p, as.data.frame))
+p <- melt(p)
+
+#### However, we need to separate the years in muZ[i,t] and z[i,t] (where i denotes site, and t year)
+muZ <- lapply(samp, function(x) x[, grepl("muZ", dimnames(x)[[2]])])
+muZ <- rbindlist(lapply(muZ, as.data.frame))
+muZ <- melt(muZ)
+z <- lapply(samp, function(x) x[, grepl("z", dimnames(x)[[2]])])
+z <- rbindlist(lapply(z, as.data.frame))
+z <- melt(z)
+
+
+
+#### Tidy data
+
+# Tidy VisitID column for p
+p$VisitID <- as.character(gsub(p$variable, pa="p\\[", repl=""))
+p$VisitID <- as.numeric(gsub(p$VisitID, pa="\\]", repl=""))
+
+# Tidy year and site columns for muZ and z
+muZ$Site <- as.character(gsub(muZ$variable, pa="muZ\\[", repl="")) 
+muZ$Site <- as.numeric(gsub(muZ$Site, pa="\\,[0-9]*\\]", repl="")) # 2750 
+muZ$Year <- as.character(gsub(muZ$variable, pa="muZ\\[[0-9]*\\,", repl=""))
+muZ$Year <- as.numeric(gsub(muZ$Year, pa="\\]", repl="")) # 116 
+z$Site <- as.character(gsub(z$variable, pa="z\\[", repl="")) 
+z$Site <- as.numeric(gsub(z$Site, pa="\\,[0-9]*\\]", repl="")) # 2750 
+z$Year <- as.character(gsub(z$variable, pa="z\\[[0-9]*\\,", repl=""))
+z$Year <- as.numeric(gsub(z$Year, pa="\\]", repl="")) # 116 
+
+# Tidy iteration
+p <- p %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+muZ <- muZ %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+z <- z %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+
+# The above code output is a grouped data frame, so we convert it to a 'regular' data frame again
+p <- as.data.frame(p[,c("variable", "value", "VisitID", "iter")])
+muZ <- as.data.frame(muZ[,c("variable", "value", "Site", "Year", "iter")])
+z <- as.data.frame(z[,c("variable", "value", "Site", "Year", "iter")])
+
+# add the y (observations per visit) to the p dataframe
+# load the raw data
+temp_data <- Erebia_aethiops_ModelC$model$data()
+
+# subset year, siteID and the actual observation (y)
+temp_data <- as.data.frame(with(temp_data, cbind(Site, Year, y)))  
+temp_data$VisitID <- 1:nrow(temp_data)
+
+# Merge with p dataframe
+p <- merge(p, temp_data)
+
+
+
+ 
+################################################################
+### Wright occupancy residuals 
+################################################################
+
+# Rename value and variable 
+names(muZ)[names(muZ) == "value"] <- "muZ_value"
+names(z)[names(z) == "value"] <- "z_value"
+names(muZ)[names(muZ) == "variable"] <- "muZ_variable"
+names(z)[names(z) == "variable"] <- "z_variable"
+
+# merge 
+occuWright <- merge(muZ, z)
+
+# Find residuals
+occuWright$res <- (occuWright$z_value - occuWright$muZ_value)
+
+# Save file
+write.csv(occuWright, "../outputs/WrightResid/Erebia_aethiops_ModelC_occuWright.csv")
+
+
+
+
+
+################################################################
+### Wright Detection Residuals
+################################################################
+
+# Rename value and variable 
+names(p)[names(p) == "value"] <- "p_value"
+names(p)[names(p) == "variable"] <- "p_variable"
+
+
+# merge but specify to only include z values for sites and years where there actually was a visit ie p[j]
+detWright <- merge(p, z, all.x=TRUE, all.y=FALSE)
+
+# Check the number of estimated occupancy (i.e. 1s) 
+summary(as.factor(detWright$z_value)) 
+# XXXXX 1s
+# XXXXX 0s
+
+# Subset the visits where estimated occupancy is 1 (as these are the visits used to find residuals)
+detWright <- subset(detWright, z_value == 1) 
+
+# Find residuals
+detWright$res <- (detWright$y - detWright$p_value)
+
+# Save file
+write.csv(detWright, "../outputs/WrightResid/Erebia_aethiops_ModelC_detWright.csv")
+```  
+
+
+
+
+
+    
+
+##  Results: *Limenitis camilla* (White Admiral)
+   
+   
+   
+### Occupancy
+```{r plot-occu-outputs-L-camilla, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+### Source plotting function
+source("./fig-plot.Occdet_G.R")
+
+# Read the model output
+Limenitis_camilla_ModelA <- readRDS("../outputs/catLL-outputs/results_Limenitis_camilla_crick_catLL.rds")
+Limenitis_camilla_ModelB <- readRDS("../outputs/mixLL-outputs/results_Limenitis_camilla_ctag_mixLL.rds")
+Limenitis_camilla_ModelC <- readRDS("../outputs/mixLL2-outputs/results_Limenitis_camilla_watson_mixLL2.rds")
+
+
+plot.occDet_G(Limenitis_camilla_ModelA, 
+              Limenitis_camilla_ModelB, 
+              Limenitis_camilla_ModelC) +
+  ggtitle(label = "*Limenitis camilla* - Occupancy", 
+          subtitle = "(White Admiral)") +
+  scale_y_continuous(limits=c(0, 0.4), expand = c(0, 0)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  theme(text=element_text(size=15)) 
+```      
+   
+   
+   
+> The distribution of this species in the early 1900s had declined to the point that it was restricted to southern England. However, the butterfly reach[ed] its former distribution that extends as far north as Lincolnshire now. One explanation is that global warming has allowed the species to thrive at sites that had become too cool. Another is that the cessation of coppicing, that has been detrimental to so many woodland butterflies, has benefited this species which requires Honeysuckle growing in shady woodland for the successful development of its larvae.   
+    
+    
+    
+    
+From [ukbutterflies.co.uk](https://www.ukbutterflies.co.uk/species.php?species=camilla)   
+   
+   
+   
+> The White Admiral occurs widely in southern Britain and has spread rapidly since the 1920s, after an earlier contraction. It continued to spread in the 1980s and 1990s but within its range populations have declined in size since the mid 1990s.... Between the 1920 and 1930s, the distribution extended by distances up to 100km.   
+   
+   
+   
+from [Butterfly Conservation](https://butterfly-conservation.org/sites/default/files/white-admiral-psf.pdf)
+   
+   
+   
+   
+   
+   
+**Neither of the two above sources of anecdotal eviidence clearly points towards Model A or B&C**   
+
+### *L. camilla*-Model A
+    
+    
+#### Extract resuduals
+```{r WrightResiduals-Lcamilla-ModelA, echo=FALSE, eval=FALSE, cache=TRUE}
+# Load required packages
+require("rjags")
+require("coda")
+require("reshape2")
+require("dplyr")
+require("sparta")
+require("lattice")
+require("LearnBayes")
+require("R2jags")
+require("data.table")
+
+# Read the model output
+Limenitis_camilla_ModelA <- readRDS("../outputs/catLL-outputs/results_Limenitis_camilla_crick_catLL.rds")
+
+# recompile the model
+Limenitis_camilla_ModelA$model$recompile()
+
+# Sample 100 iterations of each of the 3 chains and thin by 3, giving 99 samples of "muZ", "z", and "p"
+samp <- rjags:::coda.samples(model=Limenitis_camilla_ModelA$model, 
+                             parallel=TRUE, n.cores=3,
+                             variable.names=c("muZ", "z", "p"), 
+                             n.iter=100, # Define number of iterations to run
+                             thin=3)
+
+
+### Separate columns station with "muZ", "z" and "p" 
+### As 'regular' lists, we can use the data.table-function melt()
+# recall the format p[j] vs muZ[i,t] and z[i,t] (where j denotes visit)
+# This makes p straight forward: 
+p <- lapply(samp, function(x) x[, grepl("p", dimnames(x)[[2]])])
+p <- rbindlist(lapply(p, as.data.frame))
+p <- melt(p)
+
+#### However, we need to separate the years in muZ[i,t] and z[i,t] (where i denotes site, and t year)
+muZ <- lapply(samp, function(x) x[, grepl("muZ", dimnames(x)[[2]])])
+muZ <- rbindlist(lapply(muZ, as.data.frame))
+muZ <- melt(muZ)
+z <- lapply(samp, function(x) x[, grepl("z", dimnames(x)[[2]])])
+z <- rbindlist(lapply(z, as.data.frame))
+z <- melt(z)
+
+
+
+#### Tidy data
+
+# Tidy VisitID column for p
+p$VisitID <- as.character(gsub(p$variable, pa="p\\[", repl=""))
+p$VisitID <- as.numeric(gsub(p$VisitID, pa="\\]", repl=""))
+
+# Tidy year and site columns for muZ and z
+muZ$Site <- as.character(gsub(muZ$variable, pa="muZ\\[", repl="")) 
+muZ$Site <- as.numeric(gsub(muZ$Site, pa="\\,[0-9]*\\]", repl="")) # 2750 
+muZ$Year <- as.character(gsub(muZ$variable, pa="muZ\\[[0-9]*\\,", repl=""))
+muZ$Year <- as.numeric(gsub(muZ$Year, pa="\\]", repl="")) # 116 
+z$Site <- as.character(gsub(z$variable, pa="z\\[", repl="")) 
+z$Site <- as.numeric(gsub(z$Site, pa="\\,[0-9]*\\]", repl="")) # 2750 
+z$Year <- as.character(gsub(z$variable, pa="z\\[[0-9]*\\,", repl=""))
+z$Year <- as.numeric(gsub(z$Year, pa="\\]", repl="")) # 116 
+
+# Tidy iteration
+p <- p %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+muZ <- muZ %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+z <- z %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+
+# The above code output is a grouped data frame, so we convert it to a 'regular' data frame again
+p <- as.data.frame(p[,c("variable", "value", "VisitID", "iter")])
+muZ <- as.data.frame(muZ[,c("variable", "value", "Site", "Year", "iter")])
+z <- as.data.frame(z[,c("variable", "value", "Site", "Year", "iter")])
+
+# add the y (observations per visit) to the p dataframe
+# load the raw data
+temp_data <- Limenitis_camilla_ModelA$model$data()
+
+# subset year, siteID and the actual observation (y)
+temp_data <- as.data.frame(with(temp_data, cbind(Site, Year, y)))  
+temp_data$VisitID <- 1:nrow(temp_data)
+
+# Merge with p dataframe
+p <- merge(p, temp_data)
+
+
+
+ 
+################################################################
+### Wright occupancy residuals 
+################################################################
+
+# Rename value and variable 
+names(muZ)[names(muZ) == "value"] <- "muZ_value"
+names(z)[names(z) == "value"] <- "z_value"
+names(muZ)[names(muZ) == "variable"] <- "muZ_variable"
+names(z)[names(z) == "variable"] <- "z_variable"
+
+# merge 
+occuWright <- merge(muZ, z)
+
+# Find residuals
+occuWright$res <- (occuWright$z_value - occuWright$muZ_value)
+
+# Save file
+write.csv(occuWright, "../outputs/WrightResid/Limenitis_camilla_ModelA_occuWright.csv")
+
+
+
+
+
+################################################################
+### Wright Detection Residuals
+################################################################
+
+# Rename value and variable 
+names(p)[names(p) == "value"] <- "p_value"
+names(p)[names(p) == "variable"] <- "p_variable"
+
+# merge but specify to only include z values for sites and years where there actually was a visit ie p[j]
+detWright <- merge(p, z, all.x=TRUE, all.y=FALSE)
+
+# Check the number of estimated occupancy (i.e. 1s) 
+summary(as.factor(detWright$z_value)) 
+# 4309874 1s
+# 130942639 0s
+
+# Subset the visits where estimated occupancy is 1 (as these are the visits used to find residuals)
+detWright <- subset(detWright, z_value == 1) 
+
+# Find residuals
+detWright$res <- (detWright$y - detWright$p_value)
+
+# Save file
+write.csv(detWright, "../outputs/WrightResid/Limenitis_camilla_ModelA_detWright.csv")
+```  
+
+
+
+
+
+    
+
+#### Plot binned residuals
+
+    
+  
+```{r WrightPlot-Lcamilla-ModelA, echo=FALSE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE}
+rm(list = ls())
+
+
+# Read file
+occuWright <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelA_occuWright.csv")
+
+# Load required packages
+require(arm)
+
+# Set up 2 rows 2 columns
+par(mfrow = c(2, 3))
+
+
+
+### Plot
+
+# It seems like the function can't handle the number of residuals since I get the following error when attempting to apply it to the whole data:
+occuWright_5iter <- subset(occuWright, iter <= 5) 
+occuWright_yr1to6 <- subset(occuWright, Year <= 6) 
+occuWright_yr76to82 <- subset((subset(occuWright, Year >= 76)), Year < 82)
+
+
+binnedplot(occuWright_yr1to6$muZ_value, 
+           occuWright_yr1to6$res,
+           nclass = 116,
+           xlab="Occupancy", 
+           ylab="Binned residuals",
+           main = "Binned residuals 1900-1905 - *L. camilla* Model A")
+
+
+binnedplot(occuWright_yr76to82$muZ_value, 
+           occuWright_yr76to82$res,
+           nclass = 116,
+           xlab="Occupancy", 
+           ylab="Binned residuals",
+           main = "Binned residuals 1975-1981 - *L. camilla* Model A")
+
+binnedplot((occuWright_5iter$Year+1899), 
+           occuWright_5iter$res,
+           nclass = 116,
+           xlab="Year", 
+           ylab="Binned residuals",
+           main = "Binned residuals 5 iters: *L. camilla* Model A")
+
+# Clear environment as these are long vectors and rmarkdown cannot handle these 
+rm(list = ls())
+
+# gray lines indicate plus and minus 2 standard-error bounds, within which one would expect about 95% of the binned residuals to fall, if the model were actually true.
+
+# Read detection probability file
+detWright <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelA_detWright.csv")
+
+
+detWright <- subset(detWright, Year <= 6) 
+
+# PLot
+binnedplot(detWright$p_value, 
+           detWright$res,
+           nclass = 116,
+           xlab="Detection Probability", 
+           ylab="Binned residuals",
+           main = "Binned residuals 1900-1905: *L. camilla* Model A")
+
+# Clear environment as these are long vectors and rmarkdown cannot handle these 
+rm(list = ls())
+
+# Read detection probability file again
+detWright <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelA_detWright.csv")
+
+detWright <- subset((subset(detWright, Year >= 76)), Year < 82)
+
+# Plot
+binnedplot(detWright$p_value, 
+           detWright$res,
+           nclass = 116,
+           xlab="Detection Probability", 
+           ylab="Binned residuals",
+           main = "Binned residuals 1975-1981: *L. camilla* Model A")
+```
+      
+      
+      
+      
+      
+      
+      
+      
+      
+
+
+### *L. camilla*-Model B 
+    
+    
+#### Extract resuduals
+```{r WrightResiduals-Lcamilla-ModelB, echo=FALSE, eval=FALSE, cache=TRUE}
+# Load required packages
+require("rjags")
+require("coda")
+require("reshape2")
+require("dplyr")
+require("sparta")
+require("lattice")
+require("LearnBayes")
+require("R2jags")
+require("data.table")
+
+# Read the model output
+Limenitis_camilla_ModelB <- readRDS("../outputs/mixLL-outputs/results_Limenitis_camilla_ctag_mixLL.rds")
+
+# recompile the model
+Limenitis_camilla_ModelB$model$recompile()
+
+# Sample 100 iterations of each of the 3 chains and thin by 3, giving 99 samples of "muZ", "z", and "p"
+samp <- rjags:::coda.samples(model=Limenitis_camilla_ModelB$model, 
+                             parallel=TRUE, n.cores=3,
+                             variable.names=c("muZ", "z", "p"), 
+                             n.iter=100, # Define number of iterations to run
+                             thin=3)
+# This produced a mcmc.list of length three: one list per chain with a total length of XXXX columns for p[j], and 319000 columns for muZ[i,t] and z[i,t]
+
+
+
+### Separate columns station with "muZ", "z" and "p" 
+
+### As 'regular' lists, we can use the data.table-function melt()
+# recall the format p[j] vs muZ[i,t] and z[i,t] (where j denotes visit)
+# This makes p straight forward: 
+p <- lapply(samp, function(x) x[, grepl("p", dimnames(x)[[2]])])
+p <- rbindlist(lapply(p, as.data.frame))
+p <- melt(p)
+
+#### However, we need to separate the years in muZ[i,t] and z[i,t] (where i denotes site, and t year)
+muZ <- lapply(samp, function(x) x[, grepl("muZ", dimnames(x)[[2]])])
+muZ <- rbindlist(lapply(muZ, as.data.frame))
+muZ <- melt(muZ)
+z <- lapply(samp, function(x) x[, grepl("z", dimnames(x)[[2]])])
+z <- rbindlist(lapply(z, as.data.frame))
+z <- melt(z)
+
+
+
+#### Tidy data
+
+# Tidy VisitID column for p
+p$VisitID <- as.character(gsub(p$variable, pa="p\\[", repl=""))
+p$VisitID <- as.numeric(gsub(p$VisitID, pa="\\]", repl=""))
+
+# Tidy year and site columns for muZ and z
+muZ$Site <- as.character(gsub(muZ$variable, pa="muZ\\[", repl="")) 
+muZ$Site <- as.numeric(gsub(muZ$Site, pa="\\,[0-9]*\\]", repl="")) # 2750 
+muZ$Year <- as.character(gsub(muZ$variable, pa="muZ\\[[0-9]*\\,", repl=""))
+muZ$Year <- as.numeric(gsub(muZ$Year, pa="\\]", repl="")) # 116 
+z$Site <- as.character(gsub(z$variable, pa="z\\[", repl="")) 
+z$Site <- as.numeric(gsub(z$Site, pa="\\,[0-9]*\\]", repl="")) # 2750 
+z$Year <- as.character(gsub(z$variable, pa="z\\[[0-9]*\\,", repl=""))
+z$Year <- as.numeric(gsub(z$Year, pa="\\]", repl="")) # 116 
+
+
+# Tidy iteration
+p <- p %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+muZ <- muZ %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+z <- z %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+
+# The above code output is a grouped data frame, so we convert it to a 'regular' data frame again
+p <- as.data.frame(p[,c("variable", "value", "VisitID", "iter")])
+muZ <- as.data.frame(muZ[,c("variable", "value", "Site", "Year", "iter")])
+z <- as.data.frame(z[,c("variable", "value", "Site", "Year", "iter")])
+
+
+
+# add the y (observations per visit) to the p dataframe
+# load the raw data
+temp_data <- Limenitis_camilla_ModelB$model$data()
+
+# subset year, siteID and the actual observation (y)
+temp_data <- as.data.frame(with(temp_data, cbind(Site, Year, y)))  
+temp_data$VisitID <- 1:nrow(temp_data)
+
+# Finally, merge with p dataframe
+p <- merge(p, temp_data)
+
+
+
+
+
+
+
+
+
+################################################################
+### Wright occupancy residuals 
+################################################################
+
+# Rename value and variable 
+names(muZ)[names(muZ) == "value"] <- "muZ_value"
+names(z)[names(z) == "value"] <- "z_value"
+names(muZ)[names(muZ) == "variable"] <- "muZ_variable"
+names(z)[names(z) == "variable"] <- "z_variable"
+
+# merge 
+occuWright <- merge(muZ, z)
+
+# Find residuals
+occuWright$res <- (occuWright$z_value - occuWright$muZ_value)
+
+# Save file
+write.csv(occuWright, "../outputs/WrightResid/Limenitis_camilla_ModelB_occuWright.csv")
+
+
+
+
+
+################################################################
+### Wright Detection Residuals
+################################################################
+
+# Rename value and variable 
+names(p)[names(p) == "value"] <- "p_value"
+names(p)[names(p) == "variable"] <- "p_variable"
+
+
+# merge but specify to only include z values for sites and years where there actually was a visit ie p[j]
+detWright <- merge(p, z, all.x=TRUE, all.y=FALSE)
+
+# Check the number of estimated occupancy (i.e. 1s) 
+summary(as.factor(detWright$z_value)) 
+# 34297222 1s
+# 100955291 0s
+
+# Subset the visits where estimated occupancy is 1 (as these are the visits used to find residuals)
+detWright <- subset(detWright, z_value == 1) 
+
+# Find residuals
+detWright$res <- (detWright$y - detWright$p_value)
+
+# Save file
+write.csv(detWright, "../outputs/WrightResid/Limenitis_camilla_ModelB_detWright.csv")
+``` 
+     
+     
+    
+    
+    
+    
+    
+    
+
+#### Plot binned residuals
+
+    
+  
+```{r WrightPlot-Lcamilla-ModelB, echo=FALSE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE}
+rm(list = ls())
+
+
+# Read file
+occuWright <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelB_occuWright.csv")
+
+# Load required packages
+require(arm)
+
+# Set up 2 rows 2 columns
+par(mfrow = c(2, 3))
+
+
+
+### Plot
+
+occuWright_5iter <- subset(occuWright, iter <= 5) 
+occuWright_yr1to6 <- subset(occuWright, Year <= 6) 
+occuWright_yr76to82 <- subset((subset(occuWright, Year >= 76)), Year < 82)
+
+
+binnedplot(occuWright_yr1to6$muZ_value, 
+           occuWright_yr1to6$res,
+           nclass = 116,
+           xlab="Occupancy", 
+           ylab="Binned residuals",
+           main = "Binned residuals 1900-1905: *L. camilla* Model B")
+
+
+binnedplot(occuWright_yr76to82$muZ_value, 
+           occuWright_yr76to82$res,
+           nclass = 116,
+           xlab="Occupancy", 
+           ylab="Binned residuals",
+           main = "Binned residuals 1975-1981: *L. camilla* Model B")
+
+binnedplot((occuWright_5iter$Year+1899), 
+           occuWright_5iter$res,
+           nclass = 116,
+           xlab="Year", 
+           ylab="Binned residuals",
+           main = "Binned residuals 5 iters: *L. camilla* Model B")
+
+# Clear environment as these are long vectors and rmarkdown cannot handle these 
+rm(list = ls())
+
+# gray lines indicate plus and minus 2 standard-error bounds, within which one would expect about 95% of the binned residuals to fall, if the model were actually true.
+
+# Read detection probability file
+detWright <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelB_detWright.csv")
+
+
+detWright <- subset(detWright, Year <= 6) 
+
+# PLot
+binnedplot(detWright$p_value, 
+           detWright$res,
+           nclass = 116,
+           xlab="Detection Probability", 
+           ylab="Binned residuals",
+           main = "Binned residuals 1900-1905: *L. camilla* Model B")
+
+# Clear environment as these are long vectors and rmarkdown cannot handle these 
+rm(list = ls())
+
+# Read detection probability file again
+detWright <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelB_detWright.csv")
+
+detWright <- subset((subset(detWright, Year >= 76)), Year < 82)
+
+# Plot
+binnedplot(detWright$p_value, 
+           detWright$res,
+           nclass = 116,
+           xlab="Detection Probability", 
+           ylab="Binned residuals",
+           main = "Binned residuals 1975-1981: *L. camilla* Model B")
+```
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+
+
+
+
+
+      
+
+
+
+
+
+### *L. camilla*-Model C **(not run)**
+   
+   
+#### Extract resuduals
+```{r WrightResiduals-Lcamilla-ModelC, echo=FALSE, eval=FALSE, cache=TRUE}
+# Load required packages
+require("rjags")
+require("coda")
+require("reshape2")
+require("dplyr")
+require("sparta")
+require("lattice")
+require("LearnBayes")
+require("R2jags")
+require("data.table")
+
+# Read the model output
+Limenitis_camilla_ModelC <- readRDS("../outputs/mixLL2-outputs/results_Limenitis_camilla_watson_mixLL2.rds")
+
+# recompile the model
+Limenitis_camilla_ModelC$model$recompile()
+
+# Sample 100 iterations of each of the 3 chains and thin by 3, giving 99 samples of "muZ", "z", and "p"
+samp <- rjags:::coda.samples(model=Limenitis_camilla_ModelC$model, 
+                             parallel=TRUE, n.cores=3,
+                             variable.names=c("muZ", "z", "p"), 
+                             n.iter=100, # Define number of iterations to run
+                             thin=3)
+
+
+### Separate columns station with "muZ", "z" and "p" 
+### As 'regular' lists, we can use the data.table-function melt()
+# recall the format p[j] vs muZ[i,t] and z[i,t] (where j denotes visit)
+# This makes p straight forward: 
+p <- lapply(samp, function(x) x[, grepl("p", dimnames(x)[[2]])])
+p <- rbindlist(lapply(p, as.data.frame))
+p <- melt(p)
+
+#### However, we need to separate the years in muZ[i,t] and z[i,t] (where i denotes site, and t year)
+muZ <- lapply(samp, function(x) x[, grepl("muZ", dimnames(x)[[2]])])
+muZ <- rbindlist(lapply(muZ, as.data.frame))
+muZ <- melt(muZ)
+z <- lapply(samp, function(x) x[, grepl("z", dimnames(x)[[2]])])
+z <- rbindlist(lapply(z, as.data.frame))
+z <- melt(z)
+
+
+
+#### Tidy data
+
+# Tidy VisitID column for p
+p$VisitID <- as.character(gsub(p$variable, pa="p\\[", repl=""))
+p$VisitID <- as.numeric(gsub(p$VisitID, pa="\\]", repl=""))
+
+# Tidy year and site columns for muZ and z
+muZ$Site <- as.character(gsub(muZ$variable, pa="muZ\\[", repl="")) 
+muZ$Site <- as.numeric(gsub(muZ$Site, pa="\\,[0-9]*\\]", repl="")) # 2750 
+muZ$Year <- as.character(gsub(muZ$variable, pa="muZ\\[[0-9]*\\,", repl=""))
+muZ$Year <- as.numeric(gsub(muZ$Year, pa="\\]", repl="")) # 116 
+z$Site <- as.character(gsub(z$variable, pa="z\\[", repl="")) 
+z$Site <- as.numeric(gsub(z$Site, pa="\\,[0-9]*\\]", repl="")) # 2750 
+z$Year <- as.character(gsub(z$variable, pa="z\\[[0-9]*\\,", repl=""))
+z$Year <- as.numeric(gsub(z$Year, pa="\\]", repl="")) # 116 
+
+# Tidy iteration
+p <- p %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+muZ <- muZ %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+z <- z %>% group_by(variable) %>% mutate(iter = seq_along(variable))
+
+# The above code output is a grouped data frame, so we convert it to a 'regular' data frame again
+p <- as.data.frame(p[,c("variable", "value", "VisitID", "iter")])
+muZ <- as.data.frame(muZ[,c("variable", "value", "Site", "Year", "iter")])
+z <- as.data.frame(z[,c("variable", "value", "Site", "Year", "iter")])
+
+# add the y (observations per visit) to the p dataframe
+# load the raw data
+temp_data <- Limenitis_camilla_ModelC$model$data()
+
+# subset year, siteID and the actual observation (y)
+temp_data <- as.data.frame(with(temp_data, cbind(Site, Year, y)))  
+temp_data$VisitID <- 1:nrow(temp_data)
+
+# Merge with p dataframe
+p <- merge(p, temp_data)
+
+
+
+ 
+################################################################
+### Wright occupancy residuals 
+################################################################
+
+# Rename value and variable 
+names(muZ)[names(muZ) == "value"] <- "muZ_value"
+names(z)[names(z) == "value"] <- "z_value"
+names(muZ)[names(muZ) == "variable"] <- "muZ_variable"
+names(z)[names(z) == "variable"] <- "z_variable"
+
+# merge 
+occuWright <- merge(muZ, z)
+
+# Find residuals
+occuWright$res <- (occuWright$z_value - occuWright$muZ_value)
+
+# Save file
+write.csv(occuWright, "../outputs/WrightResid/Limenitis_camilla_ModelC_occuWright.csv")
+
+
+
+
+
+################################################################
+### Wright Detection Residuals
+################################################################
+
+# Rename value and variable 
+names(p)[names(p) == "value"] <- "p_value"
+names(p)[names(p) == "variable"] <- "p_variable"
+
+
+# merge but specify to only include z values for sites and years where there actually was a visit ie p[j]
+detWright <- merge(p, z, all.x=TRUE, all.y=FALSE)
+
+# Check the number of estimated occupancy (i.e. 1s) 
+summary(as.factor(detWright$z_value)) 
+# XXXXX 1s
+# XXXXX 0s
+
+# Subset the visits where estimated occupancy is 1 (as these are the visits used to find residuals)
+detWright <- subset(detWright, z_value == 1) 
+
+# Find residuals
+detWright$res <- (detWright$y - detWright$p_value)
+
+# Save file
+write.csv(detWright, "../outputs/WrightResid/Limenitis_camilla_ModelC_detWright.csv")
+```  
+
+
+
+
+
+    
+    
+    
+    
+    
+#### Plot binned residuals
+
+    
+  
+```{r WrightPlot-Lcamilla-ModelC, echo=FALSE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE}
+rm(list = ls())
+
+
+# Read file
+occuWright <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelC_occuWright.csv")
+
+# Load required packages
+require(arm)
+
+# Set up 2 rows 2 columns
+par(mfrow = c(2, 3))
+
+
+
+### Plot
+
+occuWright_5iter <- subset(occuWright, iter <= 5) 
+occuWright_yr1to6 <- subset(occuWright, Year <= 6) 
+occuWright_yr76to82 <- subset((subset(occuWright, Year >= 76)), Year < 82)
+
+
+binnedplot(occuWright_yr1to6$muZ_value, 
+           occuWright_yr1to6$res,
+           nclass = 116,
+           xlab="Occupancy", 
+           ylab="Binned residuals",
+           main = "Binned residuals 1900-1905: *L. camilla* Model C")
+
+
+binnedplot(occuWright_yr76to82$muZ_value, 
+           occuWright_yr76to82$res,
+           nclass = 116,
+           xlab="Occupancy", 
+           ylab="Binned residuals",
+           main = "Binned residuals 1975-1981: *L. camilla* Model C")
+
+binnedplot((occuWright_5iter$Year+1899), 
+           occuWright_5iter$res,
+           nclass = 116,
+           xlab="Year", 
+           ylab="Binned residuals",
+           main = "Binned residuals 5 iterations: *L. camilla* Model C")
+
+# Clear environment as these are long vectors and rmarkdown cannot handle these 
+rm(list = ls())
+
+# gray lines indicate plus and minus 2 standard-error bounds, within which one would expect about 95% of the binned residuals to fall, if the model were actually true.
+
+# Read detection probability file
+detWright <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelC_detWright.csv")
+
+
+detWright <- subset(detWright, Year <= 6) 
+
+# PLot
+binnedplot(detWright$p_value, 
+           detWright$res,
+           nclass = 116,
+           xlab="Detection Probability", 
+           ylab="Binned residuals",
+           main = "Binned residuals 1900-1905: *L. camilla* Model C")
+
+# Clear environment as these are long vectors and rmarkdown cannot handle these 
+rm(list = ls())
+
+# Read detection probability file again
+detWright <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelC_detWright.csv")
+
+detWright <- subset((subset(detWright, Year >= 76)), Year < 82)
+
+# Plot
+binnedplot(detWright$p_value, 
+           detWright$res,
+           nclass = 116,
+           xlab="Detection Probability", 
+           ylab="Binned residuals",
+           main = "Binned residuals 1975-1981: *L. camilla* Model C")
+```
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+
+
+
+
+
+      
+
+
+
+
