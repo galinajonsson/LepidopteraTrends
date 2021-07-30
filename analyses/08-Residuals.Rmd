@@ -3187,7 +3187,7 @@ binnedplot(detWright$p_value,
 
 
 
-### *L. camilla*-Model C **(not run)**
+### *L. camilla*-Model C 
    
    
 #### Extract resuduals
@@ -3312,8 +3312,8 @@ detWright <- merge(p, z, all.x=TRUE, all.y=FALSE)
 
 # Check the number of estimated occupancy (i.e. 1s) 
 summary(as.factor(detWright$z_value)) 
-# XXXXX 1s
-# XXXXX 0s
+# 34301178 1s
+# 100951335 0s
 
 # Subset the visits where estimated occupancy is 1 (as these are the visits used to find residuals)
 detWright <- subset(detWright, z_value == 1) 
@@ -3399,7 +3399,7 @@ binnedplot(detWright$p_value,
            nclass = 116,
            xlab="Detection Probability", 
            ylab="Binned residuals",
-           main = "Binned residuals 1900-1905: *L. camilla* Model C")
+           main = "Residuals 1900-1905: *L. camilla* Model C")
 
 # Clear environment as these are long vectors and rmarkdown cannot handle these 
 rm(list = ls())
