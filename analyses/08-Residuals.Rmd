@@ -1341,7 +1341,6 @@ The Chequered Skipper is confined to north-west Scotland where it was first disc
    
    
 
-  theme(plot.title=element_text(face="italic")) +
 
 
 
@@ -2848,7 +2847,7 @@ Limenitis_camilla_ModelC <- readRDS("../outputs/mixLL2-outputs/results_Limenitis
 plot.occDet_G(Limenitis_camilla_ModelA, 
               Limenitis_camilla_ModelB, 
               Limenitis_camilla_ModelC) +
-  ggtitle(label = "*Limenitis camilla* - Occupancy", 
+  ggtitle(label = "Limenitis camilla", 
           subtitle = "(White Admiral)") +
   scale_y_continuous(limits=c(0, 0.4), expand = c(0, 0)) +
   scale_x_continuous(expand = c(0, 0)) +
@@ -2878,6 +2877,68 @@ from [Butterfly Conservation](https://butterfly-conservation.org/sites/default/f
    
    
 **Neither of the two above sources of anecdotal eviidence clearly points towards Model A or B&C**   
+
+
+
+
+
+### Detection probability
+```{r plot-detprob-outputs-L-camilla, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE, fig.width=7, fig.height=2}
+require("sparta")
+
+
+# Read the model output
+Limenitis_camilla_ModelA <- readRDS("../outputs/catLL-outputs/results_Limenitis_camilla_crick_catLL.rds")
+Limenitis_camilla_ModelB <- readRDS("../outputs/mixLL-outputs/results_Limenitis_camilla_ctag_mixLL.rds")
+Limenitis_camilla_ModelC <- readRDS("../outputs/mixLL2-outputs/results_Limenitis_camilla_watson_mixLL2.rds")
+
+
+
+plot_DetectionOverTime(Limenitis_camilla_ModelA,
+                              min.yr = 1900, 
+                                    legend_labels =
+                         c("    BNM/Year_Effect  ", 
+                                                    "UKBMS", 
+                                                   "NHCs"),
+                                  legend_title = "Data Type") +
+             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+             scale_x_continuous(expand = c(0, 0)) +
+  ggtitle("Model A") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank()) +
+  theme(text=element_text(size=12)) 
+
+plot_DetectionOverTime(Limenitis_camilla_ModelB, 
+                       min.yr = 1900, 
+                       legend_labels = c("BNM_LL1/Year effect", 
+                                         "UKBMS", 
+                                         "NHCs", 
+                                         "BNM_LL5"), 
+                       legend_title = "Data Type") +
+  scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  ggtitle("Model B") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank()) +
+  theme(text=element_text(size=12))
+
+plot_DetectionOverTime(Limenitis_camilla_ModelC,
+                              min.yr = 1900, 
+                       legend_labels = c("BNM_LL1/Year effect", 
+                                         "UKBMS", 
+                                         "NHCs", 
+                                         "BNM_LL5"), 
+                       mixLL2 = TRUE,                  ### Important: specify its mixLL2
+                       legend_title = "Data Type") +
+  scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  ggtitle("Model C") +
+  theme(text=element_text(size=12))
+```
+
+
+
+
 
 ### *L. camilla*-Model A
     
@@ -3029,6 +3090,8 @@ write.csv(detWright, "../outputs/WrightResid/Limenitis_camilla_ModelA_detWright.
 ```{r WrightPlot-Lcamilla-ModelA, echo=FALSE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE}
 rm(list = ls())
 
+### Source residual function
+source("./function-binned.resids.R")
 
 # Read file
 occuWright <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelA_occuWright.csv")
@@ -3054,7 +3117,7 @@ binnedplot(occuWright_yr1to6$muZ_value,
            nclass = 116,
            xlab="Occupancy", 
            ylab="Binned residuals",
-           main = "Binned residuals 1900-1905 - *L. camilla* Model A")
+           main = "Model A: 1900-1905")
 
 
 binnedplot(occuWright_yr76to82$muZ_value, 
@@ -3062,19 +3125,19 @@ binnedplot(occuWright_yr76to82$muZ_value,
            nclass = 116,
            xlab="Occupancy", 
            ylab="Binned residuals",
-           main = "Binned residuals 1975-1981 - *L. camilla* Model A")
+           main = "Model A: 1975-1981")
 
 binnedplot((occuWright_5iter$Year+1899), 
            occuWright_5iter$res,
            nclass = 116,
            xlab="Year", 
            ylab="Binned residuals",
-           main = "Binned residuals 5 iters: *L. camilla* Model A")
+           main = "Model A: Occupancy 5 iter")
 
 # Clear environment as these are long vectors and rmarkdown cannot handle these 
 rm(list = ls())
 
-# gray lines indicate plus and minus 2 standard-error bounds, within which one would expect about 95% of the binned residuals to fall, if the model were actually true.
+
 
 # Read detection probability file
 detWright <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelA_detWright.csv")
@@ -3088,7 +3151,7 @@ binnedplot(detWright$p_value,
            nclass = 116,
            xlab="Detection Probability", 
            ylab="Binned residuals",
-           main = "Binned residuals 1900-1905: *L. camilla* Model A")
+           main = "Model A: 1900-1905")
 
 # Clear environment as these are long vectors and rmarkdown cannot handle these 
 rm(list = ls())
@@ -3104,10 +3167,48 @@ binnedplot(detWright$p_value,
            nclass = 116,
            xlab="Detection Probability", 
            ylab="Binned residuals",
-           main = "Binned residuals 1975-1981: *L. camilla* Model A")
+           main = "Model A: 1975-1981")
+
+
+# Clear environment as these are long vectors and rmarkdown cannot handle these 
+rm(list = ls())
+
+# Read detection probability file again
+detWright <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelA_detWright.csv")
+
+# Find residuals across all iterations for year 1 (1900)
+p <-  binned.resids((subset(detWright, Year == 1)$Year+1899),
+                    (subset(detWright, Year == 1))$res)
+# Loop through remaining years and estimate residuals, whilsr row binding to previous
+for(i in 2:106){
+  p <- rbind(p, binned.resids((subset(detWright, Year == paste(i))$Year+1899),
+                    (subset(detWright, Year == paste(i)))$res))
+}
+
+
+################################################################
+####### Years 107 & 110 & 111 & 114 & 115 & 116 gives error of having too many data points
+################################################################
+
+### Plot!
+cex.pts=0.8
+col.pts=1
+col.int="gray"
+
+plot(range(p$xbar), range(p$ybar, p$X2se, -p$X2se, na.rm=TRUE),
+     xlab="Year", ylab="Binned Residuals", type="n", main="Detection: Model A all iterations") + 
+  abline (0,0, lty=2) +
+  lines (p$xbar, p$X2se, col=col.int) +
+  lines (p$xbar, -p$X2se, col=col.int) +
+  points (p$xbar, p$ybar, pch=19, cex=cex.pts, col=col.pts)
+
 ```
-      
-      
+    
+    
+    
+    
+         
+gray lines indicate plus and minus 2 standard-error bounds, within which one would expect about 95% of the binned residuals to fall, if the model were actually true.      
       
       
       
