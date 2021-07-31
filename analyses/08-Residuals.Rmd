@@ -8,12 +8,21 @@ output:
     toc_depth: 3
     toc_float: true
 ---
+   
+   
+   
+   
+   
+**To do list**   
+* Colour Wright residuals according to data type    
+* Plot all occupancy Wright residuals    
 
+   
+   
+   
+   
+   
 # Dunn-Smyth residuals
-
-**Nick** - in contract to Wright et al, Warton uses 'absolute estimates' per visit rather than draws from the posterior distribution. Should I take the mean of (how many?) draws from the posterior distribution? 
-
-https://www.tandfonline.com/doi/abs/10.1080/10618600.1996.10474708
 
 Here, we plot Dunn-Smyth residuals ([Dunn & Smyth, 1997](https://www.tandfonline.com/doi/abs/10.1080/10618600.1996.10474708)) according to the methodology of [Warton *et al.* (2017)](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.12761). We only plot Dunn-Smyth (DS) residuals for one model (*A. urticae* model B) to demonstrate the plotting procedure, especially given that our data is formatted differently to that of Warton *et al.*, and we wish to plot residuals for multi-year occupancy models, whilst the authors used a single season example; hence, we had to make some alterations to the functions provided by the authors (namely residuals.occMod() and DS.resid.plot(); Supplementary Data 6 of Warton *et al.*, 2017). Dunn-Smyth residuals for all species and models can be found under 'species-wise summary'.    
  
@@ -35,7 +44,7 @@ Examples of papers that have produced DS residuals for multi-year occupancy mode
 
 > If the detection probability is not constant across surveys[, $F_{det}(Y_{i})$] is computed as a summation across all possible [detection] histories* with $Y_{i}$ or fewer detections. The cumulative distribution function of $Y_{i}$ can be written as:   
 
-*Recall: all possible detection histories to site $i$, which has been vistited ($v$) three times within year $t$ would be $2^3 = 8$ (2 for the two options present (1) or absent (0), and 3 for the number of visits, $v$): 010, 000, 001, 011, 111, 110, 100, 101   
+*Recall: all possible detection histories to site $i$, which has been visitited ($v$) three times within year $t$ would be $2^3 = 8$ (2 for the two options present (1) or absent (0), and 3 for the number of visits, $v$): 010, 000, 001, 011, 111, 110, 100, 101   
 
 $$F_{det}(Y_{i}|Y_{i}>1) =\left( \frac{1}{1-(1 - \prod_{v=1}^{V}(1-p_{iv})} \right)\sum_{x|1≤Y_{x}≤Y_{i}}^{}  \prod_{v=1}^{V}-p_{iv}^{xv}(1-p_{iv})^{1- _{xv}}$$
 where $Y_x=\sum_{v=1}^{V} x_v$ is the total number of detections (i.e, 1s) in detection history $x$. In other words, the equation loops through all possible detection histories, $x$, (i.e. $2^V$) to site $i$, given that there has been detections ($F_{det}(Y_{i}|Y_{i}>1)$). This can become computationaly expensive when the total number or visits, $V$, and the total number of detections at a site, $Y_{i}$, aren't small since the possible number of detection histories, $x$, with $Y_{i}$ or fewer detection becomes big (e.g., 4 visits to site $i$ of which 2 were detections gives cumuulative probability 0.6875 & 16($2^4$) * 0.6875 == **11** possible detection histories, $x$, whilst 15 visits to site $i$ of which 7 were detections  gives cumulative probability 0.69638061523 & **22819** possible detection histories).     
@@ -46,8 +55,7 @@ where $Y_x=\sum_{v=1}^{V} x_v$ is the total number of detections (i.e, 1s) in de
 * The total number of detections at site ($i$), $Y_{i}$, which is the sum of the parameter y[j]. Then I'll need to sum the number of visits (v) to the same site within the same year      
 * The detection probability $p_{iv}$ at visit $v$ to site ($i$) so the parameter p[j]. Then I'll need to sum the number of visits (j) to the same site within the same year      
    
-**Note**, that we will take the median value for each parameter across 99 iterations as this residual formulation only takes one value into consideration (i.e. not formulated for Bayesian modelling methods). The reason for taking the median across iterations rather than the mean is that .... something to do with that the mean will not produce binary data when this is what we're often working with in occupancy models. However, detection probability $p_{iv}$ and probability of occurrence $\psi_{i}$ are not binary..    
-**Nick**, should I use the menas for these parameters instead of the median? This method of producing residuals does not use the estimated occupancy state $z$, which is binary.          
+**Note**, that we will take the mean value for each parameter across 99 iterations as this residual formulation only takes one value into consideration (i.e. not formulated for Bayesian modelling methods). The reason for taking the median across iterations rather than the mean is that .... something to do with that the mean will not produce binary data when this is what we're often working with in occupancy models. However, detection probability $p_{iv}$ and probability of occurrence $\psi_{i}$ are not binary..    
    
    
    
@@ -100,7 +108,7 @@ Arguments that the function, used by, and, published in [Warton *et al.* (2017)]
 1.  object, the occMod object which must contain the following:  
 2.  $psi, fitted probabilities of occupancy, assuming a vector.  
 3.  $p, fitted probabilities of detection.   
-4. 
+4.  $det.data, binary matrix of detections, sites in rows and visits in columns. NA for missing values.
 ```{r DSoccupancyResCalc-Aurticae-ModelB, echo=TRUE, eval=FALSE, cache=TRUE}
 # Load required packages 
 library(dplyr)
@@ -506,8 +514,6 @@ We plot the Wright residuals as binned residuals according to the methodology of
 [Gelman *et al*., (2000)](https://doi.org/10.1111/1467-9876.00190) state that quantile–quantile plots of these binned residuals does not work well, whilst [Wright *et al.*, (2019)](https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/ecy.2703) don't mention quantile–quantile plots of their residuals.    
    
    
-**Nick**   
-* What are your thoughts on quantile–quantile plots of "unbinned" residuals?    
 
 
 **To do**   
@@ -1301,7 +1307,7 @@ Conclusions thus far:
    
    
    
-   
+### 1960 -1980 *A. urticae*   
 
 
 ##  Results: *Carterocephalus palaemon* (Chequered skipper)
@@ -1357,7 +1363,7 @@ Carterocephalus_palaemon_ModelC <- readRDS("../outputs/mixLL2-outputs/results_Ca
 plot_DetectionOverTime(Carterocephalus_palaemon_ModelA,
                               min.yr = 1900, 
                                     legend_labels =
-                         c("    BNM/Year_Effect  ", 
+                         c("    BNM/Year_Effect    ", 
                                                     "UKBMS", 
                                                    "NHCs"),
                                   legend_title = "Data Type") +
@@ -2172,13 +2178,67 @@ Erebia_aethiops_ModelC <- readRDS("../outputs/mixLL2-outputs/results_Erebia_aeth
 
 
 plot.occDet_G(Erebia_aethiops_ModelA, Erebia_aethiops_ModelB, Erebia_aethiops_ModelC) +
-  ggtitle(label = "*Erebia_aethiops* occupancy", 
+  ggtitle(label = "Erebia aethiops", 
           subtitle = "(Scotch argus)") +
   scale_y_continuous(limits=c(0, 0.25), expand = c(0, 0)) +
   scale_x_continuous(expand = c(0, 0)) +
+  theme(plot.title=element_text(face="italic")) +
   theme(text=element_text(size=15))  
 ```      
    
+
+### Detection probability
+```{r plot-detprob-outputs-E-aethiops, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE, fig.width=7, fig.height=2}
+require(sparta)
+
+# Read the model output
+Erebia_aethiops_ModelA <- readRDS("../outputs/catLL-outputs/results_Erebia_aethiops_watson_catLL.rds")
+Erebia_aethiops_ModelB <- readRDS("../outputs/mixLL-outputs/results_Erebia_aethiops_crick_mixLL.rds")
+Erebia_aethiops_ModelC <- readRDS("../outputs/mixLL2-outputs/results_Erebia_aethiops_crick_mixLL2.rds")
+
+plot_DetectionOverTime(Erebia_aethiops_ModelA,
+                              min.yr = 1900, 
+                                    legend_labels =
+                         c("    BNM/Year_Effect  ", 
+                                                    "UKBMS", 
+                                                   "NHCs"),
+                                  legend_title = "Data Type") +
+             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+             scale_x_continuous(expand = c(0, 0)) +
+  ggtitle("Model A") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank()) +
+  theme(text=element_text(size=12)) 
+
+plot_DetectionOverTime(Erebia_aethiops_ModelB, 
+                       min.yr = 1900, 
+                       legend_labels = c("BNM_LL1/Year effect", 
+                                         "UKBMS", 
+                                         "NHCs", 
+                                         "BNM_LL5"), 
+                       legend_title = "Data Type") +
+  scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  ggtitle("Model B") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank()) +
+  theme(text=element_text(size=12))
+
+plot_DetectionOverTime(Erebia_aethiops_ModelC,
+                              min.yr = 1900, 
+                       legend_labels = c("BNM_LL1/Year effect", 
+                                         "UKBMS", 
+                                         "NHCs", 
+                                         "BNM_LL5"), 
+                       mixLL2 = TRUE,                  ### Important: specify its mixLL2
+                       legend_title = "Data Type") +
+  scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  ggtitle("Model C") +
+  theme(text=element_text(size=12))
+
+```
+
 
 
 
@@ -2685,7 +2745,7 @@ binnedplot(detWright$p_value,
 
 
 
-### *E. aethiops* - Model C **(not run)**
+### *E. aethiops* - Model C
    
    
 #### Extract resuduals
@@ -2810,8 +2870,8 @@ detWright <- merge(p, z, all.x=TRUE, all.y=FALSE)
 
 # Check the number of estimated occupancy (i.e. 1s) 
 summary(as.factor(detWright$z_value)) 
-# XXXXX 1s
-# XXXXX 0s
+# 4281336 1s
+# 130971177 0s
 
 # Subset the visits where estimated occupancy is 1 (as these are the visits used to find residuals)
 detWright <- subset(detWright, z_value == 1) 
@@ -2851,6 +2911,7 @@ plot.occDet_G(Limenitis_camilla_ModelA,
           subtitle = "(White Admiral)") +
   scale_y_continuous(limits=c(0, 0.4), expand = c(0, 0)) +
   scale_x_continuous(expand = c(0, 0)) +
+  theme(plot.title=element_text(face="italic")) +
   theme(text=element_text(size=15)) 
 ```      
    
@@ -2884,28 +2945,30 @@ from [Butterfly Conservation](https://butterfly-conservation.org/sites/default/f
 
 ### Detection probability
 ```{r plot-detprob-outputs-L-camilla, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE, fig.width=7, fig.height=2}
+# load package
 require("sparta")
-
 
 # Read the model output
 Limenitis_camilla_ModelA <- readRDS("../outputs/catLL-outputs/results_Limenitis_camilla_crick_catLL.rds")
 Limenitis_camilla_ModelB <- readRDS("../outputs/mixLL-outputs/results_Limenitis_camilla_ctag_mixLL.rds")
 Limenitis_camilla_ModelC <- readRDS("../outputs/mixLL2-outputs/results_Limenitis_camilla_watson_mixLL2.rds")
 
-
-
+# Plot
 plot_DetectionOverTime(Limenitis_camilla_ModelA,
-                              min.yr = 1900, 
-                                    legend_labels =
-                         c("    BNM/Year_Effect  ", 
-                                                    "UKBMS", 
-                                                   "NHCs"),
-                                  legend_title = "Data Type") +
-             scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
-             scale_x_continuous(expand = c(0, 0)) +
+                       min.yr = 1900, 
+                       legend_labels = c("\\ \\ BNM/Year_Effect", 
+                                         "UKBMS", 
+                                         "NHCs"),
+                       legend_title = "Data Type") +
+  scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+  scale_x_continuous(expand = c(0, 0)) +
   ggtitle("Model A") +
   theme(axis.title.x=element_blank(),
         axis.text.x=element_blank()) +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.line = element_line(colour = "black")) +
   theme(text=element_text(size=12)) 
 
 plot_DetectionOverTime(Limenitis_camilla_ModelB, 
@@ -2920,6 +2983,10 @@ plot_DetectionOverTime(Limenitis_camilla_ModelB,
   ggtitle("Model B") +
   theme(axis.title.x=element_blank(),
         axis.text.x=element_blank()) +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.line = element_line(colour = "black")) +
   theme(text=element_text(size=12))
 
 plot_DetectionOverTime(Limenitis_camilla_ModelC,
@@ -2933,6 +3000,10 @@ plot_DetectionOverTime(Limenitis_camilla_ModelC,
   scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
   scale_x_continuous(expand = c(0, 0)) +
   ggtitle("Model C") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.line = element_line(colour = "black")) +
   theme(text=element_text(size=12))
 ```
 
@@ -2944,7 +3015,7 @@ plot_DetectionOverTime(Limenitis_camilla_ModelC,
     
     
 #### Extract resuduals
-```{r WrightResiduals-Lcamilla-ModelA, echo=FALSE, eval=FALSE, cache=TRUE}
+```{r WrightResiduals-Lcamilla-ModelA, echo=FALSE, eval=FALSE}
 # Load required packages
 require("rjags")
 require("coda")
@@ -3090,14 +3161,13 @@ write.csv(detWright, "../outputs/WrightResid/Limenitis_camilla_ModelA_detWright.
 ```{r WrightPlot-Lcamilla-ModelA, echo=FALSE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE}
 rm(list = ls())
 
-### Source residual function
-source("./function-binned.resids.R")
+# Load required packages
+require(arm)
+require(ggplot2)
 
 # Read file
 occuWright <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelA_occuWright.csv")
 
-# Load required packages
-require(arm)
 
 # Set up 2 rows 2 columns
 par(mfrow = c(2, 3))
@@ -3134,6 +3204,82 @@ binnedplot((occuWright_5iter$Year+1899),
            ylab="Binned residuals",
            main = "Model A: Occupancy 5 iter")
 
+
+
+#####################################################
+### Finally, I extract detection residuals based on all iterations
+### and for all years, but, since the conditional z=1 part of the
+### equations means that years have different numbers of iterations
+### so the default function would not bin per year, hence, 
+### I separately find residual values for each year, then rbind() and plot
+#####################################################
+
+# Clear environment as these are long vectors and rmarkdown cannot handle these 
+#rm(list = ls())
+
+# Read occu file again
+#occuWright <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelA_occuWright.csv")
+
+### Source residual function
+#source("./function-binnedResidsG.R")
+
+# Find residuals across all iterations for year 1 (1900)
+#a <-  binned.residsG((subset(occuWright, Year == 1)$Year+1899),
+#                     (subset(occuWright, Year == 1))$res)
+# Loop through remaining years and estimate residuals, whilst row binding to previous
+#for(i in 2:116){
+#  a <- rbind(a, binned.residsG((subset(occuWright, Year == paste(i))$Year+1899),
+#                    (subset(occuWright, Year == paste(i)))$res))
+#}
+
+# Years 107, 110, 111, 114, 115, 116 gives error of having too many data points
+# hence, I will remove iterations above 60
+#for(j in 107:116){
+#  temp <- subset(subset(detWright, Year == paste(j)), iter < 61)
+#  p <- rbind(p, binned.residsG((temp$Year+1899), temp$res))
+#}
+
+
+### Plot!
+#cex.pts=0.8
+#col.pts=1
+#col.int="gray"
+
+#plot(range(a$xbar), range(a$ybar, a$X2se, -a$X2se, na.rm=TRUE),
+#     xlab="Year", ylab="Binned Residuals", type="n", main="Detection: Model A all iters") + 
+#  abline (0,0, lty=2) +
+#  lines (a$xbar, a$X2se, col=col.int) +
+#  lines (a$xbar, -a$X2se, col=col.int) +
+#  points (a$xbar, a$ybar, pch=19, cex=cex.pts, col=col.pts)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Clear environment as these are long vectors and rmarkdown cannot handle these 
 rm(list = ls())
 
@@ -3169,26 +3315,43 @@ binnedplot(detWright$p_value,
            ylab="Binned residuals",
            main = "Model A: 1975-1981")
 
-
-# Clear environment as these are long vectors and rmarkdown cannot handle these 
-rm(list = ls())
+#####################################################
+### Finally, I extract detection residuals based on all iterations
+### and for all years, but, since the conditional z=1 part of the
+### equations means that years have different numbers of iterations
+### so the default function would not bin per year, hence, 
+### I separately find residual values for each year, then rbind() and plot
+### Must save output as vector too long to knit
+#####################################################
 
 # Read detection probability file again
-detWright <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelA_detWright.csv")
+#detWright <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelA_detWright.csv")
+
+### Source residual function
+#source("./function-binnedResidsG.R")
 
 # Find residuals across all iterations for year 1 (1900)
-p <-  binned.resids((subset(detWright, Year == 1)$Year+1899),
-                    (subset(detWright, Year == 1))$res)
-# Loop through remaining years and estimate residuals, whilsr row binding to previous
-for(i in 2:106){
-  p <- rbind(p, binned.resids((subset(detWright, Year == paste(i))$Year+1899),
-                    (subset(detWright, Year == paste(i)))$res))
-}
+#p <-  binned.residsG((subset(detWright, Year == 1)$Year+1899),
+#                     (subset(detWright, Year == 1))$res)
 
+# Loop through remaining years and estimate residuals, whilst row binding to previous
+#for(i in 2:106){
+#  p <- rbind(p, binned.residsG((subset(detWright, Year == paste(i))$Year+1899),
+#                    (subset(detWright, Year == paste(i)))$res))
+#}
 
-################################################################
-####### Years 107 & 110 & 111 & 114 & 115 & 116 gives error of having too many data points
-################################################################
+# Years 107, 110, 111, 114, 115, 116 gives error of having too many data points
+# hence, I will remove iterations above 60
+#for(j in 107:116){
+#  temp <- subset(subset(detWright, Year == paste(j)), iter < 61)
+#  p <- rbind(p, binned.residsG((temp$Year+1899), temp$res))
+#}
+
+# Save file
+#write.csv(p, "../outputs/WrightResid/Limenitis_camilla_ModelA_detWright_p_AllYrs_AllIters.csv")
+
+# Read file
+p <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelA_detWright_p_AllYrs_AllIters.csv")
 
 ### Plot!
 cex.pts=0.8
@@ -3196,7 +3359,7 @@ col.pts=1
 col.int="gray"
 
 plot(range(p$xbar), range(p$ybar, p$X2se, -p$X2se, na.rm=TRUE),
-     xlab="Year", ylab="Binned Residuals", type="n", main="Detection: Model A all iterations") + 
+     xlab="Year", ylab="Binned Residuals", type="n", main="Detection: Model A all iters") + 
   abline (0,0, lty=2) +
   lines (p$xbar, p$X2se, col=col.int) +
   lines (p$xbar, -p$X2se, col=col.int) +
@@ -3406,7 +3569,7 @@ binnedplot(occuWright_yr1to6$muZ_value,
            nclass = 116,
            xlab="Occupancy", 
            ylab="Binned residuals",
-           main = "Binned residuals 1900-1905: *L. camilla* Model B")
+           main = "Model B: 1900-1905")
 
 
 binnedplot(occuWright_yr76to82$muZ_value, 
@@ -3414,14 +3577,14 @@ binnedplot(occuWright_yr76to82$muZ_value,
            nclass = 116,
            xlab="Occupancy", 
            ylab="Binned residuals",
-           main = "Binned residuals 1975-1981: *L. camilla* Model B")
+           main = "Model B: 1975-1981")
 
 binnedplot((occuWright_5iter$Year+1899), 
            occuWright_5iter$res,
            nclass = 116,
            xlab="Year", 
            ylab="Binned residuals",
-           main = "Binned residuals 5 iters: *L. camilla* Model B")
+           main = "Model B: 5 iters")
 
 # Clear environment as these are long vectors and rmarkdown cannot handle these 
 rm(list = ls())
@@ -3440,7 +3603,7 @@ binnedplot(detWright$p_value,
            nclass = 116,
            xlab="Detection Probability", 
            ylab="Binned residuals",
-           main = "Binned residuals 1900-1905: *L. camilla* Model B")
+           main = "Model B: 1900-1905")
 
 # Clear environment as these are long vectors and rmarkdown cannot handle these 
 rm(list = ls())
@@ -3456,7 +3619,61 @@ binnedplot(detWright$p_value,
            nclass = 116,
            xlab="Detection Probability", 
            ylab="Binned residuals",
-           main = "Binned residuals 1975-1981: *L. camilla* Model B")
+           main = "Model B: 1975-1981")
+
+
+#####################################################
+### Finally, I extract detection residuals based on all iterations
+### and for all years, but, since the conditional z=1 part of the
+### equations means that years have different numbers of iterations
+### so the default function would not bin per year, hence, 
+### I separately find residual values for each year, then rbind() and plot
+### Must save output as vector too long to knit
+#####################################################
+
+# Read detection probability file again
+#detWright <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelB_detWright.csv")
+
+### Source residual function
+#source("./function-binnedResidsG.R")
+
+# Find residuals across all iterations for year 1 (1900)
+#p <-  binned.residsG((subset(detWright, Year == 1)$Year+1899),
+#                     (subset(detWright, Year == 1))$res)
+
+# Loop through remaining years and estimate residuals, whilst row binding to previous
+#for(i in 2:106){
+#  p <- rbind(p, binned.residsG((subset(detWright, Year == paste(i))$Year+1899),
+#                    (subset(detWright, Year == paste(i)))$res))
+#}
+
+# Years 107, 110, 111, 114, 115, 116 gives error of having too many data points
+# hence, I will remove iterations above 60
+#for(j in 107:116){
+#  temp <- subset(subset(detWright, Year == paste(j)), iter < 61)
+#  p <- rbind(p, binned.residsG((temp$Year+1899), temp$res))
+#}
+
+# Save file
+#write.csv(p, "../outputs/WrightResid/Limenitis_camilla_ModelB_detWright_p_AllYrs_AllIters.csv")
+
+# Clear environment as these are long vectors and rmarkdown cannot handle these 
+rm(list = ls())
+
+# Read file
+p <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelB_detWright_p_AllYrs_AllIters.csv")
+
+### Plot!
+cex.pts=0.8
+col.pts=1
+col.int="gray"
+
+plot(range(p$xbar), range(p$ybar, p$X2se, -p$X2se, na.rm=TRUE),
+     xlab="Year", ylab="Binned Residuals", type="n", main="Detection: Model B all iters") + 
+  abline (0,0, lty=2) +
+  lines (p$xbar, p$X2se, col=col.int) +
+  lines (p$xbar, -p$X2se, col=col.int) +
+  points (p$xbar, p$ybar, pch=19, cex=cex.pts, col=col.pts)
 ```
       
       
@@ -3659,7 +3876,7 @@ binnedplot(occuWright_yr1to6$muZ_value,
            nclass = 116,
            xlab="Occupancy", 
            ylab="Binned residuals",
-           main = "Binned residuals 1900-1905: *L. camilla* Model C")
+           main = "Model C: 1900-1905")
 
 
 binnedplot(occuWright_yr76to82$muZ_value, 
@@ -3667,14 +3884,14 @@ binnedplot(occuWright_yr76to82$muZ_value,
            nclass = 116,
            xlab="Occupancy", 
            ylab="Binned residuals",
-           main = "Binned residuals 1975-1981: *L. camilla* Model C")
+           main = "Model C: 1975-1981")
 
 binnedplot((occuWright_5iter$Year+1899), 
            occuWright_5iter$res,
            nclass = 116,
            xlab="Year", 
            ylab="Binned residuals",
-           main = "Binned residuals 5 iterations: *L. camilla* Model C")
+           main = "Model C: 5 iters")
 
 # Clear environment as these are long vectors and rmarkdown cannot handle these 
 rm(list = ls())
@@ -3693,7 +3910,7 @@ binnedplot(detWright$p_value,
            nclass = 116,
            xlab="Detection Probability", 
            ylab="Binned residuals",
-           main = "Residuals 1900-1905: *L. camilla* Model C")
+           main = "Model C: 1900-1905")
 
 # Clear environment as these are long vectors and rmarkdown cannot handle these 
 rm(list = ls())
@@ -3709,7 +3926,66 @@ binnedplot(detWright$p_value,
            nclass = 116,
            xlab="Detection Probability", 
            ylab="Binned residuals",
-           main = "Binned residuals 1975-1981: *L. camilla* Model C")
+           main = "Model C: 1975-1981")
+
+
+
+
+
+
+
+#####################################################
+### Finally, I extract detection residuals based on all iterations
+### and for all years, but, since the conditional z=1 part of the
+### equations means that years have different numbers of iterations
+### so the default function would not bin per year, hence, 
+### I separately find residual values for each year, then rbind() and plot
+### Must save output as vector too long to knit
+#####################################################
+
+# Read detection probability file again
+#detWright <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelC_detWright.csv")
+
+### Source residual function
+#source("./function-binnedResidsG.R")
+
+# Find residuals across all iterations for year 1 (1900)
+#p <-  binned.residsG((subset(detWright, Year == 1)$Year+1899),
+#                     (subset(detWright, Year == 1))$res)
+
+# Loop through remaining years and estimate residuals, whilst row binding to previous
+#for(i in 2:106){
+#  p <- rbind(p, binned.residsG((subset(detWright, Year == paste(i))$Year+1899),
+#                    (subset(detWright, Year == paste(i)))$res))
+#}
+
+# Years 107, 110, 111, 114, 115, 116 gives error of having too many data points
+# hence, I will remove iterations above 60
+#for(j in 107:116){
+#  temp <- subset(subset(detWright, Year == paste(j)), iter < 61)
+#  p <- rbind(p, binned.residsG((temp$Year+1899), temp$res))
+#}
+
+# Save file
+#write.csv(p, "../outputs/WrightResid/Limenitis_camilla_ModelC_detWright_p_AllYrs_AllIters.csv")
+
+# Clear environment as these are long vectors and rmarkdown cannot handle these 
+rm(list = ls())
+
+# Read file
+p <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelC_detWright_p_AllYrs_AllIters.csv")
+
+### Plot!
+cex.pts=0.8
+col.pts=1
+col.int="gray"
+
+plot(range(p$xbar), range(p$ybar, p$X2se, -p$X2se, na.rm=TRUE),
+     xlab="Year", ylab="Binned Residuals", type="n", main="Detection: Model C all iters") + 
+  abline (0,0, lty=2) +
+  lines (p$xbar, p$X2se, col=col.int) +
+  lines (p$xbar, -p$X2se, col=col.int) +
+  points (p$xbar, p$ybar, pch=19, cex=cex.pts, col=col.pts)
 ```
       
       
@@ -3730,6 +4006,13 @@ binnedplot(detWright$p_value,
 
       
 
+
+
+
+
+
+
+### *L. camilla* 1930-1960
 
 
 
