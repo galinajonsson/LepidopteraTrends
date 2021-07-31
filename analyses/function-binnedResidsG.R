@@ -1,4 +1,4 @@
-binned.resids <- function (x, y, nclass=floor(sqrt(length(x)))){
+binned.residsG <- function(x, y, nclass=floor(sqrt(length(x)))){
   
   breaks.index <- floor(length(x)*(1:(nclass-1))/nclass)
   if(any(breaks.index==0)) nclass <- 1
