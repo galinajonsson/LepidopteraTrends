@@ -89,24 +89,24 @@ plot.occDet_G <- function(x, y = NULL, z = NULL, main = x$SPP_NAME, reg_agg = ''
       geom_ribbon(data = new_data3,
                   aes_string(group = 1, 
                              ymin = "quant_025", ymax = "quant_975"),
-                  alpha = 0.3, fill="#000000") +
+                  alpha = 0.3, fill = "#E69F00") +
       geom_ribbon(data = new_data2,
                   aes_string(group = 1, 
                              ymin = "quant_025", ymax = "quant_975"),
-                  alpha = 0.3, fill="#0072B2") +
+                  alpha = 0.3, fill= "#0072B2") +
       geom_ribbon(data = new_data,
                   aes_string(group = 1, 
                              ymin = "quant_025", ymax = "quant_975"),
-                  alpha = 0.3, fill = "#E69F00") +
+                  alpha = 0.3, fill= "#000000") +
       geom_line(data = new_data, size = 1, 
-                aes(colour = c("#E69F00")), #colour = c("#56B4E9"), 
-                linetype = "solid") +
+                aes(col = c("#000000")), #colour = c("#000000"), 
+                linetype = 2) +
       geom_line(data = new_data2, size = 1, 
                 aes(col = c("#0072B2")), #colour = c("#E69F00"), 
                 linetype = "solid") +
       geom_line(data = new_data3, size = 1, 
-                aes(col = c("#000000")), #colour = c("#000000"), 
-                linetype = 2) +
+                aes(colour = c("#E69F00")), #colour = c("#56B4E9"), 
+                linetype = "solid") +
       geom_vline(xintercept = 1976, linetype = "dashed") +   # Vertical line = 1976
       ylab("Occupancy") +
       xlab("Year") +
