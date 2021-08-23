@@ -528,8 +528,6 @@ samp <- rjags:::coda.samples(model=Aglais_urticae_mixLL$model,
 # This produced a mcmc.list of length three: one list per chain with column names in the format muZ[i,t], z[i,t] and p[j] (where j denotes visit; v) with a total length of 1366187 columns for p[j], and 319000 columns for muZ[i,t] and z[i,t], of samples estimates and 33 rows, each, totalling 99 samples 
 
 
-
-
 ### Separate columns station with "muZ", "z" and "p" (will also turn the mcmc.list to a 'regular' list)
 
 ### As 'regular' lists, we can use the data.table-function melt()
@@ -581,13 +579,29 @@ p <- as.data.frame(p[,c("variable", "value", "VisitID", "iter")])
 # load the raw data
 temp_data <- results_Aglais_urticae_mixLL$model$data()
 
-# subset year, siteID and the actual observation (y)
-temp_data <- as.data.frame(with(temp_data, cbind(Site, Year, y)))  
+### Add data type for each visit
+# Create Source column
+Source <- paste(as.character(temp_data$DATATYPE2), as.character(temp_data$DATATYPE3))
+
+summary(as.factor(Source))
+# 0 0   XXX / XXX / XXX
+# 0 1   XXX / XXX / XXX
+# 1 0   XXX / XXX / XXX
+
+### Substitute to real names
+Source <- gsub("0 0", "BNM", Source)
+Source <- gsub("0 1", "NHCs", Source)
+Source <- gsub("1 0", "UKBMS", Source)
+
+# add source vector to tem_data
+temp_data$Source <- Source
+
+# subset year, siteID, Source and the actual observation (y)
+temp_data <- as.data.frame(with(temp_data, cbind(Site, Year, y, Source))) 
 temp_data$VisitID <- 1:nrow(temp_data)
 
 # Finally, merge with p dataframe
 p <- merge(p, temp_data)
-
 ```
 muZ[i,t] and z[i,t] will be loner than p[j] (all combinations of sites (2750) and year (116) vs. the total number of visits (i.e. not only for the focal species; 1,361,103)   
    
@@ -640,6 +654,8 @@ Calculating the residuals:
 # Rename value and variable 
 names(p)[names(p) == "value"] <- "p_value"
 names(p)[names(p) == "variable"] <- "p_variable"
+names(z)[names(z) == "value"] <- "z_value"
+names(z)[names(z) == "variable"] <- "z_variable"
 
 # merge but specify to only include z values for sites and years where there actually was a visit ie p[j]
 detWright <- merge(p, z, all.x=TRUE, all.y=FALSE)
@@ -653,6 +669,7 @@ detWright <- merge(p, z, all.x=TRUE, all.y=FALSE)
 detWright <- subset(detWright, z_value == 1) 
 
 # Find residuals
+detWright$y <- as.numeric(detWright$y)
 detWright$res <- (detWright$y - detWright$p_value)
 
 # Save file
@@ -906,7 +923,6 @@ samp <- rjags:::coda.samples(model=Aglais_urticae_ModelA$model,
 
 
 ### Separate columns station with "muZ", "z" and "p" 
-
 ### As 'regular' lists, we can use the data.table-function melt()
 # recall the format p[j] vs muZ[i,t] and z[i,t] (where j denotes visit)
 # This makes p straight forward: 
@@ -922,13 +938,10 @@ z <- rbindlist(lapply(z, as.data.frame))
 z <- melt(z)
 
 
-
 #### Tidy data
-
 # Tidy VisitID column for p
 p$VisitID <- as.character(gsub(p$variable, pa="p\\[", repl=""))
 p$VisitID <- as.numeric(gsub(p$VisitID, pa="\\]", repl=""))
-
 # Tidy year and site columns for muZ and z
 muZ$Site <- as.character(gsub(muZ$variable, pa="muZ\\[", repl="")) 
 muZ$Site <- as.numeric(gsub(muZ$Site, pa="\\,[0-9]*\\]", repl="")) # 2750 
@@ -938,8 +951,6 @@ z$Site <- as.character(gsub(z$variable, pa="z\\[", repl=""))
 z$Site <- as.numeric(gsub(z$Site, pa="\\,[0-9]*\\]", repl="")) # 2750 
 z$Year <- as.character(gsub(z$variable, pa="z\\[[0-9]*\\,", repl=""))
 z$Year <- as.numeric(gsub(z$Year, pa="\\]", repl="")) # 116 
-
-
 # Tidy iteration
 p <- p %>% group_by(variable) %>% mutate(iter = seq_along(variable))
 muZ <- muZ %>% group_by(variable) %>% mutate(iter = seq_along(variable))
@@ -957,26 +968,28 @@ temp_data <- Aglais_urticae_ModelA$model$data()
 
 ### Add data type for each visit
 # Create Source column
-temp_data$Source <- as.character(NA)
+Source2 <- paste(as.character(temp_data$DATATYPE2), as.character(temp_data$DATATYPE3))
+summary(as.factor(Source2))
+# 0 0   XXX / XXX / XXX
+# 0 1   XXX / XXX / XXX
+# 1 0   XXX / XXX / XXX
 
-# Populate with data source
-for(i in 1:nrow(temp_data)){
-  if(isTRUE(temp_data[i, c("DATATYPE2")] == 1)){
-    temp_data[i, c("Source")] <- "NHCs"
-  }
-  if(isTRUE(temp_data[i, c("DATATYPE3")] == 1)){
-    temp_data[i, c("Source")] <- "UKBMS"
-  } else{
-    temp_data[i, c("Source")] <- "BNM"
-  }
-}
+### Substitute to real names
+Source2 <- gsub("0 0", "BNM", Source2)
+Source2 <- gsub("0 1", "NHCs", Source2)
+Source2 <- gsub("1 0", "UKBMS", Source2)
+
+#######################
+identical(Source, Source2)
+
+# add vector to temp_data
+temp_data$Source <- Source
 
 # subset year, siteID, Source and the actual observation (y)
 temp_data <- as.data.frame(with(temp_data, cbind(Site, Year, y, Source))) 
 
 # Find VisitID
 temp_data$VisitID <- 1:nrow(temp_data)
-
 
 # Merge with p dataframe
 p <- merge(p, temp_data)
@@ -1000,7 +1013,7 @@ occuWright <- merge(muZ, z)
 occuWright$res <- (occuWright$z_value - occuWright$muZ_value)
 
 # Save file
-write.csv(occuWright, "../outputs/WrightResid/Aglais_urticae_ModelA_occuWright.csv")
+#write.csv(occuWright, "../outputs/WrightResid/Aglais_urticae_ModelA_occuWright.csv")
 
 
 
@@ -1030,16 +1043,6 @@ detWright$res <- (detWright$y - detWright$p_value)
 
 # Save file
 write.csv(detWright, "../outputs/WrightResid/Aglais_urticae_ModelA_detWright.csv")
-
-#################################################
-
-p <- merge(detWright, temp_data[,c("VisitID", "Source")], by="VisitID", all.x=TRUE, all.y=FALSE)
-# 1366187
-# 131659680
-
-write.csv(p, "../outputs/WrightResid/Aglais_urticae_ModelA_detWright.csv")
-
-#################################################
 ``` 
      
     
@@ -2036,7 +2039,7 @@ plot_DetectionOverTime(Carterocephalus_palaemon_ModelC,
 ```
 
 
-### *C. palaemon* - Model A **Resids re-run - DONE**
+### *C. palaemon* - Model A **Rerun - DONE**
     
     
 ####  Extract resuduals
@@ -2287,7 +2290,7 @@ binnedplot((detWright$Year+1899),
     
 
     
-### *C. palaemon* - Model B **Resids re-run - DONE**
+### *C. palaemon* - Model B **Rerun - DONE**
     
 #### Extract resuduals
 ```{r WrightResiduals-Cpalaemon-ModelB, eval=FALSE, echo=FALSE, cache=TRUE}
@@ -2561,7 +2564,7 @@ binnedplot((detWright_5iter$Year+1899),
 
 
     
-### *C. palaemon* - Model C   
+### *C. palaemon* - Model C  **Rerun - DONE**   
    
    
 #### Extract resuduals
@@ -2660,7 +2663,7 @@ occuWright <- merge(muZ, z)
 # Find residuals
 occuWright$res <- (occuWright$z_value - occuWright$muZ_value)
 # Save file
-#write.csv(occuWright, "../outputs/WrightResid/Carterocephalus_palaemon_ModelC_occuWright.csv")
+write.csv(occuWright, "../outputs/WrightResid/Carterocephalus_palaemon_ModelC_occuWright.csv")
 
 
 ################################################################
@@ -2673,8 +2676,8 @@ names(p)[names(p) == "variable"] <- "p_variable"
 detWright <- merge(p, z, all.x=TRUE, all.y=FALSE)
 # Check the number of estimated occupancy (i.e. 1s) 
 summary(as.factor(detWright$z_value)) 
-# 412398 1s
-# 134840115 0s
+# 411411 1s
+# 134841102 0s
 # Subset the visits where estimated occupancy is 1 (as these are the visits used to find residuals)
 detWright <- subset(detWright, z_value == 1) 
 # Find residuals
@@ -2931,7 +2934,7 @@ binnedplot(subset((subset(occuWright, Year >= 76)), Year < 82)$Year+1899,
    
    
 ### Detection residuals: 1900-2015
-```{r WrightDetPlot-C-palaemon, echo=FALSE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE, fig.width=7, fig.height=7}
+```{r WrightDetPlot-C-palaemon-Part1, echo=FALSE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE, fig.width=7, fig.height=7}
 # Load required packages
 require(arm)
 require(dplyr)
@@ -2941,7 +2944,7 @@ rm(list = ls())
 ### Source residual function
 source("./function-binnedResidsG.R")
 
-# Set up 3 rows 2 columns
+# Set up 3 rows 3 columns
 par(mfrow = c(3, 3))
 
 ################################################################
@@ -2955,10 +2958,11 @@ detWright$Year <- as.numeric(detWright$Year)
 ### Plot
 empty_list <- vector(mode = "list")
 vec <- c(11,21,31,41,51,61,71,81,91,100)
+vec2 <- c(11,21,31,41,51,61,71,81,91,100)
 count <- 0
 for(i in vec){
   count <- count + 1
-  temp <- subset(detWright, iter <= paste0(i))
+  temp <- subset(subset(detWright, iter <= paste0(i)), iter > vec2[count-1])
   empty_list[[paste0(count)]] <- binned.residsG(temp$Year+1899, temp$res, nclass = 116)
 }
 plot(range(c(1900,2015)), range(c(0.3,-0.2)),
@@ -2973,8 +2977,14 @@ for(i in 1:10){
 
 ### Plot all years: seperate line colours for iterations of visits of different types
 # Setup
+# Read detection probability file again
+rm(list = ls())
+source("./function-binnedResidsG.R")
+detWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelA_detWright2.csv")
+detWright$Year <- as.numeric(detWright$Year)
 empty_list <- vector(mode = "list")
 vec <- c(11,21,31,41,51,61,71,81,91,100)
+vec2 <- c(11,21,31,41,51,61,71,81,91,100)
 sourceVec <- c("BNM", "UKBMS", "NHCs")
 source_nclass <- c(98, 27, 80)
 source_col <- c(3, 2, 1)
@@ -2983,14 +2993,15 @@ source_lty <- c(1, 2, 3)
 plot(range(c(1900,2015)), range(c(-0.3,0.3)),
            xlab="Year", 
            ylab="Binned occupancy residuals",
-           main = "Model B") +
+           main = "Model A") +
   abline (0,0, lty=2) +
 for(s in 1:3){
   detWright_temp <- subset(detWright, Source == paste0(sourceVec[s]))
 count <- 0
 for(i in vec){
   count <- count + 1
-  temp <- subset(detWright_temp, iter <= paste0(i))
+  #temp <- subset(detWright_temp, iter <= paste0(i))
+  temp <- subset(subset(detWright_temp, iter <= paste0(i)), iter > vec2[count-1])
   empty_list[[paste0(count)]] <- binned.residsG(temp$Year+1899, temp$res, nclass=paste0(source_nclass[s]))
   }
 for(i in 1:10){
@@ -3006,30 +3017,38 @@ lines(empty_list[[i]]$xbar,
 
 
 ### Plot all years: seperate point colours for visits of different data types
+# Read detection probability file again
+rm(list = ls())
+source("./function-binnedResidsG.R")
+detWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelA_detWright2.csv")
+detWright$Year <- as.numeric(detWright$Year)
+# subset
 NHCs <- binned.residsG((subset(subset(detWright, Source == "NHCs"))$Year+1899),
                      (subset(subset(detWright, Source == "NHCs")))$res,
                      nclass=80)
 UKBMS <- binned.residsG((subset(subset(detWright, Source == "UKBMS"))$Year+1899),
                      (subset(detWright, Source == "UKBMS"))$res,
                      nclass=27)
-BNM <- binned.residsG((subset(subset(detWright, Source == "BNM"))$Year+1899),
+detWright <- binned.residsG((subset(subset(detWright, Source == "BNM"))$Year+1899),
                      (subset(detWright, Source == "BNM"))$res,
                      nclass=98)
 # Plot
 plot(range(1900,2015), range(0.4, -0.3),
+     xlab="Year", ylab="",
      # xlab="Year", ylab="", 
-     type="n", main="Model B") + 
+     type="n", main="Model A") + 
   abline(0,0, lty=2) +
   points(NHCs$xbar, NHCs$ybar, pch=19, cex=0.8, col=1) +
   points(UKBMS$xbar, UKBMS$ybar, pch=18, cex=1.3, col=2) +
-  points(BNM$xbar, BNM$ybar, pch=17, cex=1, col=3) +
+  points(detWright$xbar, detWright$ybar, pch=17, cex=1, col=3) +
   legend("topright", legend = c("BNM", "UKBMS", "NHCs"), 
   bty = "n", col = c(3, 2, 1), pch = c(17, 18, 19), 
   pt.cex = c(1.1, 1.4, 0.9), cex = 1, text.col = "black", 
   horiz = F , inset = c(0.0, -0.02))
+```
 
 
-
+```{r WrightDetPlot-C-palaemon-Part2, echo=FALSE, eval=FALSE, warning=FALSE, message=FALSE, cache=TRUE, fig.width=7, fig.height=7}
 
 
 
@@ -3093,18 +3112,21 @@ plot(range(1900,2015), range(0.4, -0.3),
 ################################################################
 ###     Model B
 ################################################################
+rm(list = ls())
 
 # Read detection probability file again
 detWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelB_detWright2.csv")
 detWright$Year <- as.numeric(detWright$Year)
+source("./function-binnedResidsG.R")
 
 ### Plot
 empty_list <- vector(mode = "list")
 vec <- c(11,21,31,41,51,61,71,81,91,100)
+vec2 <- c(11,21,31,41,51,61,71,81,91,100)
 count <- 0
 for(i in vec){
   count <- count + 1
-  temp <- subset(detWright, iter <= paste0(i))
+  temp <- subset(subset(detWright, iter <= paste0(i)), iter > vec2[count-1])
   empty_list[[paste0(count)]] <- binned.residsG(temp$Year+1899, temp$res, nclass = 116)
 }
 plot(range(c(1900,2015)), range(c(0.3,-0.2)),
@@ -3118,9 +3140,16 @@ for(i in 1:10){
 
 
 ### Plot all years: seperate lines for iterations of visits of different types
+# Read detection probability file again
+rm(list = ls())
+# Read detection probability file again
+detWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelB_detWright2.csv")
+detWright$Year <- as.numeric(detWright$Year)
+source("./function-binnedResidsG.R")
 # Setup
 empty_list <- vector(mode = "list")
 vec <- c(11,21,31,41,51,61,71,81,91,100)
+vec2 <- c(11,21,31,41,51,61,71,81,91,100)
 sourceVec <- c("BNM", "UKBMS", "NHCs")
 source_nclass <- c(98, 27, 80)
 source_col <- c(3, 2, 1)
@@ -3136,7 +3165,8 @@ for(s in 1:3){
 count <- 0
 for(i in vec){
   count <- count + 1
-  temp <- subset(detWright_temp, iter <= paste0(i))
+  #temp <- subset(detWright_temp, iter <= paste0(i))
+  temp <- subset(subset(detWright_temp, iter <= paste0(i)), iter > vec2[count-1])
   empty_list[[paste0(count)]] <- binned.residsG(temp$Year+1899, 
                                                 temp$res, nclass = source_nclass[s])
   }
@@ -3153,6 +3183,13 @@ lines(empty_list[[i]]$xbar,
 
 
 ### Plot all years: seperate point colours for visits of different data types
+# Read detection probability file again
+rm(list = ls())
+# Read detection probability file again
+detWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelB_detWright2.csv")
+detWright$Year <- as.numeric(detWright$Year)
+source("./function-binnedResidsG.R")
+
 NHCs <- binned.residsG((subset(subset(detWright, Source == "NHCs"))$Year+1899),
                      (subset(subset(detWright, Source == "NHCs")))$res,
                      nclass=80)
@@ -3184,42 +3221,102 @@ plot(range(1900,2015), range(0.4, -0.3),
 ################################################################
 ###     Model C
 ################################################################
-
+rm(list = ls())
 # Read detection probability file again
-#detWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelC_detWright.csv")
+detWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelC_detWright2.csv")
+detWright$Year <- as.numeric(detWright$Year)
+source("./function-binnedResidsG.R")
+### Plot
+empty_list <- vector(mode = "list")
+vec <- c(11,21,31,41,51,61,71,81,91,100)
+vec2 <- c(11,21,31,41,51,61,71,81,91,100)
+count <- 0
+for(i in vec){
+  count <- count + 1
+  temp <- subset(subset(detWright, iter <= paste0(i)), iter > vec2[count-1])
+  empty_list[[paste0(count)]] <- binned.residsG(temp$Year+1899, temp$res, nclass = 116)
+}
+plot(range(c(1900,2015)), range(c(0.3,-0.2)),
+           #xlab="Year", 
+           ylab="Binned detection residuals",
+           main = "Model A") +
+  abline (0,0, lty=2)
+for(i in 1:10){
+  + lines(empty_list[[i]]$xbar, empty_list[[i]]$ybar, col="grey")
+}
 
 
+### Plot all years: seperate line colours for iterations of visits of different types
+rm(list = ls())
+# Read detection probability file again
+detWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelC_detWright2.csv")
+detWright$Year <- as.numeric(detWright$Year)
+source("./function-binnedResidsG.R")
+# Setup
+empty_list <- vector(mode = "list")
+vec <- c(11,21,31,41,51,61,71,81,91,100)
+vec2 <- c(11,21,31,41,51,61,71,81,91,100)
+sourceVec <- c("BNM", "UKBMS", "NHCs")
+source_nclass <- c(98, 27, 80)
+source_col <- c(3, 2, 1)
+source_lty <- c(1, 2, 3)
+# Plot
+plot(range(c(1900,2015)), range(c(-0.3,0.3)),
+           xlab="", 
+           ylab="",
+           main = "Model C") +
+  abline (0,0, lty=2) +
+for(s in 1:3){
+  detWright_temp <- subset(detWright, Source == paste0(sourceVec[s]))
+count <- 0
+for(i in vec){
+  count <- count + 1
+  #temp <- subset(detWright_temp, iter <= paste0(i))
+  temp <- subset(subset(detWright_temp, iter <= paste0(i)), iter > vec2[count-1])
+  empty_list[[paste0(count)]] <- binned.residsG(temp$Year+1899, temp$res, nclass=paste0(source_nclass[s]))
+  }
+for(i in 1:10){
+lines(empty_list[[i]]$xbar, 
+      empty_list[[i]]$ybar, 
+      col=paste0(source_col[s]),
+      lty=paste0(source_lty[s]))
+      }
+} +
+  legend("topright", legend = sourceVec, #bty = "n", 
+  col = source_col, lty = source_lty, #pt.cex = c(1.1,1.4,0.9), 
+  cex = 1, text.col = "black", horiz = F , inset = c(0.0, -0.02))
 
-######## Year
-######## Year
-### extract detection residuals based on all iterations
-### Read detection probability file again
-#detWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelC_detWright.csv")
-### Source residual function
-#source("./function-binnedResidsG.R")
-### Find residuals across all iterations for year 1 (1900)
-#p <-  binned.residsG((subset(detWright, Year == 1)$Year+1899),
-#                    (subset(detWright, Year == 1))$res)
-### Loop through remaining years and estimate residuals, whilst row binding to previous
-#for(i in 2:116){
-#  p <- rbind(p, binned.residsG((subset(detWright, Year == paste(i))$Year+1899),
-#                    (subset(detWright, Year == paste(i)))$res))
-#  }
-### Save file
-#write.csv(p, "../outputs/WrightResid/Carterocephalus_palaemon_ModelC_detWright_AllYrs_AllIters.csv")
-#rm(list = ls())
-# Read file
-#p <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelC_detWright_AllYrs_AllIters.csv")
-### Plot!
-#plot(range(p$xbar), range(p$ybar, p$X2se, -p$X2se, na.rm=TRUE),
-#     xlab="", ylab="", 
-#     type="n", main="Model B") + 
-#  abline(0,0, lty=2) +
-#  lines(p$xbar, p$X2se, col="gray") +
-#  lines(p$xbar, -p$X2se, col="gray") +
-#  points(p$xbar, p$ybar, pch=19, cex=0.8, col=1)
 
-
+  
+### Plot all years: seperate point colours for visits of different data types
+# Read detection probability file again
+rm(list = ls())
+source("./function-binnedResidsG.R")
+detWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelC_detWright2.csv")
+detWright$Year <- as.numeric(detWright$Year)
+# subset
+NHCs <- binned.residsG((subset(subset(detWright, Source == "NHCs"))$Year+1899),
+                     (subset(subset(detWright, Source == "NHCs")))$res,
+                     nclass=80)
+UKBMS <- binned.residsG((subset(subset(detWright, Source == "UKBMS"))$Year+1899),
+                     (subset(detWright, Source == "UKBMS"))$res,
+                     nclass=27)
+detWright <- binned.residsG((subset(subset(detWright, Source == "BNM"))$Year+1899),
+                     (subset(detWright, Source == "BNM"))$res,
+                     nclass=98)
+# Plot
+plot(range(1900,2015), range(0.4, -0.3),
+     xlab="Year", ylab="",
+     # xlab="Year", ylab="", 
+     type="n", main="Model C") + 
+  abline(0,0, lty=2) +
+  points(NHCs$xbar, NHCs$ybar, pch=19, cex=0.8, col=1) +
+  points(UKBMS$xbar, UKBMS$ybar, pch=18, cex=1.3, col=2) +
+  points(detWright$xbar, detWright$ybar, pch=17, cex=1, col=3) +
+  legend("topright", legend = c("BNM", "UKBMS", "NHCs"), 
+  bty = "n", col = c(3, 2, 1), pch = c(17, 18, 19), 
+  pt.cex = c(1.1, 1.4, 0.9), cex = 1, text.col = "black", 
+  horiz = F , inset = c(0.0, -0.02))
 ```
    
    
