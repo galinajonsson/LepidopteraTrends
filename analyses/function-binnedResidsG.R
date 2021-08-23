@@ -1,9 +1,10 @@
 binned.residsG <- function(x, y, nclass=floor(sqrt(length(x)))){
   
   breaks.index <- floor(length(x)*(1:(nclass-1))/nclass)
-  if(any(breaks.index==0)) nclass <- 1
-  x.sort <- sort(x)
-  breaks <- -Inf
+  if(any(breaks.index==0)){ 
+    nclass <- 1}
+    x.sort <- sort(x)
+    breaks <- -Inf
   if(nclass > 1){
     for (i in 1:(nclass-1)){
       x.lo <- x.sort[breaks.index[i]]
