@@ -97,9 +97,9 @@ plot.occDet_G <- function(x, y = NULL, z = NULL, main = x$SPP_NAME, reg_agg = ''
       geom_ribbon(data = new_data,
                   aes_string(group = 1, 
                              ymin = "quant_025", ymax = "quant_975"),
-                  alpha = 0.3, fill= "#000000") +
+                  alpha = 0.3, fill= "#440154FF") +
       geom_line(data = new_data, size = 1, 
-                aes(col = c("#000000")), #colour = c("#000000"), 
+                aes(col = c("#000000")), #colour = c("#440154FF"), 
                 linetype = 2) +
       geom_line(data = new_data2, size = 1, 
                 aes(col = c("#0072B2")), #colour = c("#E69F00"), 
@@ -113,51 +113,20 @@ plot.occDet_G <- function(x, y = NULL, z = NULL, main = x$SPP_NAME, reg_agg = ''
       scale_y_continuous(limits = c(0, 1)) +   # Limits to y-scale
       scale_x_continuous(breaks=seq(1900, 2020, 20), limits = c(1900, 2025)) +
       theme(legend.position="bottom") +
-      #theme(plot.title = element_text(lineheight = .8, face = "bold"))+
       scale_colour_manual(name = 'Model', 
-                          values =c("#000000" = "#000000",
+                          values =c("#440154FF" = "#440154FF",
                                     "#0072B2" = "#0072B2",
                                     "#E69F00" = "#E69F00"), 
                           labels = c("A",
                                      "B", 
                                      "C")) +
-      #  scale_linetype_manual(name = 'Model',
-      #                        values =c(#"#56B4E9" = 
-      #                          "solid",
-      #                               # "#E69F00" =  
-       #                         "solid",
-      #                              #  "#000000" = 
-      ##                          "dotted"),
-      #                      labels = c("A",
-      #                                 "B", 
-      #                                 "C")) +
-  #  scale_color_manual(values = c("a" = "gray40", "b" = "gray70", "log2(x)" = "cadetblue2")) +
-    #scale_color_manual(values = c("a" = "gray40", "b" = "gray70", "log2(x)" = "cadetblue2")) +
-    #  scale_shape_manual(values = c("a" = 16, "b" = 17, "log2(x)" = NA)) +
-    #  scale_linetype_manual(values = c("a" = "blank", "b" = "blank", "log2(x)" = "solid"))
-    #  guides(fill = guide_legend(title = "Model",
-    #         colour = c("#000000",
-    #                    "#E69F00",
-    #                    "#56B4E9"),
-    #         linetype = c("blank", "blank", "solid"))) +
       theme(panel.grid.major = element_blank(), 
             panel.grid.minor = element_blank(),
             panel.background = element_blank(), 
-            axis.line = element_line(colour = "black")) #+
-      #guides(fill = guide_legend(title = 
-      #                             title.theme = element_text(
-       #   size = 15,
-       #   face = "italic",
-        #  colour = "red",
-     #     angle = 0
-    #    )) +
-     # theme(text=element_text(size=25)) 
-     # guides(shape = guide_legend(override.aes = list(color = c("gray40", "gray70", "cadetblue2"),
-     #                                                 shape = c(16, 17, 16),
-     #                                                 linetype = c("blank", "blank", "solid"))))
-  } else if(is.null(y)==FALSE){
+            axis.line = element_line(colour = "black")) 
     
     
+        } else if(is.null(y)==FALSE){
     
     ###############  y occDet  #################
     
@@ -200,7 +169,6 @@ plot.occDet_G <- function(x, y = NULL, z = NULL, main = x$SPP_NAME, reg_agg = ''
       xlab("Year") +
       scale_y_continuous(limits = c(0, 1)) +   # Limits to y-scale
       scale_x_continuous(breaks=seq(1900, 2020, 20), limits = c(1900, 2025)) +
-      #theme(plot.title = element_text(lineheight = .8, face = "bold"))+
       scale_colour_manual(name = 'Model', 
                           values =c("red"="red",
                                     "black"="black"), 
@@ -211,25 +179,28 @@ plot.occDet_G <- function(x, y = NULL, z = NULL, main = x$SPP_NAME, reg_agg = ''
             panel.background = element_blank(), 
             axis.line = element_line(colour = "black")) +
       theme(text=element_text(size=25)) 
-  } else if(is.null(y)==TRUE){
+  } 
+  
+  
+  else if(is.null(y)==TRUE){
     
-  ggplot(new_data, aes_string(x = "year", y = "mean"), ...) + 
+  ggplot(new_data, aes(x = year, y = mean)) + 
     geom_ribbon(data = new_data,
-                aes_string(group = 1, 
-                           ymin = "quant_025", ymax = "quant_975"),
-                alpha = 0.2) +
-    geom_line(size = 1, col = "black") +   # Line colour
+                aes(group = 1, 
+                           ymin = quant_025, ymax = quant_975),
+                alpha = 0.3, fill= "#0072B2") +
+    geom_line(data = new_data, size = 1, 
+              colour = c("#0072B2"), #colour = c("#E69F00"), 
+              linetype = "solid") +
     geom_vline(xintercept = 1976, linetype = "dashed") +   # Vertical line = 1976
     ylab("Occupancy") +
     xlab("Year") +
     scale_y_continuous(limits = c(0, 1)) +   # Limits to y-scale
     scale_x_continuous(breaks=seq(1900, 2020, 20), limits = c(1900, 2025)) +
-    ggtitle(main) + 
     theme(panel.grid.major = element_blank(), 
           panel.grid.minor = element_blank(),
           panel.background = element_blank(), 
-          axis.line = element_line(colour = "black")) +
-    theme(text=element_text(size=30))
+          axis.line = element_line(colour = "black")) 
     
     
     }

@@ -969,9 +969,9 @@ temp_data <- Aglais_urticae_ModelA$model$data()
 # Create Source column
 Source2 <- paste(as.character(temp_data$DATATYPE2), as.character(temp_data$DATATYPE3))
 summary(as.factor(Source2))
-# 0 0   XXX / XXX / XXX
-# 0 1   XXX / XXX / XXX
-# 1 0   XXX / XXX / XXX
+# 0 0   362846 / 1135628/ XXX
+# 0 1   671283 / 24583 / XXX
+# 1 0   332058 / 205976 / XXX
 
 ### Substitute to real names
 Source2 <- gsub("0 0", "BNM", Source2)
@@ -979,7 +979,6 @@ Source2 <- gsub("0 1", "NHCs", Source2)
 Source2 <- gsub("1 0", "UKBMS", Source2)
 
 #######################
-identical(Source, Source2)
 
 # add vector to temp_data
 temp_data$Source <- Source
@@ -1038,6 +1037,7 @@ summary(as.factor(detWright$z_value))
 detWright <- subset(detWright, z_value == 1) 
 
 # Find residuals
+detWright$y <- as.numeric(detWright$y)
 detWright$res <- (detWright$y - detWright$p_value)
 
 # Save file
@@ -1055,7 +1055,7 @@ write.csv(detWright, "../outputs/WrightResid/Aglais_urticae_ModelA_detWright.csv
 #### Plot binned residuals
 
   
-```{r WrightPlot-Aurticae-ModelA, echo=FALSE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE}
+```{r WrightPlot-Aurticae-ModelA, echo=FALSE, eval=FALSE, warning=FALSE, message=FALSE, cache=TRUE}
 
 # Load required packages
 require(arm)
@@ -1073,7 +1073,7 @@ par(mfrow = c(2, 3))
 ################################################################
 
 # Read file
-occuWright <- read.csv("../outputs/WrightResid/Aglais_urticae_ModelA_occuWright.csv")
+occuWright <- read.csv("../outputs/WrightResid/Aglais_urticae_ModelC_occuWright.csv")
 
 # subset
 occuWright_yr26to32 <- subset((subset(occuWright, Year >= 26)), Year < 32)
@@ -1112,7 +1112,7 @@ rm(list = ls())
 #occuWright <- read.csv("../outputs/WrightResid/Aglais_urticae_ModelA_occuWright.csv")
 
 ### Source residual function
-source("./function-binnedResidsG.R")
+#source("./function-binnedResidsG.R")
 
 # Find residuals across all iterations for year 1 (1900)
 #psi <-  binned.residsG((subset(occuWright, Year == 1)$Year+1899),
@@ -1596,13 +1596,32 @@ z <- as.data.frame(z[,c("variable", "value", "Site", "Year", "iter")])
 # load the raw data
 temp_data <- Aglais_urticae_ModelC$model$data()
 
-# subset year, siteID and the actual observation (y)
-temp_data <- as.data.frame(with(temp_data, cbind(Site, Year, y)))  
+### Add data type for each visit
+# Create Source column
+Source <- paste(as.character(temp_data$DATATYPE2), as.character(temp_data$DATATYPE3))
+summary(as.factor(Source))
+# 0 0   362846 / 1135628/ 1135628
+# 0 1   671283 / 24583 / 24583
+# 1 0   332058 / 205976 / 205976
+
+### Substitute to real names
+Source <- gsub("0 0", "BNM", Source)
+Source <- gsub("0 1", "NHCs", Source)
+Source <- gsub("1 0", "UKBMS", Source)
+
+#######################
+
+# add vector to temp_data
+temp_data$Source <- Source
+
+# subset year, siteID, Source and the actual observation (y)
+temp_data <- as.data.frame(with(temp_data, cbind(Site, Year, y, Source))) 
+
+# Find VisitID
 temp_data$VisitID <- 1:nrow(temp_data)
 
 # Merge with p dataframe
 p <- merge(p, temp_data)
-
 
 
  
@@ -1637,6 +1656,11 @@ write.csv(occuWright, "../outputs/WrightResid/Aglais_urticae_ModelC_occuWright.c
 names(p)[names(p) == "value"] <- "p_value"
 names(p)[names(p) == "variable"] <- "p_variable"
 
+################################################################
+p_save <- as.data.frame(with(p, cbind(VisitID, p_variable, p_value, iter, Site, Year, Source))) 
+write.csv(p_save, "../outputs/WrightResid/lookup_pSource.csv")
+################################################################
+
 # merge but specify to only include z values for sites and years where there actually was a visit ie p[j]
 detWright <- merge(p, z, all.x=TRUE, all.y=FALSE)
 
@@ -1649,6 +1673,7 @@ summary(as.factor(detWright$z_value))
 detWright <- subset(detWright, z_value == 1) 
 
 # Find residuals
+detWright$y <- as.numeric(detWright$y)
 detWright$res <- (detWright$y - detWright$p_value)
 
 # Save file
@@ -1946,6 +1971,777 @@ Conclusions thus far:
    
    
    
+   
+   
+### *A. urticae* - Plot residuals for BES QSIG
+
+```{r WrightPlot-Aurticae-BES-QSIG, echo=FALSE, eval=FALSE, warning=FALSE, message=FALSE, cache=TRUE}
+# Load required packages
+require(arm)
+require(dplyr)
+
+
+################################################
+#################  Occupancy   ################# 
+################################################
+# Set up 3 rows 1 column
+par(mfrow = c(3, 3))
+
+#################   Model A   
+# Read file
+psi <- read.csv("../outputs/WrightResid/Aglais_urticae_ModelA_occuWright_AllYrs_AllIters.csv")
+### Plot
+plot(range(psi$xbar), #range(psi$ybar, psi$X2se, -psi$X2se, na.rm=TRUE),
+     range(0.003, -0.003),
+     xlab="", ylab="Occupancy Residuals", 
+     type="n", main="Model A",
+     cex.main=1.5, cex.lab=1.5, cex.axis=1.5) + 
+  abline (0,0, lty=2) +
+  points (psi$xbar, psi$ybar, pch=19, cex=0.8, col=1)
+
+
+
+
+#################   Model B
+# Read file
+psi <- read.csv("../outputs/WrightResid/Aglais_urticae_ModelB_occuWright_AllYrs_AllIters.csv")
+### Plot!
+plot(range(psi$xbar), #range(psi$ybar, psi$X2se, -psi$X2se, na.rm=TRUE),
+     range(0.003, -0.003),
+     xlab="", ylab="Occupancy Residuals", 
+     type="n", main="Model B", 
+     cex.main=1.5, cex.lab=1.5, cex.axis=1.5) + 
+  abline (0,0, lty=2) +
+  points (psi$xbar, psi$ybar, pch=19, cex=0.8, col=1)
+
+
+#################   Model C
+# Read file
+psi <- read.csv("../outputs/WrightResid/Aglais_urticae_ModelC_occuWright_AllYrs_AllIters.csv")
+### Plot!
+plot(range(psi$xbar),  #range(psi$ybar, psi$X2se, -psi$X2se, na.rm=TRUE),
+     range(0.003, -0.003),
+     xlab="Year", ylab="Occupancy Residuals", 
+     type="n", main="Model C", 
+     cex.main=1.8, cex.lab=1.8, cex.axis=1.8) +  
+  abline(0,0, lty=2) +
+  points(psi$xbar, psi$ybar, pch=19, cex=0.8, col=1)
+
+
+
+
+
+################################################
+#################  Detection   ################# 
+################################################
+
+
+#################   Model A
+### Plot all years: separate point colours for visits of different data types
+# Read detection probability file again
+rm(list = ls())
+#source("./function-binnedResidsG.R")  
+#detWright <- read.csv("../outputs/WrightResid/Aglais_urticae_ModelA_detWright.csv")  
+#detWright$Year <- as.numeric(detWright$Year)  ### 
+#length(unique((subset(detWright, Source == "NHCs"))$Year))
+#length(unique((subset(detWright, Source == "UKBMS"))$Year))
+#length(unique((subset(detWright, Source == "BNM"))$Year))
+### subset
+#NHCs <- binned.residsG((subset(subset(detWright, Source == "NHCs"))$Year+1899),  
+#                     (subset(subset(detWright, Source == "NHCs")))$res,  
+#                     nclass=109)  
+#saveRDS(NHCs, "../outputs/WrightResid/Aglais_urticae_ModelA_detWright_allYrs_NHCs_list.rds")
+#UKBMS <- binned.residsG((subset(subset(detWright, Source == "UKBMS"))$Year+1899),
+#                     (subset(detWright, Source == "UKBMS"))$res, 
+#                     nclass=40)
+#saveRDS(UKBMS, "../outputs/WrightResid/Aglais_urticae_ModelA_detWright_allYrs_UKBMS_list.rds")  ###  
+#BNM <- binned.residsG((subset(subset(detWright, Source == "BNM"), Year < 95)$Year+1899), 
+#                     subset((subset(detWright, Source == "BNM")), Year < 95)$res,
+#                     nclass=113)
+#BNM2 <- binned.residsG(subset(subset((subset(detWright, Source == "BNM")), Year > 95), #iter<30)$Year+1899,
+#                     subset(subset((subset(detWright, Source == "BNM")), Year > 95), iter<30)$res, nclass=16)
+#test <- rbind(BNM, BNM2)
+#saveRDS(test, "../outputs/WrightResid/Aglais_urticae_ModelA_detWright_allYrs_BNM_list.rds")
+### Read and plot binned det residuals
+NHCs <- readRDS("../outputs/WrightResid/Aglais_urticae_ModelA_detWright_allYrs_NHCs_list.rds") 
+UKBMS <- readRDS("../outputs/WrightResid/Aglais_urticae_ModelA_detWright_allYrs_UKBMS_list.rds") 
+BNM <- readRDS("../outputs/WrightResid/Aglais_urticae_ModelA_detWright_allYrs_BNM_list.rds") 
+
+plot(range(1900,2015), range(0.2, -0.5),
+     xlab="Year", ylab="Detection Residuals",
+     type="n", main="Model A",
+     cex.main=1.8, cex.lab=1.8, cex.axis=1.8) + 
+  abline(0,0, lty=2) +
+  points(NHCs$xbar, NHCs$ybar, pch=19, cex=1, col="black") +
+  points(UKBMS$xbar, UKBMS$ybar, pch=19, cex=1, col="black") +
+  points(BNM$xbar, BNM$ybar, pch=19, cex=1, col="black") 
+
+
+
+#################   Model B
+### Plot all years: separate point colours for visits of different data types
+# Read detection probability file again
+#rm(list = ls())
+#source("./function-binnedResidsG.R")  
+#detWright <- read.csv("../outputs/WrightResid/Aglais_urticae_ModelB_detWright.csv") 
+#detWright$Year <- as.numeric(detWright$Year)  
+### subset
+#NHCs <- binned.residsG((subset(subset(detWright, Source == "NHCs"))$Year+1899),
+#                     (subset(subset(detWright, Source == "NHCs")))$res,
+#                     nclass=109) 
+#saveRDS(NHCs, "../outputs/WrightResid/Aglais_urticae_ModelB_detWright_allYrs_NHCs_list.rds")
+#UKBMS <- binned.residsG((subset(subset(detWright, Source == "UKBMS"))$Year+1899),
+#                     (subset(detWright, Source == "UKBMS"))$res, 
+#                     nclass=40) 
+#saveRDS(UKBMS, "../outputs/WrightResid/Aglais_urticae_ModelB_detWright_allYrs_UKBMS_list.rds")  
+#BNM <- binned.residsG((subset(subset(detWright, Source == "BNM"), Year < 95)$Year+1899),
+#                     subset((subset(detWright, Source == "BNM")), Year < 95)$res,
+#                     nclass=113)
+#BNM2 <- binned.residsG(subset(subset((subset(detWright, Source == "BNM")), Year > 95), iter<30)$Year+1899,  
+#                     subset(subset((subset(detWright, Source == "BNM")), Year > 95), iter<30)$res, 
+#                     nclass=16) 
+#test <- rbind(BNM, BNM2)
+#saveRDS(test, "../outputs/WrightResid/Aglais_urticae_ModelB_detWright_allYrs_BNM_list.rds") 
+### Read and plot binned det residuals
+NHCs <- readRDS("../outputs/WrightResid/Aglais_urticae_ModelB_detWright_allYrs_NHCs_list.rds") 
+UKBMS <- readRDS("../outputs/WrightResid/Aglais_urticae_ModelB_detWright_allYrs_UKBMS_list.rds") 
+BNM <- readRDS("../outputs/WrightResid/Aglais_urticae_ModelB_detWright_allYrs_BNM_list.rds") 
+plot(range(1900,2015), range(0.2, -0.5),
+     xlab="Year", ylab="",
+     type="n", main="Model B",
+     cex.main=1.8, cex.lab=1.8, cex.axis=1.8) + 
+  abline(0,0, lty=2) +
+  points(NHCs$xbar, NHCs$ybar, pch=19, cex=1, col="black") +
+  points(UKBMS$xbar, UKBMS$ybar, pch=19, cex=1, col="black") +
+  points(BNM$xbar, BNM$ybar, pch=19, cex=1, col="black") 
+
+
+
+#################   Model C
+### Plot all years: separate point colours for visits of different data types
+# Read detection probability file again
+#rm(list = ls())
+#source("./function-binnedResidsG.R")  ### 
+#detWright <- read.csv("../outputs/WrightResid/Aglais_urticae_ModelC_detWright.csv")  ### 
+#detWright$Year <- as.numeric(detWright$Year)  
+### subset
+#NHCs <- binned.residsG((subset(subset(detWright, Source == "NHCs"))$Year+1899),  ### 
+#                     (subset(subset(detWright, Source == "NHCs")))$res,  ### 
+#                     nclass=109)  ### 
+#saveRDS(NHCs, "../outputs/WrightResid/Aglais_urticae_ModelC_detWright_allYrs_NHCs_list.rds")
+#UKBMS <- binned.residsG((subset(subset(detWright, Source == "UKBMS"))$Year+1899),  
+#                     (subset(detWright, Source == "UKBMS"))$res,  
+#                     nclass=40)  
+#saveRDS(UKBMS, "../outputs/WrightResid/Aglais_urticae_ModelC_detWright_allYrs_UKBMS_list.rds")  
+#BNM <- binned.residsG((subset(subset(detWright, Source == "BNM"), Year < 95)$Year+1899),  
+#                     subset((subset(detWright, Source == "BNM")), Year < 95)$res,  
+#                     nclass=113)
+#BNM2 <- binned.residsG(subset(subset((subset(detWright, Source == "BNM")), Year > 95), iter<30)$Year+1899,  ### 
+#                     subset(subset((subset(detWright, Source == "BNM")), Year > 95), iter<30)$res,  ### 
+#                     nclass=16)### 
+#test <- rbind(BNM, BNM2)
+#saveRDS(test, "../outputs/WrightResid/Aglais_urticae_ModelC_detWright_allYrs_BNM_list.rds")  ###  
+### Read and plot binned det residuals
+NHCs <- readRDS("../outputs/WrightResid/Aglais_urticae_ModelC_detWright_allYrs_NHCs_list.rds") 
+UKBMS <- readRDS("../outputs/WrightResid/Aglais_urticae_ModelC_detWright_allYrs_UKBMS_list.rds") 
+BNM <- readRDS("../outputs/WrightResid/Aglais_urticae_ModelC_detWright_allYrs_BNM_list.rds") 
+plot(range(1900,2015), range(0.2, -0.5),
+     xlab="Year", ylab="",
+     type="n", main="Model C",
+     cex.main=1.8, cex.lab=1.8, cex.axis=1.8) + 
+  abline(0,0, lty=2) +
+  points(NHCs$xbar, NHCs$ybar, pch=19, cex=1, col="black") +
+  points(UKBMS$xbar, UKBMS$ybar, pch=19, cex=1, col="black") +
+  points(BNM$xbar, BNM$ybar, pch=19, cex=1, col="black") 
+
+
+
+
+################################################
+############  Detection Coloured   ############# 
+################################################
+
+#################   Model A
+### Read and plot binned det residuals
+NHCs <- readRDS("../outputs/WrightResid/Aglais_urticae_ModelA_detWright_allYrs_NHCs_list.rds") 
+UKBMS <- readRDS("../outputs/WrightResid/Aglais_urticae_ModelA_detWright_allYrs_UKBMS_list.rds") 
+BNM <- readRDS("../outputs/WrightResid/Aglais_urticae_ModelA_detWright_allYrs_BNM_list.rds") 
+plot(range(1900,2015), range(0.2, -0.5),
+     xlab="Year", ylab="",
+     type="n", main="Model A",
+     cex.main=1.8, cex.lab=1.8, cex.axis=1.8) + 
+  abline(0,0, lty=2) +
+  points(NHCs$xbar, NHCs$ybar, pch=19, cex=0.8, col="#D55E00") +
+  points(UKBMS$xbar, UKBMS$ybar, pch=18, cex=1.3, col="#009E73") +
+  points(BNM$xbar, BNM$ybar, pch=17, cex=1, col="#E69F00") 
+legend("topright", legend = c("BNM", "UKBMS", "NHCs"), 
+  bty = "n", col = c("#E69F00", "#009E73", "#D55E00"), pch = c(17, 18, 19), 
+  pt.cex = c(1.1, 1.4, 0.9), cex = 1, text.col = "black", 
+  horiz = F , inset = c(0.0, -0.02))
+
+
+#################   Model B
+### Read and plot binned det residuals
+NHCs <- readRDS("../outputs/WrightResid/Aglais_urticae_ModelB_detWright_allYrs_NHCs_list.rds") 
+UKBMS <- readRDS("../outputs/WrightResid/Aglais_urticae_ModelB_detWright_allYrs_UKBMS_list.rds") 
+BNM <- readRDS("../outputs/WrightResid/Aglais_urticae_ModelB_detWright_allYrs_BNM_list.rds") 
+plot(range(1900,2015), range(0.2, -0.5),
+     xlab="Year", ylab="",
+     type="n", main="Model B",
+     cex.main=1.8, cex.lab=1.8, cex.axis=1.8) + 
+  abline(0,0, lty=2) +
+  points(NHCs$xbar, NHCs$ybar, pch=19, cex=0.8, col="#D55E00") +
+  points(UKBMS$xbar, UKBMS$ybar, pch=18, cex=1.3, col="#009E73") +
+  points(BNM$xbar, BNM$ybar, pch=17, cex=1, col="#E69F00") 
+legend("topright", legend = c("BNM", "UKBMS", "NHCs"), 
+  bty = "n", col = c("#E69F00", "#009E73", "#D55E00"), pch = c(17, 18, 19), 
+  pt.cex = c(1.1, 1.4, 0.9), cex = 1, text.col = "black", 
+  horiz = F , inset = c(0.0, -0.02))
+
+
+
+#################   Model C
+### Read and plot binned det residuals
+NHCs <- readRDS("../outputs/WrightResid/Aglais_urticae_ModelC_detWright_allYrs_NHCs_list.rds") 
+UKBMS <- readRDS("../outputs/WrightResid/Aglais_urticae_ModelC_detWright_allYrs_UKBMS_list.rds") 
+BNM <- readRDS("../outputs/WrightResid/Aglais_urticae_ModelC_detWright_allYrs_BNM_list.rds") 
+plot(range(1900,2015), range(0.2, -0.5),
+     xlab="Year", ylab="",
+     type="n", main="Model C",
+     cex.main=1.8, cex.lab=1.8, cex.axis=1.8) +  
+  abline(0,0, lty=2) +
+  points(NHCs$xbar, NHCs$ybar, pch=19, cex=0.8, col="#D55E00") +
+  points(UKBMS$xbar, UKBMS$ybar, pch=18, cex=1.3, col="#009E73") +
+  points(BNM$xbar, BNM$ybar, pch=17, cex=1, col="#E69F00") 
+legend("topright", legend = c("BNM", "UKBMS", "NHCs"), 
+  bty = "n", col = c("#E69F00", "#009E73", "#D55E00"), pch = c(17, 18, 19), 
+  pt.cex = c(1.1, 1.4, 0.9), cex = 1, text.col = "black", 
+  horiz = F , inset = c(0.0, -0.02))
+```
+
+
+
+    
+
+
+
+
+
+
+
+   
+### Occupancy residuals: 1900-2015
+ 
+
+
+    
+
+
+   
+```{r WrightOccuPlot-A-urticae, echo=FALSE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE, fig.width=7, fig.height=10}
+# Load required packages
+require(arm)
+require(dplyr)
+# Set up 3 rows 3 columns
+par(mfrow = c(3, 3))
+
+###############################################
+#################   Model A   ################# 
+###############################################
+### Read file
+#occuWright <- read.csv("../outputs/WrightResid/Aglais_urticae_ModelA_occuWright.csv")
+# Source residual function
+#source("./function-binnedResidsG.R")
+### Find binned residuals
+#empty_list <- vector(mode = "list")
+#vec <- c(10,20,30,40,50,60,70,80,90,100)
+#vec2 <- c(0,10,20,30,40,50,60,70,80,90)
+#count <- 0
+#for(i in vec){
+#  count <- count + 1
+#  temp <- subset(subset(occuWright, iter <= paste0(i)), iter > vec2[count])
+#  empty_list[[paste0(count)]] <- binned.residsG(temp$Year+1899, temp$res, nclass=116)
+#}
+### save output
+#saveRDS(empty_list, "../outputs/WrightResid/Aglais_urticae_ModelA_occuWright_allYrs_list.rds")  
+###############################################
+### Read and plot binned occu residuals
+empty_list <- readRDS("../outputs/WrightResid/Aglais_urticae_ModelA_occuWright_allYrs_list.rds")   
+plot(range(c(1900,2015)), range(c(0.003,-0.003)),
+           xlab="", 
+           ylab="Binned occupancy residuals",
+           main = "Model A")
+abline (0,0, lty=2)
+for(i in 1:10){
+  lines(empty_list[[i]]$xbar, empty_list[[i]]$ybar, col="grey")
+}
+### Subset & plot years 1925-1930
+rm(list = ls())
+occuWright <- read.csv("../outputs/WrightResid/Aglais_urticae_ModelA_occuWright.csv")
+occuWright <- subset((subset(occuWright, Year >= 26)), Year < 32)
+binnedplot(occuWright$Year+1899, 
+           occuWright$res,
+           xlab="", 
+           ylab="",
+           main = "Model A: 1925-1930",
+           col.int="white")
+### Subset & plot years 1975-1980
+rm(list = ls())
+occuWright <- read.csv("../outputs/WrightResid/Aglais_urticae_ModelA_occuWright.csv")
+occuWright <- subset((subset(occuWright, Year >= 76)), Year < 82)
+binnedplot(occuWright$Year+1899, 
+           occuWright$res,           
+           xlab="",
+           ylab="",
+           main = "Model A: 1975-1980",
+           col.int="white")
+
+
+###############################################
+#################   Model B   ################# 
+###############################################
+rm(list = ls())
+### Read file
+#occuWright <- read.csv("../outputs/WrightResid/Aglais_urticae_ModelB_occuWright.csv")
+# Source residual function
+#source("./function-binnedResidsG.R")
+### Find binned residuals
+#empty_list <- vector(mode = "list")
+#vec <- c(10,20,30,40,50,60,70,80,90,100)
+#vec2 <- c(0,10,20,30,40,50,60,70,80,90)
+#count <- 0
+#for(i in vec){
+#  count <- count + 1
+#  temp <- subset(subset(occuWright, iter <= paste0(i)), iter > vec2[count])
+#  empty_list[[paste0(count)]] <- binned.residsG(temp$Year+1899, temp$res, nclass=116)
+#}
+### save output
+#saveRDS(empty_list, "../outputs/WrightResid/Aglais_urticae_ModelB_occuWright_allYrs_list.rds")  
+###############################################
+
+### Read and plot binned occu residuals
+empty_list <- readRDS("../outputs/WrightResid/Aglais_urticae_ModelB_occuWright_allYrs_list.rds")   
+plot(range(c(1900,2015)), range(c(0.003,-0.003)),
+           xlab="", 
+           ylab="Binned occupancy residuals",
+           main = "Model B")
+abline (0,0, lty=2)
+for(i in 1:10){
+lines(empty_list[[i]]$xbar, empty_list[[i]]$ybar, col="grey")
+}
+### Subset & plot years 1925-1930
+rm(list = ls())
+occuWright <- read.csv("../outputs/WrightResid/Aglais_urticae_ModelB_occuWright.csv")
+occuWright <- subset((subset(occuWright, Year >= 26)), Year < 32)
+binnedplot(occuWright$Year+1899, 
+           occuWright$res,
+           xlab="", 
+           ylab="",
+           main = "Model B: 1925-1930",
+           col.int="white")
+### Subset & plot years 1975-1980
+rm(list = ls())
+occuWright <- read.csv("../outputs/WrightResid/Aglais_urticae_ModelB_occuWright.csv")
+occuWright <- subset((subset(occuWright, Year >= 76)), Year < 82)
+binnedplot(occuWright$Year+1899, 
+           occuWright$res,
+           xlab="",
+           ylab="",
+           main = "Model B: 1975-1980",
+           col.int="white")
+
+
+###############################################
+#################   Model C   ################# 
+###############################################
+rm(list = ls())
+### Read file
+#occuWright <- read.csv("../outputs/WrightResid/Aglais_urticae_ModelC_occuWright.csv")
+# Source residual function
+#source("./function-binnedResidsG.R")
+### Find binned residuals
+#empty_list <- vector(mode = "list")
+#vec <- c(10,20,30,40,50,60,70,80,90,99)
+#vec2 <- c(0,10,20,30,40,50,60,70,80,90)
+#count <- 0
+#for(i in vec){
+#  count <- count + 1
+#  temp <- subset(subset(occuWright, iter <= paste0(i)), iter > vec2[count])
+#  empty_list[[paste0(count)]] <- binned.residsG(temp$Year+1899, temp$res, nclass=116)
+#}
+### save output
+#saveRDS(empty_list, "../outputs/WrightResid/CAglais_urticae_ModelC_occuWright_allYrs_list.rds")  
+###############################################
+### Read and plot binned occu residuals
+empty_list <- readRDS("../outputs/WrightResid/Aglais_urticae_ModelC_occuWright_allYrs_list.rds")   
+plot(range(c(1900,2015)), range(c(0.003,-0.003)),
+           xlab="Year", 
+           ylab="Binned occupancy residuals",
+           main = "Model C")
+abline (0,0, lty=2)
+for(i in 1:10){
+lines(empty_list[[i]]$xbar, empty_list[[i]]$ybar, col="grey")
+}
+### Subset & plot years 1925-1930
+rm(list = ls())
+occuWright <- read.csv("../outputs/WrightResid/Aglais_urticae_ModelC_occuWright.csv")
+occuWright <- subset((subset(occuWright, Year >= 26)), Year < 32)
+binnedplot(occuWright$Year+1899, 
+           occuWright$res,
+           xlab="Year", 
+           ylab="",
+           main = "Model C: 1925-1930",
+           col.int="white")
+### Subset & plot years 1975-1980
+rm(list = ls())
+occuWright <- read.csv("../outputs/WrightResid/Aglais_urticae_ModelC_occuWright.csv")
+occuWright <- subset((subset(occuWright, Year >= 76)), Year < 82)
+binnedplot(occuWright$Year+1899, 
+           occuWright$res,
+           xlab="Year", 
+           ylab="",
+           main = "Model C: 1975-1980",
+           col.int="white")
+```   
+   
+   
+
+
+
+
+   
+   
+   
+   
+### Detection residuals: 1900-2015
+```{r WrightDetPlot-A-urticae-Part1, echo=FALSE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE, fig.width=7, fig.height=10}
+# Load required packages
+require(arm)
+require(dplyr)
+# Set up 3 rows 3 columns
+par(mfrow = c(3, 2))
+
+################################################################
+###     Model A
+################################################################
+rm(list = ls())
+# Read detection probability file again
+###############################################
+detWright <- read.csv("../outputs/WrightResid/Aglais_urticae_ModelA_detWright.csv")
+detWright$Year <- as.numeric(detWright$Year)
+# Source residual function
+source("./function-binnedResidsG.R")
+### Find binned residuals
+empty_list <- vector(mode = "list")
+vec <- c(10,20,30,40,50,60,70,80,90,100)
+vec2 <- c(0,10,20,30,40,50,60,70,80,90)
+count <- 0
+for(i in vec){
+  count <- count + 1
+  temp <- subset(subset(detWright, iter <= paste0(i)), iter > vec2[count])
+  for(j in 1:116){
+  empty_list[[paste0(count)]] <- binned.residsG((subset(temp, Year == paste(j))$Year+1899), (subset(temp, Year == paste(j)))$res)
+}
+}
+### save output
+saveRDS(empty_list, "../outputs/WrightResid/Aglais_urticae_ModelA_detWright_allYrs_list.rds")  
+
+
+# Years 107, 110, 111, 114, 115, 116 gives error of having too many data points
+# hence, I will remove iterations above 60
+#for(j in 107:116){
+#  temp <- subset(subset(detWright, Year == paste(j)), iter < 61)
+#  p <- rbind(p, binned.residsG((temp$Year+1899), temp$res))
+#}
+
+
+### Plot!
+#cex.pts=0.8
+#col.pts=1
+#col.int="gray"
+
+#plot(range(a$xbar), range(a$ybar, a$X2se, -a$X2se, na.rm=TRUE),
+#     xlab="Year", ylab="Binned Residuals", type="n", main="Detection: Model A all iters") + 
+#  abline (0,0, lty=2) +
+#  lines (a$xbar, a$X2se, col=col.int) +
+#  lines (a$xbar, -a$X2se, col=col.int) +
+#  points (a$xbar, a$ybar, pch=19, cex=cex.pts, col=col.pts)
+
+
+
+###############################################
+### Read and plot binned occu residuals
+empty_list <- readRDS("../outputs/WrightResid/Aglais_urticae_ModelA_detWright_allYrs_list.rds")   
+plot(range(c(1900,2015)), range(c(0.5,-0.5)),
+           xlab="", 
+           ylab="Binned detection residuals",
+           main = "Model A")
+abline (0,0, lty=2)
+for(i in 1:10){
+  lines(empty_list[[i]]$xbar, empty_list[[i]]$ybar, col="grey")
+}
+
+###############################################
+rm(list = ls())
+detWright <- read.csv("../outputs/WrightResid/Aglais_urticae_ModelA_detWright.csv")
+detWright$Year <- as.numeric(detWright$Year)  
+# Source residual function
+source("./function-binnedResidsG.R")
+### Find binned residuals
+empty_list <- vector(mode = "list")  
+vec <- c(10,20,30,40,50,60,70,80,90,99)  
+vec2 <- c(0,10,20,30,40,50,60,70,80,90)  
+sourceVec <- c("BNM", "UKBMS", "NHCs")
+source_nclass <- c(98, 27, 80)
+source_col <- c(3, 2, 1)
+source_lty <- c(1, 2, 3)
+count <- 0
+# Plot
+plot(range(c(1900,2015)), range(c(-0.5,0.6)),
+           xlab="Year", 
+           ylab="Binned detection residuals",
+           main = "Model A") +
+  abline (0,0, lty=2) +
+for(s in 1:3){  
+  detWright_temp <- subset(detWright, Source == paste0(sourceVec[s]))  
+  count <- 0  
+for(i in vec){   
+  count <- count + 1  
+  temp <- subset(subset(detWright_temp, iter <= paste0(i)), iter > vec2[count])  
+  empty_list[[paste0(count)]] <- binned.residsG(temp$Year+1899, temp$res, nclass=source_nclass[s])  
+} 
+### Plot all years: separate line colours for iterations of visits of different types
+for(j in 1:10){
+lines(empty_list[[j]]$xbar, 
+      empty_list[[j]]$ybar, 
+      col=source_col[s],
+      lty=source_lty[s])
+      }
+} 
+legend("topright", legend = c("BNM", "UKBMS", "NHCs"), 
+  col = c(3, 2, 1), lty = c(1, 2, 3), #pt.cex = c(1.1,1.4,0.9), 
+  cex = 1, text.col = "black", horiz = F , inset = c(0.0, -0.02))
+
+
+### Plot all years: separate point colours for visits of different data types
+# Read detection probability file again
+rm(list = ls())
+###############################################
+#source("./function-binnedResidsG.R")  ### 
+#detWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelA_detWright2.csv")  ### 
+#detWright$Year <- as.numeric(detWright$Year)  ### 
+# subset
+#NHCs <- binned.residsG((subset(subset(detWright, Source == "NHCs"))$Year+1899),  ### 
+#                     (subset(subset(detWright, Source == "NHCs")))$res,  ### 
+#                     nclass=80)  ### 
+#saveRDS(NHCs, "../outputs/WrightResid/Carterocephalus_palaemon_ModelA_detWright_allYrs_NHCs_list.rds")  ###  
+#UKBMS <- binned.residsG((subset(subset(detWright, Source == "UKBMS"))$Year+1899),  ### 
+#                     (subset(detWright, Source == "UKBMS"))$res,  ### 
+#                     nclass=27)  ### 
+#saveRDS(UKBMS, "../outputs/WrightResid/Carterocephalus_palaemon_ModelA_detWright_allYrs_UKBMS_list.rds")  ###  
+#BNM <- binned.residsG((subset(subset(detWright, Source == "BNM"))$Year+1899),  ### 
+#                     (subset(detWright, Source == "BNM"))$res,  ### 
+#                     nclass=98)  ### 
+#saveRDS(BNM, "../outputs/WrightResid/Carterocephalus_palaemon_ModelA_detWright_allYrs_BNM_list.rds")  ###  
+###############################################
+### Read and plot binned det residuals
+NHCs <- readRDS("../outputs/WrightResid/Carterocephalus_palaemon_ModelA_detWright_allYrs_NHCs_list.rds") 
+UKBMS <- readRDS("../outputs/WrightResid/Carterocephalus_palaemon_ModelA_detWright_allYrs_UKBMS_list.rds") 
+BNM <- readRDS("../outputs/WrightResid/Carterocephalus_palaemon_ModelA_detWright_allYrs_BNM_list.rds") 
+plot(range(1900,2015), range(0.4, -0.3),
+     xlab="Year", ylab="",
+     type="n", main="Model A") + 
+  abline(0,0, lty=2) +
+  points(NHCs$xbar, NHCs$ybar, pch=19, cex=0.8, col=1) +
+  points(UKBMS$xbar, UKBMS$ybar, pch=18, cex=1.3, col=2) +
+  points(BNM$xbar, BNM$ybar, pch=17, cex=1, col=3) 
+legend("topright", legend = c("BNM", "UKBMS", "NHCs"), 
+  bty = "n", col = c(3, 2, 1), pch = c(17, 18, 19), 
+  pt.cex = c(1.1, 1.4, 0.9), cex = 1, text.col = "black", 
+  horiz = F , inset = c(0.0, -0.02))
+
+
+
+
+
+
+################################################################
+###     Model B
+################################################################
+rm(list = ls())
+# Read detection probability file again
+###############################################
+detWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelB_detWright2.csv")  ###
+detWright$Year <- as.numeric(detWright$Year)  ###
+# Source residual function
+source("./function-binnedResidsG.R")  ###
+### Find binned residuals
+empty_list <- vector(mode = "list")  ###
+vec <- c(10,20,30,40,50,60,70,80,90,99)  ###
+vec2 <- c(0,10,20,30,40,50,60,70,80,90)  ###
+###############################################
+sourceVec <- c("BNM", "UKBMS", "NHCs")
+source_nclass <- c(98, 27, 80)
+source_col <- c(3, 2, 1)
+source_lty <- c(1, 2, 3)
+count <- 0
+# Plot
+plot(range(c(1900,2015)), range(c(-0.5,0.6)),
+           xlab="Year", 
+           ylab="Binned occupancy residuals",
+           main = "Model B") +
+  abline (0,0, lty=2) +
+###############################################
+for(s in 1:3){  ###
+  detWright_temp <- subset(detWright, Source == paste0(sourceVec[s]))  ###
+  count <- 0  ###
+for(i in vec){   ###
+  count <- count + 1  ###
+  temp <- subset(subset(detWright_temp, iter <= paste0(i)), iter > vec2[count])  ###
+  empty_list[[paste0(count)]] <- binned.residsG(temp$Year+1899, temp$res, nclass=source_nclass[s])  ###
+} ###
+for(j in 1:10){
+lines(empty_list[[j]]$xbar, 
+      empty_list[[j]]$ybar, 
+      col=source_col[s],
+      lty=source_lty[s])
+      }
+} 
+legend("topright", legend = c("BNM", "UKBMS", "NHCs"), 
+  col = c(3, 2, 1), lty = c(1, 2, 3), #pt.cex = c(1.1,1.4,0.9), 
+  cex = 1, text.col = "black", horiz = F , inset = c(0.0, -0.02))
+
+
+### Plot all years: separate point colours for visits of different data types
+# Read detection probability file again
+rm(list = ls())
+###############################################
+#source("./function-binnedResidsG.R")  ### 
+#detWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelB_detWright2.csv")  ### 
+#detWright$Year <- as.numeric(detWright$Year)  ### 
+# subset
+#NHCs <- binned.residsG((subset(subset(detWright, Source == "NHCs"))$Year+1899),  ### 
+#                     (subset(subset(detWright, Source == "NHCs")))$res,  ### 
+#                     nclass=80)  ### 
+#saveRDS(NHCs, "../outputs/WrightResid/Carterocephalus_palaemon_ModelB_detWright_allYrs_NHCs_list.rds")  ###  
+#UKBMS <- binned.residsG((subset(subset(detWright, Source == "UKBMS"))$Year+1899),  ### 
+#                     (subset(detWright, Source == "UKBMS"))$res,  ### 
+#                     nclass=27)  ### 
+#saveRDS(UKBMS, "../outputs/WrightResid/Carterocephalus_palaemon_ModelB_detWright_allYrs_UKBMS_list.rds")  ###  
+#BNM <- binned.residsG((subset(subset(detWright, Source == "BNM"))$Year+1899),  ### 
+#                     (subset(detWright, Source == "BNM"))$res,  ### 
+#                     nclass=98)  ### 
+#saveRDS(BNM, "../outputs/WrightResid/Carterocephalus_palaemon_ModelB_detWright_allYrs_BNM_list.rds")  ###  
+###############################################
+### Read and plot binned det residuals
+NHCs <- readRDS("../outputs/WrightResid/Carterocephalus_palaemon_ModelB_detWright_allYrs_NHCs_list.rds") 
+UKBMS <- readRDS("../outputs/WrightResid/Carterocephalus_palaemon_ModelB_detWright_allYrs_UKBMS_list.rds") 
+BNM <- readRDS("../outputs/WrightResid/Carterocephalus_palaemon_ModelB_detWright_allYrs_BNM_list.rds") 
+plot(range(1900,2015), range(0.4, -0.3),
+     xlab="Year", ylab="",
+     type="n", main="Model B") + 
+  abline(0,0, lty=2) +
+  points(NHCs$xbar, NHCs$ybar, pch=19, cex=0.8, col=1) +
+  points(UKBMS$xbar, UKBMS$ybar, pch=18, cex=1.3, col=2) +
+  points(BNM$xbar, BNM$ybar, pch=17, cex=1, col=3) 
+legend("topright", legend = c("BNM", "UKBMS", "NHCs"), 
+  bty = "n", col = c(3, 2, 1), pch = c(17, 18, 19), 
+  pt.cex = c(1.1, 1.4, 0.9), cex = 1, text.col = "black", 
+  horiz = F , inset = c(0.0, -0.02))
+
+
+
+
+
+
+################################################################
+###     Model C
+################################################################
+rm(list = ls())
+# Read detection probability file again
+###############################################
+detWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelC_detWright2.csv")  ###
+detWright$Year <- as.numeric(detWright$Year)  ###
+# Source residual function
+source("./function-binnedResidsG.R")  ###
+### Find binned residuals
+empty_list <- vector(mode = "list")  ###
+vec <- c(10,20,30,40,50,60,70,80,90,99)  ###
+vec2 <- c(0,10,20,30,40,50,60,70,80,90)  ###
+###############################################
+sourceVec <- c("BNM", "UKBMS", "NHCs")
+source_nclass <- c(98, 27, 80)
+source_col <- c(3, 2, 1)
+source_lty <- c(1, 2, 3)
+count <- 0
+# Plot
+plot(range(c(1900,2015)), range(c(-0.5,0.6)),
+           xlab="Year", 
+           ylab="Binned occupancy residuals",
+           main = "Model C") +
+  abline (0,0, lty=2) +
+###############################################
+for(s in 1:3){  ###
+  detWright_temp <- subset(detWright, Source == paste0(sourceVec[s]))  ###
+  count <- 0  ###
+for(i in vec){   ###
+  count <- count + 1  ###
+  temp <- subset(subset(detWright_temp, iter <= paste0(i)), iter > vec2[count])  ###
+  empty_list[[paste0(count)]] <- binned.residsG(temp$Year+1899, temp$res, nclass=source_nclass[s])  ###
+} ###
+for(j in 1:10){
+lines(empty_list[[j]]$xbar, 
+      empty_list[[j]]$ybar, 
+      col=source_col[s],
+      lty=source_lty[s])
+      }
+} 
+legend("topright", legend = c("BNM", "UKBMS", "NHCs"), 
+  col = c(3, 2, 1), lty = c(1, 2, 3), #pt.cex = c(1.1,1.4,0.9), 
+  cex = 1, text.col = "black", horiz = F , inset = c(0.0, -0.02))
+
+
+### Plot all years: separate point colours for visits of different data types
+# Read detection probability file again
+rm(list = ls())
+###############################################
+#source("./function-binnedResidsG.R")  ### 
+#detWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelC_detWright2.csv")  ### 
+#detWright$Year <- as.numeric(detWright$Year)  ### 
+# subset
+#NHCs <- binned.residsG((subset(subset(detWright, Source == "NHCs"))$Year+1899),  ### 
+#                     (subset(subset(detWright, Source == "NHCs")))$res,  ### 
+#                     nclass=80)  ### 
+#saveRDS(NHCs, "../outputs/WrightResid/Carterocephalus_palaemon_ModelC_detWright_allYrs_NHCs_list.rds")  ###  
+#UKBMS <- binned.residsG((subset(subset(detWright, Source == "UKBMS"))$Year+1899),  ### 
+#                     (subset(detWright, Source == "UKBMS"))$res,  ### 
+#                     nclass=27)  ### 
+#saveRDS(UKBMS, "../outputs/WrightResid/Carterocephalus_palaemon_ModelC_detWright_allYrs_UKBMS_list.rds")  ###  
+#BNM <- binned.residsG((subset(subset(detWright, Source == "BNM"))$Year+1899),  ### 
+#                     (subset(detWright, Source == "BNM"))$res,  ### 
+#                     nclass=98)  ### 
+#saveRDS(BNM, "../outputs/WrightResid/Carterocephalus_palaemon_ModelC_detWright_allYrs_BNM_list.rds")  ###  
+###############################################
+### Read and plot binned det residuals
+NHCs <- readRDS("../outputs/WrightResid/Carterocephalus_palaemon_ModelC_detWright_allYrs_NHCs_list.rds") 
+UKBMS <- readRDS("../outputs/WrightResid/Carterocephalus_palaemon_ModelC_detWright_allYrs_UKBMS_list.rds") 
+BNM <- readRDS("../outputs/WrightResid/Carterocephalus_palaemon_ModelC_detWright_allYrs_BNM_list.rds") 
+plot(range(1900,2015), range(0.4, -0.3),
+     xlab="Year", ylab="",
+     type="n", main="Model C") + 
+  abline(0,0, lty=2) +
+  points(NHCs$xbar, NHCs$ybar, pch=19, cex=0.8, col=1) +
+  points(UKBMS$xbar, UKBMS$ybar, pch=18, cex=1.3, col=2) +
+  points(BNM$xbar, BNM$ybar, pch=17, cex=1, col=3) 
+legend("topright", legend = c("BNM", "UKBMS", "NHCs"), 
+  bty = "n", col = c(3, 2, 1), pch = c(17, 18, 19), 
+  pt.cex = c(1.1, 1.4, 0.9), cex = 1, text.col = "black", 
+  horiz = F , inset = c(0.0, -0.02))
+```
+   
+   
+   
+   
 ##  Results: *Carterocephalus palaemon* (Chequered skipper)
 
 ### Occupancy
@@ -1957,7 +2753,7 @@ source("./fig-plot.Occdet_G.R")
 Carterocephalus_palaemon_ModelA <- readRDS("../outputs/catLL-outputs/results_Carterocephalus_palaemon_watson_catLL.rds")
 Carterocephalus_palaemon_ModelB <- readRDS("../outputs/mixLL-outputs/results_Carterocephalus_palaemon_ctag_mixLL.rds")
 Carterocephalus_palaemon_ModelC <- readRDS("../outputs/mixLL2-outputs/results_Carterocephalus_palaemon_watson_mixLL2.rds")
-
+ 
 plot.occDet_G(Carterocephalus_palaemon_ModelA,
               Carterocephalus_palaemon_ModelB,
               Carterocephalus_palaemon_ModelC) +
@@ -2784,6 +3580,174 @@ binnedplot((detWright_5iter$Year+1899),
 
 
 
+
+### *C. palaemon* - Plot residuals for BES QSIG
+
+```{r WrightPlot-Cpalaemon-BES-QSIG, echo=FALSE, eval=FALSE, warning=FALSE, message=FALSE, cache=TRUE}
+# Load required packages
+require(arm)
+require(dplyr)
+# Set up 3 rows 3 columns
+par(mfrow = c(3, 3))
+
+################################################
+#################  Occupancy   ################# 
+################################################
+
+#################   Model A   
+empty_list <- readRDS("../outputs/WrightResid/Carterocephalus_palaemon_ModelC_occuWright_allYrs_list.rds")
+  
+plot(range(c(1900,2015)), range(c(0.003,-0.003)),
+           xlab="", 
+           ylab="Binned occupancy residuals",
+           main = "Model A",
+     cex.main=1.5, cex.lab=1.5, cex.axis=1.5) + 
+points(empty_list[[1]]$xbar, empty_list[[1]]$ybar, pch=19, cex=1, col="black")
+abline (0,0, lty=2)
+
+
+#################   Model B   
+empty_list <- readRDS("../outputs/WrightResid/Carterocephalus_palaemon_ModelB_occuWright_allYrs_list.rds")
+plot(range(c(1900,2015)), range(c(0.003,-0.003)),
+           xlab="", 
+           ylab="Binned occupancy residuals",
+           main = "Model B",
+     cex.main=1.5, cex.lab=1.5, cex.axis=1.5) + 
+points(empty_list[[1]]$xbar, empty_list[[1]]$ybar, pch=19, cex=1, col="black")
+abline (0,0, lty=2)
+
+
+#################   Model C   
+empty_list <- readRDS("../outputs/WrightResid/Carterocephalus_palaemon_ModelC_occuWright_allYrs_list.rds")
+plot(range(c(1900,2015)), range(c(0.003,-0.003)),
+           xlab="", 
+           ylab="Binned occupancy residuals",
+           main = "Model C",
+     cex.main=1.5, cex.lab=1.5, cex.axis=1.5) + 
+points(empty_list[[1]]$xbar, empty_list[[1]]$ybar, pch=19, cex=1, col="black")
+abline (0,0, lty=2)
+
+
+
+
+
+################################################
+#################  Detection   ################# 
+################################################
+
+
+#################   Model A
+rm(list = ls())
+NHCs <- readRDS("../outputs/WrightResid/Carterocephalus_palaemon_ModelA_detWright_allYrs_NHCs_list.rds") 
+UKBMS <- readRDS("../outputs/WrightResid/Carterocephalus_palaemon_ModelA_detWright_allYrs_UKBMS_list.rds") 
+BNM <- readRDS("../outputs/WrightResid/Carterocephalus_palaemon_ModelA_detWright_allYrs_BNM_list.rds") 
+plot(range(1900,2015), range(0.5, -0.5),
+     xlab="Year", ylab="",
+     type="n", main="Model A") + 
+  abline(0,0, lty=2) +
+  points(NHCs$xbar, NHCs$ybar, pch=19, cex=1, col="black") +
+  points(UKBMS$xbar, UKBMS$ybar, pch=19, cex=1, col="black") +
+  points(BNM$xbar, BNM$ybar, pch=19, cex=1, col="black") 
+
+
+#################   Model B
+NHCs <- readRDS("../outputs/WrightResid/Carterocephalus_palaemon_ModelB_detWright_allYrs_NHCs_list.rds") 
+UKBMS <- readRDS("../outputs/WrightResid/Carterocephalus_palaemon_ModelB_detWright_allYrs_UKBMS_list.rds") 
+BNM <- readRDS("../outputs/WrightResid/Carterocephalus_palaemon_ModelB_detWright_allYrs_BNM_list.rds") 
+plot(range(1900,2015), range(0.5, -0.5),
+     xlab="Year", ylab="",
+     type="n", main="Model B") + 
+  abline(0,0, lty=2) +
+  points(NHCs$xbar, NHCs$ybar, pch=19, cex=1, col="black") +
+  points(UKBMS$xbar, UKBMS$ybar, pch=19, cex=1, col="black") +
+  points(BNM$xbar, BNM$ybar, pch=19, cex=1, col="black") 
+
+
+#################   Model C
+NHCs <- readRDS("../outputs/WrightResid/Carterocephalus_palaemon_ModelC_detWright_allYrs_NHCs_list.rds") 
+UKBMS <- readRDS("../outputs/WrightResid/Carterocephalus_palaemon_ModelC_detWright_allYrs_UKBMS_list.rds") 
+BNM <- readRDS("../outputs/WrightResid/Carterocephalus_palaemon_ModelC_detWright_allYrs_BNM_list.rds") 
+plot(range(1900,2015), range(0.5, -0.5),
+     xlab="Year", ylab="",
+     type="n", main="Model C") + 
+  abline(0,0, lty=2) +
+  points(NHCs$xbar, NHCs$ybar, pch=19, cex=1, col="black") +
+  points(UKBMS$xbar, UKBMS$ybar, pch=19, cex=1, col="black") +
+  points(BNM$xbar, BNM$ybar, pch=19, cex=1, col="black") 
+
+
+
+
+###############################################
+#################   Model A   ################# 
+###############################################
+# Read file
+occuWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelC_occuWright.csv")
+
+# Set up 2 rows 2 columns
+par(mfrow = c(2, 3))
+
+
+
+### Plot
+
+occuWright_5iter <- subset(occuWright, iter <= 5) 
+
+
+
+binnedplot((occuWright_5iter$Year+1899), 
+           occuWright_5iter$res,
+           xlab="Year", 
+           ylab="Binned residuals",
+           main = "Occupancy: 5 iter Model C")
+
+# Clear environment as these are long vectors and rmarkdown cannot handle these 
+rm(list = ls())
+
+# gray lines indicate plus and minus 2 standard-error bounds, within which one would expect about 95% of the binned residuals to fall, if the model were actually true.
+
+# Read detection probability file
+detWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelC_detWright.csv")
+
+
+detWright <- subset(detWright, Year <= 6) 
+
+# Read detection probability file again
+detWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelC_detWright.csv")
+
+detWright_5iter <- subset(detWright, iter <= 5) 
+
+binnedplot((detWright_5iter$Year+1899), 
+           detWright_5iter$res,
+           xlab="Year", 
+           ylab="Binned residuals",
+           main = "Detection: 5 iter Model C")
+
+
+
+
+NHCs <- readRDS("../outputs/WrightResid/Aglais_urticae_ModelB_detWright_allYrs_NHCs_list.rds") 
+UKBMS <- readRDS("../outputs/WrightResid/Aglais_urticae_ModelB_detWright_allYrs_UKBMS_list.rds") 
+BNM <- readRDS("../outputs/WrightResid/Aglais_urticae_ModelB_detWright_allYrs_BNM_list.rds") 
+plot(range(1900,2015), range(0.5, -0.5),
+     xlab="Year", ylab="",
+     type="n", main="Model B") + 
+  abline(0,0, lty=2) +
+  points(NHCs$xbar, NHCs$ybar, pch=19, cex=1, col="black") +
+  points(UKBMS$xbar, UKBMS$ybar, pch=19, cex=1, col="black") +
+  points(BNM$xbar, BNM$ybar, pch=19, cex=1, col="black") 
+```
+
+
+
+    
+
+
+
+
+
+
+
 ### Occupancy residuals: 1900-2015
  
 
@@ -2792,7 +3756,7 @@ binnedplot((detWright_5iter$Year+1899),
 
 
    
-```{r WrightOccuPlot-C-palaemon, echo=FALSE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE, fig.width=7, fig.height=12}
+```{r WrightOccuPlot-C-palaemon, echo=FALSE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE, fig.width=7, fig.height=10}
 # Load required packages
 require(arm)
 require(dplyr)
@@ -2872,6 +3836,7 @@ rm(list = ls())
 ### save output
 #saveRDS(empty_list, "../outputs/WrightResid/Carterocephalus_palaemon_ModelB_occuWright_allYrs_list.rds")  
 ###############################################
+
 ### Read and plot binned occu residuals
 empty_list <- readRDS("../outputs/WrightResid/Carterocephalus_palaemon_ModelB_occuWright_allYrs_list.rds")   
 plot(range(c(1900,2015)), range(c(0.003,-0.003)),
@@ -2965,12 +3930,12 @@ binnedplot(occuWright$Year+1899,
    
    
 ### Detection residuals: 1900-2015
-```{r WrightDetPlot-C-palaemon-Part1, echo=FALSE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE, fig.width=7, fig.height=7}
+```{r WrightDetPlot-C-palaemon-Part1, echo=FALSE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE, fig.width=7, fig.height=10}
 # Load required packages
 require(arm)
 require(dplyr)
 # Set up 3 rows 3 columns
-par(mfrow = c(3, 3))
+par(mfrow = c(3, 2))
 
 ################################################################
 ###     Model A
@@ -2978,15 +3943,14 @@ par(mfrow = c(3, 3))
 rm(list = ls())
 # Read detection probability file again
 ###############################################
-detWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelA_detWright2.csv")  ###
-detWright$Year <- as.numeric(detWright$Year)  ###
+detWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelA_detWright2.csv")  
+detWright$Year <- as.numeric(detWright$Year)  
 # Source residual function
-source("./function-binnedResidsG.R")  ###
+source("./function-binnedResidsG.R")  
 ### Find binned residuals
-empty_list <- vector(mode = "list")  ###
-vec <- c(10,20,30,40,50,60,70,80,90,99)  ###
-vec2 <- c(0,10,20,30,40,50,60,70,80,90)  ###
-###############################################
+empty_list <- vector(mode = "list")  
+vec <- c(10,20,30,40,50,60,70,80,90,99)  
+vec2 <- c(0,10,20,30,40,50,60,70,80,90)  
 sourceVec <- c("BNM", "UKBMS", "NHCs")
 source_nclass <- c(98, 27, 80)
 source_col <- c(3, 2, 1)
@@ -2995,24 +3959,17 @@ count <- 0
 # Plot
 plot(range(c(1900,2015)), range(c(-0.5,0.6)),
            xlab="Year", 
-           ylab="Binned occupancy residuals",
+           ylab="Binned detection residuals",
            main = "Model A") +
   abline (0,0, lty=2) +
-###############################################
-for(s in 1:3){  ###
-  detWright_temp <- subset(detWright, Source == paste0(sourceVec[s]))  ###
-  count <- 0  ###
-for(i in vec){   ###
-  count <- count + 1  ###
-  temp <- subset(subset(detWright_temp, iter <= paste0(i)), iter > vec2[count])  ###
-  empty_list[[paste0(count)]] <- binned.residsG(temp$Year+1899, temp$res, nclass=source_nclass[s])  ###
-} ###
-### save output
-#saveRDS(empty_list, "../outputs/WrightResid/Carterocephalus_palaemon_ModelA_detWright_allYrs_lineCols_list.rds")  ###  
-###############################################
-### Read and plot binned det residuals
-#empty_list <- readRDS("../outputs/WrightResid/Carterocephalus_palaemon_ModelA_detWright_allYrs_lineCols_list.rds")  
-### Plot all years: separate line colours for iterations of visits of different types
+for(s in 1:3){  
+  detWright_temp <- subset(detWright, Source == paste0(sourceVec[s]))  
+  count <- 0  
+for(i in vec){  
+  count <- count + 1  
+  temp <- subset(subset(detWright_temp, iter <= paste0(i)), iter > vec2[count])  
+  empty_list[[paste0(count)]] <- binned.residsG(temp$Year+1899, temp$res, nclass=source_nclass[s])  
+} 
 for(j in 1:10){
 lines(empty_list[[j]]$xbar, 
       empty_list[[j]]$ybar, 
@@ -3053,6 +4010,179 @@ BNM <- readRDS("../outputs/WrightResid/Carterocephalus_palaemon_ModelA_detWright
 plot(range(1900,2015), range(0.4, -0.3),
      xlab="Year", ylab="",
      type="n", main="Model A") + 
+  abline(0,0, lty=2) +
+  points(NHCs$xbar, NHCs$ybar, pch=19, cex=0.8, col=1) +
+  points(UKBMS$xbar, UKBMS$ybar, pch=18, cex=1.3, col=2) +
+  points(BNM$xbar, BNM$ybar, pch=17, cex=1, col=3) 
+legend("topright", legend = c("BNM", "UKBMS", "NHCs"), 
+  bty = "n", col = c(3, 2, 1), pch = c(17, 18, 19), 
+  pt.cex = c(1.1, 1.4, 0.9), cex = 1, text.col = "black", 
+  horiz = F , inset = c(0.0, -0.02))
+
+
+
+
+
+
+################################################################
+###     Model B
+################################################################
+rm(list = ls())
+# Read detection probability file again
+###############################################
+detWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelB_detWright2.csv")  
+detWright$Year <- as.numeric(detWright$Year)  
+# Source residual function
+source("./function-binnedResidsG.R")  
+### Find binned residuals
+empty_list <- vector(mode = "list")  
+vec <- c(10,20,30,40,50,60,70,80,90,99)  
+vec2 <- c(0,10,20,30,40,50,60,70,80,90)  
+sourceVec <- c("BNM", "UKBMS", "NHCs")
+source_nclass <- c(98, 27, 80)
+source_col <- c(3, 2, 1)
+source_lty <- c(1, 2, 3)
+count <- 0
+# Plot
+plot(range(c(1900,2015)), range(c(-0.5,0.6)),
+           xlab="Year", 
+           ylab="Binned detection residuals",
+           main = "Model B") +
+  abline (0,0, lty=2) +
+for(s in 1:3){  
+  detWright_temp <- subset(detWright, Source == paste0(sourceVec[s]))  
+  count <- 0  
+for(i in vec){   
+  count <- count + 1  
+  temp <- subset(subset(detWright_temp, iter <= paste0(i)), iter > vec2[count])  
+  empty_list[[paste0(count)]] <- binned.residsG(temp$Year+1899, temp$res, nclass=source_nclass[s])  
+} 
+for(j in 1:10){
+lines(empty_list[[j]]$xbar, 
+      empty_list[[j]]$ybar, 
+      col=source_col[s],
+      lty=source_lty[s])
+      }
+} 
+legend("topright", legend = c("BNM", "UKBMS", "NHCs"), 
+  col = c(3, 2, 1), lty = c(1, 2, 3), #pt.cex = c(1.1,1.4,0.9), 
+  cex = 1, text.col = "black", horiz = F , inset = c(0.0, -0.02))
+
+
+### Plot all years: separate point colours for visits of different data types
+# Read detection probability file again
+rm(list = ls())
+###############################################
+#source("./function-binnedResidsG.R")  ### 
+#detWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelB_detWright2.csv")  ### 
+#detWright$Year <- as.numeric(detWright$Year)  ### 
+# subset
+#NHCs <- binned.residsG((subset(subset(detWright, Source == "NHCs"))$Year+1899),  ### 
+#                     (subset(subset(detWright, Source == "NHCs")))$res,  ### 
+#                     nclass=80)  ### 
+#saveRDS(NHCs, "../outputs/WrightResid/Carterocephalus_palaemon_ModelB_detWright_allYrs_NHCs_list.rds")  ###  
+#UKBMS <- binned.residsG((subset(subset(detWright, Source == "UKBMS"))$Year+1899),  ### 
+#                     (subset(detWright, Source == "UKBMS"))$res,  ### 
+#                     nclass=27)  ### 
+#saveRDS(UKBMS, "../outputs/WrightResid/Carterocephalus_palaemon_ModelB_detWright_allYrs_UKBMS_list.rds")  ###  
+#BNM <- binned.residsG((subset(subset(detWright, Source == "BNM"))$Year+1899),  ### 
+#                     (subset(detWright, Source == "BNM"))$res,  ### 
+#                     nclass=98)  ### 
+#saveRDS(BNM, "../outputs/WrightResid/Carterocephalus_palaemon_ModelB_detWright_allYrs_BNM_list.rds")  ###  
+###############################################
+### Read and plot binned det residuals
+NHCs <- readRDS("../outputs/WrightResid/Carterocephalus_palaemon_ModelB_detWright_allYrs_NHCs_list.rds") 
+UKBMS <- readRDS("../outputs/WrightResid/Carterocephalus_palaemon_ModelB_detWright_allYrs_UKBMS_list.rds") 
+BNM <- readRDS("../outputs/WrightResid/Carterocephalus_palaemon_ModelB_detWright_allYrs_BNM_list.rds") 
+plot(range(1900,2015), range(0.4, -0.3),
+     xlab="Year", ylab="",
+     type="n", main="Model B") + 
+  abline(0,0, lty=2) +
+  points(NHCs$xbar, NHCs$ybar, pch=19, cex=0.8, col=1) +
+  points(UKBMS$xbar, UKBMS$ybar, pch=18, cex=1.3, col=2) +
+  points(BNM$xbar, BNM$ybar, pch=17, cex=1, col=3) 
+legend("topright", legend = c("BNM", "UKBMS", "NHCs"), 
+  bty = "n", col = c(3, 2, 1), pch = c(17, 18, 19), 
+  pt.cex = c(1.1, 1.4, 0.9), cex = 1, text.col = "black", 
+  horiz = F , inset = c(0.0, -0.02))
+
+
+
+
+
+
+################################################################
+###     Model C
+################################################################
+rm(list = ls())
+# Read detection probability file again
+detWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelC_detWright2.csv")  
+detWright$Year <- as.numeric(detWright$Year)  
+# Source residual function
+source("./function-binnedResidsG.R")  
+### Find binned residuals
+empty_list <- vector(mode = "list")  
+vec <- c(10,20,30,40,50,60,70,80,90,99)  
+vec2 <- c(0,10,20,30,40,50,60,70,80,90)  
+sourceVec <- c("BNM", "UKBMS", "NHCs")
+source_nclass <- c(98, 27, 80)
+source_col <- c(3, 2, 1)
+source_lty <- c(1, 2, 3)
+count <- 0
+# Plot
+plot(range(c(1900,2015)), range(c(-0.5,0.6)),
+           xlab="Year", 
+           ylab="Binned detection residuals",
+           main = "Model C") +
+  abline (0,0, lty=2) +
+for(s in 1:3){  
+  detWright_temp <- subset(detWright, Source == paste0(sourceVec[s]))  
+  count <- 0  
+for(i in vec){   
+  count <- count + 1  
+  temp <- subset(subset(detWright_temp, iter <= paste0(i)), iter > vec2[count])  
+  empty_list[[paste0(count)]] <- binned.residsG(temp$Year+1899, temp$res, nclass=source_nclass[s])  
+} 
+for(j in 1:10){
+lines(empty_list[[j]]$xbar, 
+      empty_list[[j]]$ybar, 
+      col=source_col[s],
+      lty=source_lty[s])
+      }
+} 
+legend("topright", legend = c("BNM", "UKBMS", "NHCs"), 
+  col = c(3, 2, 1), lty = c(1, 2, 3), #pt.cex = c(1.1,1.4,0.9), 
+  cex = 1, text.col = "black", horiz = F , inset = c(0.0, -0.02))
+
+
+### Plot all years: separate point colours for visits of different data types
+# Read detection probability file again
+rm(list = ls())
+###############################################
+#source("./function-binnedResidsG.R")  ### 
+#detWright <- read.csv("../outputs/WrightResid/Carterocephalus_palaemon_ModelC_detWright2.csv")  ### 
+#detWright$Year <- as.numeric(detWright$Year)  ### 
+# subset
+#NHCs <- binned.residsG((subset(subset(detWright, Source == "NHCs"))$Year+1899),  ### 
+#                     (subset(subset(detWright, Source == "NHCs")))$res,  ### 
+#                     nclass=80)  ### 
+#saveRDS(NHCs, "../outputs/WrightResid/Carterocephalus_palaemon_ModelC_detWright_allYrs_NHCs_list.rds")  ###  
+#UKBMS <- binned.residsG((subset(subset(detWright, Source == "UKBMS"))$Year+1899),  ### 
+#                     (subset(detWright, Source == "UKBMS"))$res,  ### 
+#                     nclass=27)  ### 
+#saveRDS(UKBMS, "../outputs/WrightResid/Carterocephalus_palaemon_ModelC_detWright_allYrs_UKBMS_list.rds")  ###  
+#BNM <- binned.residsG((subset(subset(detWright, Source == "BNM"))$Year+1899),  ### 
+#                     (subset(detWright, Source == "BNM"))$res,  ### 
+#                     nclass=98)  ### 
+#saveRDS(BNM, "../outputs/WrightResid/Carterocephalus_palaemon_ModelC_detWright_allYrs_BNM_list.rds")  ###  
+###############################################
+### Read and plot binned det residuals
+NHCs <- readRDS("../outputs/WrightResid/Carterocephalus_palaemon_ModelC_detWright_allYrs_NHCs_list.rds") 
+UKBMS <- readRDS("../outputs/WrightResid/Carterocephalus_palaemon_ModelC_detWright_allYrs_UKBMS_list.rds") 
+BNM <- readRDS("../outputs/WrightResid/Carterocephalus_palaemon_ModelC_detWright_allYrs_BNM_list.rds") 
+plot(range(1900,2015), range(0.4, -0.3),
+     xlab="Year", ylab="",
+     type="n", main="Model C") + 
   abline(0,0, lty=2) +
   points(NHCs$xbar, NHCs$ybar, pch=19, cex=0.8, col=1) +
   points(UKBMS$xbar, UKBMS$ybar, pch=18, cex=1.3, col=2) +
@@ -4442,7 +5572,7 @@ write.csv(detWright, "../outputs/WrightResid/Limenitis_camilla_ModelA_detWright.
 
     
   
-```{r WrightPlot-Lcamilla-ModelA, echo=FALSE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE}
+```{r WrightPlot-Lcamilla-ModelA, echo=FALSE, eval=FALSE, warning=FALSE, message=FALSE, cache=TRUE}
 rm(list = ls())
 
 # Load required packages
@@ -4826,7 +5956,7 @@ write.csv(detWright, "../outputs/WrightResid/Limenitis_camilla_ModelB_detWright.
 
     
   
-```{r WrightPlot-Lcamilla-ModelB, echo=FALSE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE}
+```{r WrightPlot-Lcamilla-ModelB, echo=FALSE, eval=FALSE, warning=FALSE, message=FALSE, cache=TRUE}
 rm(list = ls())
 
 
@@ -5133,7 +6263,7 @@ write.csv(detWright, "../outputs/WrightResid/Limenitis_camilla_ModelC_detWright.
 
     
   
-```{r WrightPlot-Lcamilla-ModelC, echo=FALSE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE}
+```{r WrightPlot-Lcamilla-ModelC, echo=FALSE, eval=FALSE, warning=FALSE, message=FALSE, cache=TRUE}
 rm(list = ls())
 
 
@@ -5292,6 +6422,513 @@ plot(range(p$xbar), range(p$ybar, p$X2se, -p$X2se, na.rm=TRUE),
 
 
 
+
+
+
+
+### *L. camilla* - Plot residuals for BES QSIG
+
+```{r WrightPlot-L-camilla-BES-QSIG, echo=FALSE, eval=FALSE, warning=FALSE, message=FALSE, cache=TRUE}
+# Load required packages
+require(arm)
+require(dplyr)
+
+# Set up 3 rows 1 column
+par(mfrow = c(3, 3))
+
+
+
+
+################################################
+#################  Occupancy   ################# 
+################################################
+
+#################   Model A 
+#occuWright <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelA_occuWright.csv")
+#source("./function-binnedResidsG.R")
+#psi <-  binned.residsG((subset(occuWright, Year == 1)$Year+1899),
+#                       (subset(occuWright, Year == 1))$res)
+#for(i in 2:116){
+#  psi <- rbind(psi, binned.residsG((subset(occuWright, Year == paste(i))$Year+1899),
+#                                 (subset(occuWright, Year == paste(i)))$res))
+#}
+#write.csv(psi, "../outputs/WrightResid/Limenitis_camilla_ModelA_occuWright_AllYrs_AllIters.csv")
+### Read file
+psi <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelA_occuWright_AllYrs_AllIters.csv")
+### Plot!
+plot(range(psi$xbar), range(0.003, -0.003),
+     xlab="Year", ylab="Occupancy Residuals", 
+     type="n", main="Model A",
+     cex.main=1.8, cex.lab=1.8, cex.axis=1.8) +  
+  abline (0,0, lty=2) +
+  points (psi$xbar, psi$ybar, pch=19, cex=0.8, col=1)
+
+
+#################   Model B
+#occuWright <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelB_occuWright.csv")
+#source("./function-binnedResidsG.R")
+#psi <-  binned.residsG((subset(occuWright, Year == 1)$Year+1899),
+#                       (subset(occuWright, Year == 1))$res)
+#for(i in 2:116){
+#  psi <- rbind(psi, binned.residsG((subset(occuWright, Year == paste(i))$Year+1899),
+#                                 (subset(occuWright, Year == paste(i)))$res))
+#}
+#write.csv(psi, "../outputs/WrightResid/Limenitis_camilla_ModelB_occuWright_AllYrs_AllIters.csv")
+### Read file
+psi <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelB_occuWright_AllYrs_AllIters.csv")
+### Plot!
+plot(range(psi$xbar), range(0.003, -0.003),
+     xlab="Year", ylab="Occupancy Residuals", 
+     type="n", main="Model B",
+     cex.main=1.8, cex.lab=1.8, cex.axis=1.8) +  
+  abline (0,0, lty=2) +
+  points (psi$xbar, psi$ybar, pch=19, cex=0.8, col=1)
+
+
+#################   Model C
+#occuWright <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelC_occuWright.csv")
+#source("./function-binnedResidsG.R")
+#psi <-  binned.residsG((subset(occuWright, Year == 1)$Year+1899),
+#                       (subset(occuWright, Year == 1))$res)
+#for(i in 2:116){
+#  psi <- rbind(psi, binned.residsG((subset(occuWright, Year == paste(i))$Year+1899),
+#                                 (subset(occuWright, Year == paste(i)))$res))
+#}
+### Save file
+#write.csv(psi, "../outputs/WrightResid/Limenitis_camilla_ModelC_occuWright_AllYrs_AllIters.csv")
+### Read file
+psi <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelC_occuWright_AllYrs_AllIters.csv")
+### Plot!
+plot(range(psi$xbar), range(0.003, -0.003),
+     xlab="Year", ylab="Occupancy Residuals", 
+     type="n", main="Model C",
+     cex.main=1.8, cex.lab=1.8, cex.axis=1.8) +  
+  abline (0,0, lty=2) +
+  points (psi$xbar, psi$ybar, pch=19, cex=0.8, col=1)
+
+
+
+
+
+
+################################################
+#################  Detection   ################# 
+################################################
+
+
+#################   Model A
+source("./function-binnedResidsG.R")  
+detWright <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelA_detWright.csv")  
+lookup_pSource <- read.csv("../outputs/WrightResid/lookup_pSource.csv")  
+lookup_pSource <- unique(lookup_pSource[, c("VisitID", "Source")])
+detWright <- merge(detWright, lookup_pSource, by = "VisitID", all.x = TRUE)
+detWright$Year <- as.numeric(detWright$Year)  
+#length(unique((subset(detWright, Source == "NHCs"))$Year))
+#length(unique((subset(detWright, Source == "UKBMS"))$Year))
+#length(unique((subset(detWright, Source == "BNM"))$Year))
+### subset
+NHCs <- binned.residsG((subset(subset(detWright, Source == "NHCs"))$Year+1899),  
+                     (subset(subset(detWright, Source == "NHCs")))$res,  
+                     nclass=104)  
+saveRDS(NHCs, "../outputs/WrightResid/Limenitis_camilla_ModelA_detWright_allYrs_NHCs_list.rds")
+UKBMS <- binned.residsG((subset(subset(detWright, Source == "UKBMS"))$Year+1899),
+                     (subset(detWright, Source == "UKBMS"))$res, 
+                     nclass=40)
+saveRDS(UKBMS, "../outputs/WrightResid/Limenitis_camilla_ModelA_detWright_allYrs_UKBMS_list.rds")   
+BNM <- binned.residsG((subset(subset(detWright, Source == "BNM"), Year < 95)$Year+1899), 
+                     subset((subset(detWright, Source == "BNM")), Year < 95)$res,
+                     nclass=94)
+BNM2 <- binned.residsG(subset(subset((subset(detWright, Source == "BNM")), Year > 95), iter<30)$Year+1899,
+                     subset(subset((subset(detWright, Source == "BNM")), Year > 95), iter<30)$res, nclass=19)
+saveRDS(rbind(BNM, BNM2), "../outputs/WrightResid/Limenitis_camilla_ModelA_detWright_allYrs_BNM_list.rds")
+### Read and plot binned det residuals
+NHCs <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelA_detWright_allYrs_NHCs_list.rds") 
+UKBMS <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelA_detWright_allYrs_UKBMS_list.rds") 
+BNM <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelA_detWright_allYrs_BNM_list.rds") 
+plot(range(1900,2015), range(0.3, -0.3),
+     xlab="Year", ylab="Detection Residuals",
+     type="n", main="Model A",
+     cex.main=1.8, cex.lab=1.8, cex.axis=1.8) + 
+  abline(0,0, lty=2) +
+  points(NHCs$xbar, NHCs$ybar, pch=19, cex=1, col="black") +
+  points(UKBMS$xbar, UKBMS$ybar, pch=19, cex=1, col="black") +
+  points(BNM$xbar, BNM$ybar, pch=19, cex=1, col="black") 
+
+
+#################   Model B
+#source("./function-binnedResidsG.R")  
+#detWright <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelB_detWright.csv") 
+#lookup_pSource <- read.csv("../outputs/WrightResid/lookup_pSource.csv")  
+#lookup_pSource <- unique(lookup_pSource[, c("VisitID", "Source")])
+#detWright <- merge(detWright, lookup_pSource, by = "VisitID", all.x = TRUE)
+#detWright$Year <- as.numeric(detWright$Year)  
+### subset
+#NHCs <- binned.residsG((subset(subset(detWright, Source == "NHCs"))$Year+1899),
+#                     (subset(subset(detWright, Source == "NHCs")))$res,
+#                     nclass=104) 
+#saveRDS(NHCs, "../outputs/WrightResid/Limenitis_camilla_ModelB_detWright_allYrs_NHCs_list.rds")
+#UKBMS <- binned.residsG((subset(subset(detWright, Source == "UKBMS"))$Year+1899),
+#                     (subset(detWright, Source == "UKBMS"))$res, nclass=40) 
+#saveRDS(UKBMS, "../outputs/WrightResid/Limenitis_camilla_ModelB_detWright_allYrs_UKBMS_list.rds")  
+#BNM <- binned.residsG((subset(subset(detWright, Source == "BNM"), Year < 95)$Year+1899),
+#                     subset((subset(detWright, Source == "BNM")), Year < 95)$res, nclass=94)
+#BNM2 <- binned.residsG(subset(subset((subset(detWright, Source == "BNM")), Year > 95), iter<30)$Year+1899,  
+#                     subset(subset((subset(detWright, Source == "BNM")), Year > 95), iter<30)$res, 
+#                     nclass=19) 
+#saveRDS(rbind(BNM, BNM2), "../outputs/WrightResid/Limenitis_camilla_ModelB_detWright_allYrs_BNM_list.rds") 
+### Read and plot binned det residuals
+NHCs <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelB_detWright_allYrs_NHCs_list.rds") 
+UKBMS <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelB_detWright_allYrs_UKBMS_list.rds") 
+BNM <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelB_detWright_allYrs_BNM_list.rds") 
+plot(range(1900,2015), range(0.3, -0.3),
+     xlab="Year", ylab="Detection Residuals",
+     type="n", main="Model B",
+     cex.main=1.8, cex.lab=1.8, cex.axis=1.8) + 
+  abline(0,0, lty=2) +
+  points(NHCs$xbar, NHCs$ybar, pch=19, cex=1, col="black") +
+  points(UKBMS$xbar, UKBMS$ybar, pch=19, cex=1, col="black") +
+  points(BNM$xbar, BNM$ybar, pch=19, cex=1, col="black") 
+
+
+
+#################   Model C
+#source("./function-binnedResidsG.R")  
+#detWright <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelC_detWright.csv") 
+#lookup_pSource <- read.csv("../outputs/WrightResid/lookup_pSource.csv")  
+#lookup_pSource <- unique(lookup_pSource[, c("VisitID", "Source")])
+#detWright <- merge(detWright, lookup_pSource, by = "VisitID", all.x = TRUE)
+#detWright$Year <- as.numeric(detWright$Year)  
+#NHCs <- binned.residsG((subset(subset(detWright, Source == "NHCs"))$Year+1899),
+#                     (subset(subset(detWright, Source == "NHCs")))$res, nclass=104) 
+#saveRDS(NHCs, "../outputs/WrightResid/Limenitis_camilla_ModelC_detWright_allYrs_NHCs_list.rds")
+#UKBMS <- binned.residsG((subset(subset(detWright, Source == "UKBMS"))$Year+1899),
+#                     (subset(detWright, Source == "UKBMS"))$res, nclass=40) 
+#saveRDS(UKBMS, "../outputs/WrightResid/Limenitis_camilla_ModelC_detWright_allYrs_UKBMS_list.rds")  
+#BNM <- binned.residsG((subset(subset(detWright, Source == "BNM"), Year < 95)$Year+1899),
+#                     subset((subset(detWright, Source == "BNM")), Year < 95)$res, nclass=94)
+#BNM2 <- binned.residsG(subset(subset((subset(detWright, Source == "BNM")), Year > 95), iter<30)$Year+1899, 
+#                     subset(subset((subset(detWright, Source == "BNM")), Year > 95), iter<30)$res, nclass=19)
+#saveRDS(rbind(BNM, BNM2), "../outputs/WrightResid/Limenitis_camilla_ModelC_detWright_allYrs_BNM_list.rds") 
+### Read and plot binned det residuals
+NHCs <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelC_detWright_allYrs_NHCs_list.rds") 
+UKBMS <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelC_detWright_allYrs_UKBMS_list.rds") 
+BNM <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelC_detWright_allYrs_BNM_list.rds") 
+plot(range(1900,2015), range(0.3, -0.3),
+     xlab="Year", ylab="Detection Residuals",
+     type="n", main="Model C",
+     cex.main=1.8, cex.lab=1.8, cex.axis=1.8) + 
+  abline(0,0, lty=2) +
+  points(NHCs$xbar, NHCs$ybar, pch=19, cex=1, col="black") +
+  points(UKBMS$xbar, UKBMS$ybar, pch=19, cex=1, col="black") +
+  points(BNM$xbar, BNM$ybar, pch=19, cex=1, col="black") 
+
+
+
+
+################################################
+############  Detection Coloured   ############# 
+################################################
+
+#################   Model A
+NHCs <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelA_detWright_allYrs_NHCs_list.rds") 
+UKBMS <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelA_detWright_allYrs_UKBMS_list.rds") 
+BNM <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelA_detWright_allYrs_BNM_list.rds") 
+plot(range(1900,2015), range(0.3, -0.3),
+     xlab="Year", ylab="Detection Residuals",
+     type="n", main="Model A",
+     cex.main=1.8, cex.lab=1.8, cex.axis=1.8) + 
+  abline(0,0, lty=2) +
+  points(NHCs$xbar, NHCs$ybar, pch=19, cex=0.8, col="#D55E00") +
+  points(UKBMS$xbar, UKBMS$ybar, pch=18, cex=1.3, col="#009E73") +
+  points(BNM$xbar, BNM$ybar, pch=17, cex=1, col="#E69F00") 
+legend("topright", legend = c("BNM", "UKBMS", "NHCs"), 
+  bty = "n", col = c("#E69F00", "#009E73", "#D55E00"), pch = c(17, 18, 19), 
+  pt.cex = c(1.1, 1.4, 0.9), cex = 1, text.col = "black", 
+  horiz = F , inset = c(0.0, -0.02))
+
+
+#################   Model B
+NHCs <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelB_detWright_allYrs_NHCs_list.rds") 
+UKBMS <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelB_detWright_allYrs_UKBMS_list.rds") 
+BNM <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelB_detWright_allYrs_BNM_list.rds") 
+plot(range(1900,2015), range(0.3, -0.3),
+     xlab="Year", ylab="Detection Residuals",
+     type="n", main="Model B",
+     cex.main=1.8, cex.lab=1.8, cex.axis=1.8) + 
+  abline(0,0, lty=2) +
+  points(NHCs$xbar, NHCs$ybar, pch=19, cex=0.8, col="#D55E00") +
+  points(UKBMS$xbar, UKBMS$ybar, pch=18, cex=1.3, col="#009E73") +
+  points(BNM$xbar, BNM$ybar, pch=17, cex=1, col="#E69F00") 
+
+
+#################   Model C
+NHCs <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelC_detWright_allYrs_NHCs_list.rds") 
+UKBMS <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelC_detWright_allYrs_UKBMS_list.rds") 
+BNM <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelC_detWright_allYrs_BNM_list.rds") 
+plot(range(1900,2015), range(0.3, -0.3),
+     xlab="Year", ylab="Detection Residuals",
+     type="n", main="Model C",
+     cex.main=1.8, cex.lab=1.8, cex.axis=1.8) +  
+  abline(0,0, lty=2) +
+  points(NHCs$xbar, NHCs$ybar, pch=19, cex=0.8, col="#D55E00") +
+  points(UKBMS$xbar, UKBMS$ybar, pch=18, cex=1.3, col="#009E73") +
+  points(BNM$xbar, BNM$ybar, pch=17, cex=1, col="#E69F00") 
+```
+
+
+
+    
+
+
+
+
+
+
+
+   
+
+### *L. camilla* - Occupancy & Detection residuals: 1900-2015
+```{r WrightOccuDetPlot-L-camilla, echo=FALSE, eval=TRUE, warning=FALSE, message=FALSE, cache=TRUE, fig.width=7, fig.height=10}
+# Load required packages
+require(arm)
+require(dplyr)
+# Set up 3 rows 3 columns
+par(mfrow = c(3, 3))
+
+################################################
+#################  Occupancy   ################# 
+################################################
+
+#################   Model A   #################
+#occuWright <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelA_occuWright.csv")
+#source("./function-binnedResidsG.R")
+#psi <-  binned.residsG((subset(occuWright, Year == 1)$Year+1899),
+#                       (subset(occuWright, Year == 1))$res)
+#for(i in 2:116){
+#  psi <- rbind(psi, binned.residsG((subset(occuWright, Year == paste(i))$Year+1899),
+#                                 (subset(occuWright, Year == paste(i)))$res))
+#}
+#write.csv(psi, "../outputs/WrightResid/Limenitis_camilla_ModelA_occuWright_AllYrs_AllIters.csv")
+### Read file
+psi <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelA_occuWright_AllYrs_AllIters.csv")
+plot(range(1900,2015), range(0.003, -0.003),
+     xlab="", ylab="Occupancy Residuals", 
+     type="n", main="Model A",
+     cex.main=1.8, cex.lab=1.8, cex.axis=1.8) +  
+  abline (0,0, lty=2) +
+  points (psi$xbar, psi$ybar, pch=19, cex=0.8, col=1)
+
+
+#################   Model B   #################
+#occuWright <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelB_occuWright.csv")
+#source("./function-binnedResidsG.R")
+#psi <-  binned.residsG((subset(occuWright, Year == 1)$Year+1899),
+#                       (subset(occuWright, Year == 1))$res)
+#for(i in 2:116){
+#  psi <- rbind(psi, binned.residsG((subset(occuWright, Year == paste(i))$Year+1899),
+#                                 (subset(occuWright, Year == paste(i)))$res))
+#}
+#write.csv(psi, "../outputs/WrightResid/Limenitis_camilla_ModelB_occuWright_AllYrs_AllIters.csv")
+### Read file
+psi <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelB_occuWright_AllYrs_AllIters.csv")
+plot(range(1900,2015), range(0.003, -0.003),
+     xlab="", ylab="Occupancy Residuals", 
+     type="n", main="Model B",
+     cex.main=1.8, cex.lab=1.8, cex.axis=1.8) +  
+  abline (0,0, lty=2) +
+  points (psi$xbar, psi$ybar, pch=19, cex=0.8, col=1)
+
+
+#################   Model C   #################
+#occuWright <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelC_occuWright.csv")
+#source("./function-binnedResidsG.R")
+#psi <-  binned.residsG((subset(occuWright, Year == 1)$Year+1899),
+#                       (subset(occuWright, Year == 1))$res)
+#for(i in 2:116){
+#  psi <- rbind(psi, binned.residsG((subset(occuWright, Year == paste(i))$Year+1899),
+#                                 (subset(occuWright, Year == paste(i)))$res))
+#}
+#write.csv(psi, "../outputs/WrightResid/Limenitis_camilla_ModelC_occuWright_AllYrs_AllIters.csv")
+### Read file
+psi <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelC_occuWright_AllYrs_AllIters.csv")
+### Plot!
+plot(range(1900,2015), range(0.003, -0.003),
+     xlab="Year", ylab="Occupancy Residuals", 
+     type="n", main="Model C",
+     cex.main=1.8, cex.lab=1.8, cex.axis=1.8) +  
+  abline (0,0, lty=2) +
+  points (psi$xbar, psi$ybar, pch=19, cex=0.8, col=1)
+
+
+
+
+################################################
+#################  Detection   ################# 
+################################################
+
+#################   Model A   #################
+#source("./function-binnedResidsG.R")  
+#detWright <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelA_detWright.csv")  
+lookup_pSource <- read.csv("../outputs/WrightResid/lookup_pSource.csv")  
+lookup_pSource <- unique(lookup_pSource[, c("VisitID", "Source")])
+detWright <- merge(detWright, lookup_pSource, by = "VisitID", all.x = TRUE)
+detWright$Year <- as.numeric(detWright$Year)  
+#length(unique((subset(detWright, Source == "NHCs"))$Year))
+#length(unique((subset(detWright, Source == "UKBMS"))$Year))
+#length(unique((subset(detWright, Source == "BNM"))$Year))
+### subset
+NHCs <- binned.residsG((subset(subset(detWright, Source == "NHCs"))$Year+1899),  
+                     (subset(subset(detWright, Source == "NHCs")))$res,  
+                     nclass=104)  
+saveRDS(NHCs, "../outputs/WrightResid/Limenitis_camilla_ModelA_detWright_allYrs_NHCs_list.rds")
+UKBMS <- binned.residsG((subset(subset(detWright, Source == "UKBMS"))$Year+1899),
+                     (subset(detWright, Source == "UKBMS"))$res, 
+                     nclass=40)
+saveRDS(UKBMS, "../outputs/WrightResid/Limenitis_camilla_ModelA_detWright_allYrs_UKBMS_list.rds")   
+BNM <- binned.residsG((subset(subset(detWright, Source == "BNM"), Year < 95)$Year+1899), 
+                     subset((subset(detWright, Source == "BNM")), Year < 95)$res,
+                     nclass=94)
+BNM2 <- binned.residsG(subset(subset((subset(detWright, Source == "BNM")), Year > 95), iter<30)$Year+1899,
+                     subset(subset((subset(detWright, Source == "BNM")), Year > 95), iter<30)$res, nclass=19)
+saveRDS(rbind(BNM, BNM2), "../outputs/WrightResid/Limenitis_camilla_ModelA_detWright_allYrs_BNM_list.rds")
+### Read and plot binned det residuals
+NHCs <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelA_detWright_allYrs_NHCs_list.rds") 
+UKBMS <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelA_detWright_allYrs_UKBMS_list.rds") 
+BNM <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelA_detWright_allYrs_BNM_list.rds") 
+plot(range(1900,2015), range(0.3, -0.3),
+     xlab="", ylab="Detection Residuals",
+     type="n", main="Model A",
+     cex.main=1.8, cex.lab=1.8, cex.axis=1.8) + 
+  abline(0,0, lty=2) +
+  points(NHCs$xbar, NHCs$ybar, pch=19, cex=1, col="black") +
+  points(UKBMS$xbar, UKBMS$ybar, pch=19, cex=1, col="black") +
+  points(BNM$xbar, BNM$ybar, pch=19, cex=1, col="black") 
+
+
+#################   Model B   #################
+#source("./function-binnedResidsG.R")  
+#detWright <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelB_detWright.csv") 
+#lookup_pSource <- read.csv("../outputs/WrightResid/lookup_pSource.csv")  
+#lookup_pSource <- unique(lookup_pSource[, c("VisitID", "Source")])
+#detWright <- merge(detWright, lookup_pSource, by = "VisitID", all.x = TRUE)
+#detWright$Year <- as.numeric(detWright$Year)  
+### subset
+#NHCs <- binned.residsG((subset(subset(detWright, Source == "NHCs"))$Year+1899),
+#                     (subset(subset(detWright, Source == "NHCs")))$res,
+#                     nclass=104) 
+#saveRDS(NHCs, "../outputs/WrightResid/Limenitis_camilla_ModelB_detWright_allYrs_NHCs_list.rds")
+#UKBMS <- binned.residsG((subset(subset(detWright, Source == "UKBMS"))$Year+1899),
+#                     (subset(detWright, Source == "UKBMS"))$res, nclass=40) 
+#saveRDS(UKBMS, "../outputs/WrightResid/Limenitis_camilla_ModelB_detWright_allYrs_UKBMS_list.rds")  
+#BNM <- binned.residsG((subset(subset(detWright, Source == "BNM"), Year < 95)$Year+1899),
+#                     subset((subset(detWright, Source == "BNM")), Year < 95)$res, nclass=94)
+#BNM2 <- binned.residsG(subset(subset((subset(detWright, Source == "BNM")), Year > 95), iter<30)$Year+1899,  
+#                     subset(subset((subset(detWright, Source == "BNM")), Year > 95), iter<30)$res, 
+#                     nclass=19) 
+#saveRDS(rbind(BNM, BNM2), "../outputs/WrightResid/Limenitis_camilla_ModelB_detWright_allYrs_BNM_list.rds") 
+### Read and plot binned det residuals
+NHCs <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelB_detWright_allYrs_NHCs_list.rds") 
+UKBMS <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelB_detWright_allYrs_UKBMS_list.rds") 
+BNM <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelB_detWright_allYrs_BNM_list.rds") 
+plot(range(1900,2015), range(0.3, -0.3),
+     xlab="", ylab="Detection Residuals",
+     type="n", main="Model B",
+     cex.main=1.8, cex.lab=1.8, cex.axis=1.8) + 
+  abline(0,0, lty=2) +
+  points(NHCs$xbar, NHCs$ybar, pch=19, cex=1, col="black") +
+  points(UKBMS$xbar, UKBMS$ybar, pch=19, cex=1, col="black") +
+  points(BNM$xbar, BNM$ybar, pch=19, cex=1, col="black") 
+
+
+
+#################   Model C   #################
+#source("./function-binnedResidsG.R")  
+#detWright <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelC_detWright.csv") 
+#lookup_pSource <- read.csv("../outputs/WrightResid/lookup_pSource.csv")  
+#lookup_pSource <- unique(lookup_pSource[, c("VisitID", "Source")])
+#detWright <- merge(detWright, lookup_pSource, by = "VisitID", all.x = TRUE)
+#detWright$Year <- as.numeric(detWright$Year)  
+#NHCs <- binned.residsG((subset(subset(detWright, Source == "NHCs"))$Year+1899),
+#                     (subset(subset(detWright, Source == "NHCs")))$res, nclass=104) 
+#saveRDS(NHCs, "../outputs/WrightResid/Limenitis_camilla_ModelC_detWright_allYrs_NHCs_list.rds")
+#UKBMS <- binned.residsG((subset(subset(detWright, Source == "UKBMS"))$Year+1899),
+#                     (subset(detWright, Source == "UKBMS"))$res, nclass=40) 
+#saveRDS(UKBMS, "../outputs/WrightResid/Limenitis_camilla_ModelC_detWright_allYrs_UKBMS_list.rds")  
+#BNM <- binned.residsG((subset(subset(detWright, Source == "BNM"), Year < 95)$Year+1899),
+#                     subset((subset(detWright, Source == "BNM")), Year < 95)$res, nclass=94)
+#BNM2 <- binned.residsG(subset(subset((subset(detWright, Source == "BNM")), Year > 95), iter<30)$Year+1899, 
+#                     subset(subset((subset(detWright, Source == "BNM")), Year > 95), iter<30)$res, nclass=19)
+#saveRDS(rbind(BNM, BNM2), "../outputs/WrightResid/Limenitis_camilla_ModelC_detWright_allYrs_BNM_list.rds") 
+### Read and plot binned det residuals
+NHCs <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelC_detWright_allYrs_NHCs_list.rds") 
+UKBMS <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelC_detWright_allYrs_UKBMS_list.rds") 
+BNM <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelC_detWright_allYrs_BNM_list.rds") 
+plot(range(1900,2015), range(0.3, -0.3),
+     xlab="Year", ylab="Detection Residuals",
+     type="n", main="Model C",
+     cex.main=1.8, cex.lab=1.8, cex.axis=1.8) + 
+  abline(0,0, lty=2) +
+  points(NHCs$xbar, NHCs$ybar, pch=19, cex=1, col="black") +
+  points(UKBMS$xbar, UKBMS$ybar, pch=19, cex=1, col="black") +
+  points(BNM$xbar, BNM$ybar, pch=19, cex=1, col="black") 
+
+
+
+
+################################################
+############  Detection Coloured   ############# 
+################################################
+
+#################   Model A   #################
+NHCs <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelA_detWright_allYrs_NHCs_list.rds") 
+UKBMS <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelA_detWright_allYrs_UKBMS_list.rds") 
+BNM <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelA_detWright_allYrs_BNM_list.rds") 
+plot(range(1900,2015), range(0.3, -0.3),
+     xlab="", ylab="s",
+     type="n", main="Model A",
+     cex.main=1.8, cex.lab=1.8, cex.axis=1.8) + 
+  abline(0,0, lty=2) +
+  points(NHCs$xbar, NHCs$ybar, pch=19, cex=0.8, col="#D55E00") +
+  points(UKBMS$xbar, UKBMS$ybar, pch=18, cex=1.3, col="#009E73") +
+  points(BNM$xbar, BNM$ybar, pch=17, cex=1, col="#E69F00") 
+legend("topright", legend = c("BNM", "UKBMS", "NHCs"), 
+  bty = "n", col = c("#E69F00", "#009E73", "#D55E00"), pch = c(17, 18, 19), 
+  pt.cex = c(1.1, 1.4, 0.9), cex = 1, text.col = "black", 
+  horiz = F , inset = c(0.0, -0.02))
+
+
+#################   Model B   #################
+NHCs <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelB_detWright_allYrs_NHCs_list.rds") 
+UKBMS <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelB_detWright_allYrs_UKBMS_list.rds") 
+BNM <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelB_detWright_allYrs_BNM_list.rds") 
+plot(range(1900,2015), range(0.3, -0.3),
+     xlab="", ylab="",
+     type="n", main="Model B",
+     cex.main=1.8, cex.lab=1.8, cex.axis=1.8) + 
+  abline(0,0, lty=2) +
+  points(NHCs$xbar, NHCs$ybar, pch=19, cex=0.8, col="#D55E00") +
+  points(UKBMS$xbar, UKBMS$ybar, pch=18, cex=1.3, col="#009E73") +
+  points(BNM$xbar, BNM$ybar, pch=17, cex=1, col="#E69F00") 
+
+
+#################   Model C   #################
+NHCs <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelC_detWright_allYrs_NHCs_list.rds") 
+UKBMS <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelC_detWright_allYrs_UKBMS_list.rds") 
+BNM <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelC_detWright_allYrs_BNM_list.rds") 
+plot(range(1900,2015), range(0.3, -0.3),
+     xlab="Year", ylab="",
+     type="n", main="Model C",
+     cex.main=1.8, cex.lab=1.8, cex.axis=1.8) +  
+  abline(0,0, lty=2) +
+  points(NHCs$xbar, NHCs$ybar, pch=19, cex=0.8, col="#D55E00") +
+  points(UKBMS$xbar, UKBMS$ybar, pch=18, cex=1.3, col="#009E73") +
+  points(BNM$xbar, BNM$ybar, pch=17, cex=1, col="#E69F00") 
+```
+
+
+   
+   
+   
 
 
 
