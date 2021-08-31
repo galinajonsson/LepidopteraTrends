@@ -6517,30 +6517,29 @@ plot(range(psi$xbar), range(0.003, -0.003),
 
 
 #################   Model A
-source("./function-binnedResidsG.R")  
-detWright <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelA_detWright.csv")  
-lookup_pSource <- read.csv("../outputs/WrightResid/lookup_pSource.csv")  
-lookup_pSource <- unique(lookup_pSource[, c("VisitID", "Source")])
-detWright <- merge(detWright, lookup_pSource, by = "VisitID", all.x = TRUE)
-detWright$Year <- as.numeric(detWright$Year)  
+#source("./function-binnedResidsG.R")  
+#detWright <- read.csv("../outputs/WrightResid/Limenitis_camilla_ModelA_detWright.csv")  
+#lookup_pSource <- read.csv("../outputs/WrightResid/lookup_pSource.csv")  
+#detWright <- merge(detWright, unique(lookup_pSource[, c("VisitID", "Source")]), by ="VisitID", all.x=TRUE)
+#detWright$Year <- as.numeric(detWright$Year)  
 #length(unique((subset(detWright, Source == "NHCs"))$Year))
 #length(unique((subset(detWright, Source == "UKBMS"))$Year))
 #length(unique((subset(detWright, Source == "BNM"))$Year))
 ### subset
-NHCs <- binned.residsG((subset(subset(detWright, Source == "NHCs"))$Year+1899),  
-                     (subset(subset(detWright, Source == "NHCs")))$res,  
-                     nclass=104)  
-saveRDS(NHCs, "../outputs/WrightResid/Limenitis_camilla_ModelA_detWright_allYrs_NHCs_list.rds")
-UKBMS <- binned.residsG((subset(subset(detWright, Source == "UKBMS"))$Year+1899),
-                     (subset(detWright, Source == "UKBMS"))$res, 
-                     nclass=40)
-saveRDS(UKBMS, "../outputs/WrightResid/Limenitis_camilla_ModelA_detWright_allYrs_UKBMS_list.rds")   
-BNM <- binned.residsG((subset(subset(detWright, Source == "BNM"), Year < 95)$Year+1899), 
-                     subset((subset(detWright, Source == "BNM")), Year < 95)$res,
-                     nclass=94)
-BNM2 <- binned.residsG(subset(subset((subset(detWright, Source == "BNM")), Year > 95), iter<30)$Year+1899,
-                     subset(subset((subset(detWright, Source == "BNM")), Year > 95), iter<30)$res, nclass=19)
-saveRDS(rbind(BNM, BNM2), "../outputs/WrightResid/Limenitis_camilla_ModelA_detWright_allYrs_BNM_list.rds")
+#NHCs <- binned.residsG((subset(subset(detWright, Source == "NHCs"))$Year+1899),  
+#                     (subset(subset(detWright, Source == "NHCs")))$res,  
+#                     nclass=104)  
+#saveRDS(NHCs, "../outputs/WrightResid/Limenitis_camilla_ModelA_detWright_allYrs_NHCs_list.rds")
+#UKBMS <- binned.residsG((subset(subset(detWright, Source == "UKBMS"))$Year+1899),
+#                     (subset(detWright, Source == "UKBMS"))$res, 
+#                     nclass=40)
+#saveRDS(UKBMS, "../outputs/WrightResid/Limenitis_camilla_ModelA_detWright_allYrs_UKBMS_list.rds")   
+#BNM <- binned.residsG((subset(subset(detWright, Source == "BNM"), Year < 95)$Year+1899), 
+#                     subset((subset(detWright, Source == "BNM")), Year < 95)$res,
+#                     nclass=94)
+#BNM2 <- binned.residsG(subset(subset((subset(detWright, Source == "BNM")), Year > 95), iter<30)$Year+1899,
+#                     subset(subset((subset(detWright, Source == "BNM")), Year > 95), iter<30)$res, nclass=19)
+#saveRDS(rbind(BNM, BNM2), "../outputs/WrightResid/Limenitis_camilla_ModelA_detWright_allYrs_BNM_list.rds")
 ### Read and plot binned det residuals
 NHCs <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelA_detWright_allYrs_NHCs_list.rds") 
 UKBMS <- readRDS("../outputs/WrightResid/Limenitis_camilla_ModelA_detWright_allYrs_UKBMS_list.rds") 
