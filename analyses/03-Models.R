@@ -2462,3 +2462,59 @@ saveRDS(time.taken, "/home/galina/time.taken_results_Thecla_betulae_ctag_catLL.r
 
 # scp -o ProxyJump=galj@orca.nhm.ac.uk -r galina@ctag:/home/galina .
 
+
+
+
+
+
+##########################################################################################
+###################################### 7 Sep 2021 ########################################
+##########################################################################################
+
+### Here I run A. urticae with priors for dtype3 at (-3, 0.001) instead of (0, 0.001)
+
+library(sparta)
+
+spp_vis_merged_7April2020 <- read.csv("./data/formattedData/spp_vis_merged_2020-04-07.csv", header=T, na.strings=c("","NA"))
+occDetdata_merged_7April2020 <- read.csv("./data/formattedData/occDetdata_merged_2020-04-07.csv", header=T, na.strings=c("","NA")) 
+
+
+results_Aglais_urticae_catLL <- sparta::occDetFunc(taxa_name = "Aglais.urticae",
+                                                        n_iterations = 30000,
+                                                        burnin = 15000,
+                                                        thinning = 3, 
+                                                        occDetdata = occDetdata_merged_7April2020, 
+                                                        spp_vis = spp_vis_merged_7April2020, 
+                                                        modeltype = c('ranwalk', 'halfcauchy', 'catlistlength'), 
+                                                        write_results = FALSE)
+
+# Save outputs
+saveRDS(results_Aglais_urticae_catLL, "./outputs/catLL-outputs/results_Aglais_urticae_prior-3_catLL.rds")
+
+
+
+##########################################################################################
+###################################### 13 Sep 2021 ########################################
+##########################################################################################
+
+### Here I run A. urticae with priors for dtype3 at (-3, 0.001) instead of (0, 0.001)
+
+library(sparta)
+
+spp_vis_merged_7April2020 <- read.csv("./data/formattedData/spp_vis_merged_2020-04-07.csv", header=T, na.strings=c("","NA"))
+occDetdata_merged_7April2020 <- read.csv("./data/formattedData/occDetdata_merged_2020-04-07.csv", header=T, na.strings=c("","NA")) 
+
+
+results_Aglais_urticae_mixLL <- sparta::occDetFunc(taxa_name = "Aglais.urticae",
+                                                   n_iterations = 15000,
+                                                   burnin = 7500,
+                                                   thinning = 3, 
+                                                   occDetdata = occDetdata_merged_7April2020, 
+                                                   spp_vis = spp_vis_merged_7April2020, 
+                                                   modeltype = c('ranwalk', 'halfcauchy', 'mixlistlength'), 
+                                                   write_results = FALSE)
+
+# Save outputs
+saveRDS(results_Aglais_urticae_mixLL, "./outputs/mixLL-outputs/results_Aglais_urticae_prior-3_mixLL.rds")
+
+
