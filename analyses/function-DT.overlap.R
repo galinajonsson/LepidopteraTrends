@@ -8,28 +8,19 @@
 #' @param maxTP numeric, defaults to NA. If a subset of time periods should be used - the last time period to use. 
 #' @param TP 
 #' @param TPinterval
-#' @param ... Additional arguments passed to ggplot
-
-#' @import dplyr
-#' @method plot occDet
-#' @export
 
 
-########################################################
-# 
-# NOTE: Not finished code allowing for several TPinterval values (lines 301-309)
-#
-########################################################
 
+require("dplyr")
 
-DT.overlap <- function(taxon_name = taxon_name,
+DToverlap <- function(taxon_name = taxon_name,
                       occDetdata = occDetdata,
                       spp_vis = spp_vis,
                       modeltype = NULL, 
                       minTP = min(occDetdata$TP), 
                       maxTP = max(occDetdata$TP),
                       TP = occDetdata$TP,
-                      TPinterval = NULL,
+                      TPinterval = 1,
                       ...){
   
   
@@ -96,6 +87,7 @@ DT.overlap <- function(taxon_name = taxon_name,
       out <- list()
       
       out$taxon <- paste0(taxon_name)
+      out$TimePeriod_Interval <- TPinterval
       out$modeltype <- as.character(modeltype)
       out$minTP <- minTP 
       out$maxTP <- maxTP 
@@ -299,15 +291,15 @@ DT.overlap <- function(taxon_name = taxon_name,
       outFinal <- extractData(occDetdata)
       }
       
-      #if(length(TPinterval) > 1){
-      #  outFinal <- list()
-      #  occDetdata$TPorig <- occDetdata$TP
-      #  for(i in length(TPinterval)){
-      #    TP <- findInterval(occDetdata$TPorig, seq(minTP,maxTP, TPinterval[i]))
-      #    occDetdata$TP <- TP
-      #    outFinal[[i]] <- extractData(occDetdata)
-      #  }
-      #}
+      if(length(TPinterval) > 1){
+        outFinal <- list()
+        occDetdata$TPorig <- occDetdata$TP
+        for(i in TPinterval){
+          TP <- findInterval(occDetdata$TPorig, seq(minTP,maxTP, i))
+          occDetdata$TP <- TP
+          outFinal[[i]] <- extractData(occDetdata)
+        }
+      }
     }
     
 return(outFinal)    
