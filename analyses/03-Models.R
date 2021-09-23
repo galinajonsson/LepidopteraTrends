@@ -2503,18 +2503,38 @@ library(sparta)
 
 spp_vis_merged_7April2020 <- read.csv("./data/formattedData/spp_vis_merged_2020-04-07.csv", header=T, na.strings=c("","NA"))
 occDetdata_merged_7April2020 <- read.csv("./data/formattedData/occDetdata_merged_2020-04-07.csv", header=T, na.strings=c("","NA")) 
+occDetdata_merged_7April2020$L[occDetdata_merged_7April2020$L <= 200] <- 1
+occDetdata_merged_7April2020$L[occDetdata_merged_7April2020$L == 22222] <- 2
+occDetdata_merged_7April2020$L[occDetdata_merged_7April2020$L == 33333] <- 3
+
+count(occDetdata_merged_7April2020$L)
+#      freq
+# 1 1135652
+# 2  205976
+# 3   24583
 
 
-results_Aglais_urticae_mixLL <- sparta::occDetFunc(taxa_name = "Aglais.urticae",
-                                                   n_iterations = 15000,
-                                                   burnin = 7500,
+#occDetdata <- subset(occDetdata_merged_7April2020, TP <77 & TP >60)
+#count(occDetdata$L)
+#   freq
+# 1 5479
+# 3 2824
+
+results_Aglais_urticae_catLL_NEWprior <- sparta::occDetFunc(taxa_name = "Aglais.urticae",
+                                                   n_iterations = 7000,
+                                                   burnin = 3500,
                                                    thinning = 3, 
                                                    occDetdata = occDetdata_merged_7April2020, 
                                                    spp_vis = spp_vis_merged_7April2020, 
-                                                   modeltype = c('ranwalk', 'halfcauchy', 'mixlistlength'), 
+                                                   modeltype = c('ranwalk', 'halfcauchy', 'catlistlength'),  
                                                    write_results = FALSE)
 
+# In sparta::occDetFunc(taxa_name = "Aglais.urticae", n_iterations = 15000,  :
+# JAGS returned an error when modellingAglais.urticaeerror:
+# Error in jags.model(model.file, data = data, inits = init.values, n.chains = n.chains,  : 
+# Duplicated names in data list: logL dtype2p_min dtype2p_max
+
 # Save outputs
-saveRDS(results_Aglais_urticae_mixLL, "./outputs/mixLL-outputs/results_Aglais_urticae_prior-3_mixLL.rds")
+saveRDS(results_Aglais_urticae_catLL_NEWprior, "./outputs/results_Aglais_urticae_prior-3_catLL2_7000iter.rds")
 
 
