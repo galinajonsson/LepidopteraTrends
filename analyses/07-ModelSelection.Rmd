@@ -83,7 +83,7 @@ The three species with the largest mean annual detection probability standard de
 
 
 ```{r load-model-outputs, message=FALSE, warning=FALSE}
-#require(dplyr)
+require(dplyr)
 #require(devtools)
 #devtools::install_github("rstudio/rmarkdown")
 require(rmarkdown)
@@ -1078,7 +1078,7 @@ dict <- new_lama_dictionary(common_names =
 ### Source plotting function
 source("./fig-plot.Occdet_G.R")
 
-plot.occDet_G(mixLL_list[[1]], mixLL2_list[[1]], catLL_list[[1]]) +
+plot.occDet_G(catLL_list[[1]], mixLL_list[[1]], mixLL2_list[[1]]) +
   ggtitle(label = "Aglais urticae", 
           subtitle = paste(lama_translate_("Aglais urticae", dict, "common_names"))) + 
   theme(plot.title=element_text(face="italic")) +
@@ -1156,7 +1156,55 @@ BNM and UKBMS detection probability trends are similar for all three models afte
 
 
 
-### Visits with records
+### PPCs: Visits with records
+
+```{r plot-siteprop-A-urticae, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE, fig.width=7, fig.height=4}
+sppMeanSitesYear$Species <- as.factor(sppMeanSitesYear$Species)
+test <- subset(sppMeanSitesYear, Species == "*Aglais urticae*")
+test[349:464, "Model"] <- "Simulated Data"
+test[349:464, "sim_MeanSitesPerYear"] <- test[1:116,"obs_meanSitesPerYear"]
+test[349:464, "Year"] <- 1900:2015
+test$Model <- as.factor(test$Model)
+
+library(plyr)
+test$Model <- revalue(test$Model, c("catLL"="Model A", "mixLL"="Model B", "mixLL2"="Model C"))
+
+
+
+ggplot(data = test, aes(x = Year, y = sim_MeanSitesPerYear)) + # Specify data, x and y 
+  # Add 95% CIs
+  geom_ribbon(aes(fill = Model, # Fill by 'Model'
+                  ymin = sim_lower, ymax = sim_upper), # Specify max and min values
+                  alpha = 0.3) + # transparency
+  scale_fill_manual(values =c("#440154FF", "#20A387FF", # Specify colours
+                              "#E69F00", NA)) + # None for last level
+  # Add averaged lines
+  geom_line(aes(colour = Model), size=0.7) +  # Colour by 'Model'
+  scale_colour_manual(values =c("#440154FF", "#20A387FF",  # Specify colours
+                                "#E69F00", "black")) +
+  # Add shape lines
+  geom_point(aes(shape = Model), colour = "black", size = 2) +
+  scale_shape_manual(values = c(NA, NA, NA, 15)) + # Only for last level
+  # Vertical line at year 1976
+  geom_vline(xintercept = 1976, linetype = "dashed") +
+  theme_bw() +
+    # Tidy legend
+  theme(legend.position="bottom", 
+        legend.box = "horizontal", 
+        legend.title = element_blank()) +
+  # Tidy window (no empty space)
+  scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+  scale_x_continuous(breaks=seq(1900, 2020, 20), 
+                     limits = c(1900, 2022), 
+                     expand = c(0, 0)) +
+  # Tidy plot appearance
+  ylab("Proportion of visits") +
+  xlab("Year") +
+  ggtitle("Posterior Predictive Checks", subtitle="Small tortoiseshell") + 
+  theme(panel.grid = element_blank(),
+        text=element_text(size=30), 
+        axis.text.x = element_text(angle = 45, hjust = 1))
+```
 
 ```{r plot-siteprop-A-urticae, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE, fig.width=7, fig.height=4}
 sppMeanSitesYear$Species <- as.factor(sppMeanSitesYear$Species)
@@ -1166,34 +1214,44 @@ test$Model <- as.factor(test$Model)
 
 
 require("ggtext")
-ggplot(data = test,) +
-  geom_ribbon(aes_string(fill = "Model", 
+ggplot(data = test) +
+  geom_ribbon(aes( fill = "Model",
                     x = "Year", 
                     y = "sim_MeanSitesPerYear", 
                              ymin = "sim_lower", ymax = "sim_upper"),
                   alpha = 0.3) +
   scale_fill_manual(values =c("#440154FF",
                                     "#20A387FF",
-                                    "#E69F00")) + 
+                                    "#E69F00"), 
+                          labels = c("A",
+                                     "B", 
+                                     "C")) + 
   geom_line(aes(x = Year, y = sim_MeanSitesPerYear, colour = Model), size=0.7) + 
           scale_colour_manual(values =c("#440154FF",
                                     "#20A387FF",
-                                    "#E69F00")) +
+                                    "#E69F00"), 
+                          labels = c("A",
+                                     "B", 
+                                     "C")) +
   geom_line(aes(x=Year, y=obs_meanSitesPerYear), linetype = "dotted", colour=c("black"), size = 1.5) +
   geom_line(aes(x=Year, y=obs_meanSitesPerYear), colour=c("black"), size = 0.4) +
+          #scale_colour_manual(name = 'Simulated Data', 
+          #                    values =c("black"), 
+          #                labels = c("")) +
   geom_vline(xintercept = 1976, linetype = "dashed") +   # Vertical line = 1976
+  ggtitle("Aglais urticae") + 
+  #theme(plot.title=element_text(face="italic")) +
   ylab("Proportion of visited sites with records") +
   xlab("Year") +
+  theme_bw() +
+  #guides(Model = guide_legend(order = 1),
+  #       obs_meanSitesPerYear = guide_legend(order = 2)) +
   scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
   scale_x_continuous(breaks=seq(1900, 2020, 20), 
                      limits = c(1900, 2025), 
                      expand = c(0, 0)) +
-      #theme(legend.position="bottom") +
-  xlab("Year") + 
-  ylab("Proportion of visited sites with records") + 
-  ggtitle("Aglais urticae") + 
-  theme(plot.title=element_text(face="italic")) +
-  theme_bw()
+      #theme(legend.position="bottom", legend.box = "horizontal") + 
+  labs(subtitle="Legend at Bottom") 
 ```
 
 
@@ -1270,8 +1328,6 @@ spp_vis_A_urticae$species <- c("italic('A. urticae')")
 
 
 ```
-
-
 
 
 
