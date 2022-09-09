@@ -2507,11 +2507,14 @@ occDetdata_merged_7April2020$L[occDetdata_merged_7April2020$L <= 200] <- 1
 occDetdata_merged_7April2020$L[occDetdata_merged_7April2020$L == 22222] <- 2
 occDetdata_merged_7April2020$L[occDetdata_merged_7April2020$L == 33333] <- 3
 
-count(occDetdata_merged_7April2020$L)
+count(occDetdata_merged_7April2020, L)
 #      freq
 # 1 1135652
 # 2  205976
 # 3   24583
+
+
+occDetdata_merged_7April2020$TP <- findInterval(occDetdata_merged_7April2020$TP, seq(1,116, 5))
 
 
 #occDetdata <- subset(occDetdata_merged_7April2020, TP <77 & TP >60)
@@ -2520,14 +2523,18 @@ count(occDetdata_merged_7April2020$L)
 # 1 5479
 # 3 2824
 
-results_Aglais_urticae_catLL_NEWprior <- sparta::occDetFunc(taxa_name = "Aglais.urticae",
-                                                   n_iterations = 7000,
-                                                   burnin = 3500,
-                                                   thinning = 3, 
-                                                   occDetdata = occDetdata_merged_7April2020, 
-                                                   spp_vis = spp_vis_merged_7April2020, 
-                                                   modeltype = c('ranwalk', 'halfcauchy', 'catlistlength'),  
-                                                   write_results = FALSE)
+results_Aglais_urticae_catLL_5yrTP <- sparta::occDetFunc(taxa_name = "Aglais.urticae",
+                                                         n_iterations = 15000,
+                                                         burnin = 7500,
+                                                         thinning = 3, 
+                                                         occDetdata = occDetdata_merged_7April2020, 
+                                                         spp_vis = spp_vis_merged_7April2020, 
+                                                         modeltype = c('ranwalk', 'halfcauchy', 'catlistlength'),  
+                                                         write_results = FALSE)
+
+# Save outputs
+saveRDS(results_Aglais_urticae_catLL_5yrTP, "./outputs/results_Aglais_urticae_catLL_5yrTP_3prior.rds")
+
 
 # In sparta::occDetFunc(taxa_name = "Aglais.urticae", n_iterations = 15000,  :
 # JAGS returned an error when modellingAglais.urticaeerror:
@@ -2535,6 +2542,101 @@ results_Aglais_urticae_catLL_NEWprior <- sparta::occDetFunc(taxa_name = "Aglais.
 # Duplicated names in data list: logL dtype2p_min dtype2p_max
 
 # Save outputs
-saveRDS(results_Aglais_urticae_catLL_NEWprior, "./outputs/results_Aglais_urticae_prior-3_catLL2_7000iter.rds")
+#saveRDS(results_Aglais_urticae_catLL_NEWprior, "./outputs/results_Aglais_urticae_prior-3_catLL2_7000iter.rds")
+
+
+
+
+
+
+###### 10 yrs
+
+spp_vis_merged_7April2020 <- read.csv("./data/formattedData/spp_vis_merged_2020-04-07.csv", header=T, na.strings=c("","NA"))
+occDetdata_merged_7April2020 <- read.csv("./data/formattedData/occDetdata_merged_2020-04-07.csv", header=T, na.strings=c("","NA")) 
+occDetdata_merged_7April2020$L[occDetdata_merged_7April2020$L <= 200] <- 1
+occDetdata_merged_7April2020$L[occDetdata_merged_7April2020$L == 22222] <- 2
+occDetdata_merged_7April2020$L[occDetdata_merged_7April2020$L == 33333] <- 3
+
+
+occDetdata_merged_7April2020$TP <- findInterval(occDetdata_merged_7April2020$TP, seq(1,116, 10))
+
+
+#occDetdata <- subset(occDetdata_merged_7April2020, TP <77 & TP >60)
+#count(occDetdata$L)
+#   freq
+# 1 5479
+# 3 2824
+
+results_Aglais_urticae_catLL_10yrTP <- sparta::occDetFunc(taxa_name = "Aglais.urticae",
+                                                         n_iterations = 15000,
+                                                         burnin = 7500,
+                                                         thinning = 3, 
+                                                         occDetdata = occDetdata_merged_7April2020, 
+                                                         spp_vis = spp_vis_merged_7April2020, 
+                                                         modeltype = c('ranwalk', 'halfcauchy', 'catlistlength'),  
+                                                         write_results = FALSE)
+
+# Save outputs
+saveRDS(results_Aglais_urticae_catLL_10yrTP, "./outputs/results_Aglais_urticae_catLL_10yrTP_3prior.rds")
+
+
+
+
+
+###### 15 yrs
+
+spp_vis_merged_7April2020 <- read.csv("./data/formattedData/spp_vis_merged_2020-04-07.csv", header=T, na.strings=c("","NA"))
+occDetdata_merged_7April2020 <- read.csv("./data/formattedData/occDetdata_merged_2020-04-07.csv", header=T, na.strings=c("","NA")) 
+occDetdata_merged_7April2020$L[occDetdata_merged_7April2020$L <= 200] <- 1
+occDetdata_merged_7April2020$L[occDetdata_merged_7April2020$L == 22222] <- 2
+occDetdata_merged_7April2020$L[occDetdata_merged_7April2020$L == 33333] <- 3
+
+
+occDetdata_merged_7April2020$TP <- findInterval(occDetdata_merged_7April2020$TP, seq(1,116, 15))
+
+
+
+results_Aglais_urticae_catLL_15yrTP <- sparta::occDetFunc(taxa_name = "Aglais.urticae",
+                                                          n_iterations = 15000,
+                                                          burnin = 7500,
+                                                          thinning = 3, 
+                                                          occDetdata = occDetdata_merged_7April2020, 
+                                                          spp_vis = spp_vis_merged_7April2020, 
+                                                          modeltype = c('ranwalk', 'halfcauchy', 'catlistlength'),  
+                                                          write_results = FALSE)
+
+# Save outputs
+saveRDS(results_Aglais_urticae_catLL_15yrTP, "./outputs/results_Aglais_urticae_catLL_15yrTP_3prior.rds")
+
+
+
+
+
+
+
+##########################################################################################
+###################################### 23 Nov 2021 ########################################
+##########################################################################################
+
+
+spp_vis_merged_7April2020 <- read.csv("./data/formattedData/spp_vis_merged_2020-04-07.csv", header=T, na.strings=c("","NA"))
+occDetdata_merged_7April2020 <- read.csv("./data/formattedData/occDetdata_merged_2020-04-07.csv", header=T, na.strings=c("","NA")) 
+
+library(sparta)
+
+
+results_Aglais_urticae_mixLL_3prior <- sparta::occDetFunc(taxa_name = "Aglais.urticae",
+                                                         n_iterations = 10000,
+                                                         burnin = 5000,
+                                                         thinning = 3, 
+                                                         occDetdata = occDetdata_merged_7April2020, 
+                                                         spp_vis = spp_vis_merged_7April2020, 
+                                                         modeltype = c('ranwalk', 'halfcauchy', 'mixlistlength'),  
+                                                         write_results = FALSE)
+
+# Save outputs
+saveRDS(results_Aglais_urticae_mixLL_3prior, "./outputs/results_Aglais_urticae_mixLL_3prior_10k.rds")
+
+
 
 
