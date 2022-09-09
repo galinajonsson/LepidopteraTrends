@@ -86,10 +86,6 @@ plot.occDet_G <- function(x, y = NULL, z = NULL, main = x$SPP_NAME, reg_agg = ''
     ### lines with ribbons based on 95% CIs
     
     ggplot(new_data, aes_string(x = "year", y = "mean")) + 
-      geom_ribbon(data = new_data3,
-                  aes_string(group = 1, 
-                             ymin = "quant_025", ymax = "quant_975"),
-                  alpha = 0.3, fill = "#E69F00") +
       geom_ribbon(data = new_data2,
                   aes_string(group = 1, 
                              ymin = "quant_025", ymax = "quant_975"),
@@ -98,8 +94,12 @@ plot.occDet_G <- function(x, y = NULL, z = NULL, main = x$SPP_NAME, reg_agg = ''
                   aes_string(group = 1, 
                              ymin = "quant_025", ymax = "quant_975"),
                   alpha = 0.3, fill= "#440154FF") +
+      geom_ribbon(data = new_data3,
+                  aes_string(group = 1, 
+                             ymin = "quant_025", ymax = "quant_975"),
+                  alpha = 0.3, fill = "#E69F00") +
       geom_line(data = new_data, size = 1, 
-                aes(col = c("#000000")), #colour = c("#440154FF"), 
+                aes(col = c("#440154FF")), #colour = c("#440154FF"), 
                 linetype = 2) +
       geom_line(data = new_data2, size = 1, 
                 aes(col = c("#0072B2")), #colour = c("#E69F00"), 
@@ -117,8 +117,8 @@ plot.occDet_G <- function(x, y = NULL, z = NULL, main = x$SPP_NAME, reg_agg = ''
                           values =c("#440154FF" = "#440154FF",
                                     "#0072B2" = "#0072B2",
                                     "#E69F00" = "#E69F00"), 
-                          labels = c("A",
-                                     "B", 
+                          labels = c("B",
+                                     "A", 
                                      "C")) +
       theme(panel.grid.major = element_blank(), 
             panel.grid.minor = element_blank(),
