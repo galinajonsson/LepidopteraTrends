@@ -407,6 +407,67 @@ mapply(data = list(spp_vis1,
 
 
 ### DIC
+
+#### 
+Plot 
+Use model C output as default & plot \Delta$ DIC for C:A & C:B. 
+```{r DIC-delta, cache=TRUE, message=FALSE, echo=FALSE}
+deltaDIC_out <- data.frame(Species = as.character(),
+                           Model_A = as.numeric(),
+                           Model_B = as.numeric(),
+                           Model_C = as.numeric(),
+                           Delta_AC = as.numeric(),
+                           Delta_BC = as.numeric())
+
+# loop through BUGSoutput for each species pair in turn
+for (i in 1:length(catLL_list)){ 
+  deltaDIC_out[i, "Species"] <- paste(paste("*", ModelNames[i], sep = ""), "*", sep = "")     # Populate species_name column from spp_names list and surround by asterisks
+  deltaDIC_out[i, "Model_A"] <-  catLL_list[[i]]$BUGSoutput$DIC     # Enter Model A's DIC value
+  deltaDIC_out[i, "Model_B"] <-  mixLL_list[[i]]$BUGSoutput$DIC     # Enter Model B's DIC value
+  deltaDIC_out[i, "Model_C"] <-  mixLL2_list[[i]]$BUGSoutput$DIC     # Enter Model C's DIC value
+  deltaDIC_out[i, "Delta_AC"] <- mixLL2_list[[i]]$BUGSoutput$DIC - catLL_list[[i]]$BUGSoutput$DIC
+  deltaDIC_out[i, "Delta_BC"] <- mixLL2_list[[i]]$BUGSoutput$DIC - mixLL_list[[i]]$BUGSoutput$DIC
+}
+
+deltaDIC_out2 <- data.frame(Species = as.character(),
+                           Model = as.character(),
+                           Delta = as.numeric())
+
+deltaDIC_out2[1:24, "Species"] <- deltaDIC_out$Species
+deltaDIC_out2[1:12, "Model"] <- "C - A"
+deltaDIC_out2[1:12, "Delta"] <- deltaDIC_out$Delta_AC
+deltaDIC_out2[13:24, "Model"] <- "C - B"
+deltaDIC_out2[13:24, "Delta"] <- deltaDIC_out$Delta_BC
+
+
+
+deltaDIC_out2[12, "Delta"] <- -87.86348
+
+library(ggplot2)
+
+
+# Grouped
+ggplot(deltaDIC_out2, aes(fill=Model, y=Delta, x=Species)) + 
+  geom_bar(position="dodge", stat="identity") + ylab("Delta DIC") +
+    geom_hline(yintercept = 0) +
+ # scale_y_continuous(trans='log10') +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.line = element_line(colour = "black")) +
+  coord_flip()
+
+
+
+scale_x_continuous(trans=‘log2’)
+
+
+knitr::kable(deltaDIC_out)
+```
+A more informative way to 
+
+
+
 ```{r DIC, cache=TRUE, message=FALSE, echo=FALSE}
 # Create empty data frame to populate
 summary_out <- data.frame(Species = as.character(),
