@@ -94,12 +94,14 @@ plot.occDet_G <- function(x, y = NULL, z = NULL, main = x$SPP_NAME, reg_agg = ''
                   aes_string(group = 1, 
                              ymin = "quant_025", ymax = "quant_975"),
                   alpha = 0.3, fill= "#440154FF") +
+# alpha = 0.3, fill= "black") +
       geom_ribbon(data = new_data3,
                   aes_string(group = 1, 
                              ymin = "quant_025", ymax = "quant_975"),
                   alpha = 0.3, fill = "#E69F00") +
       geom_line(data = new_data, size = 1, 
                 aes(col = c("#440154FF")), #colour = c("#440154FF"), 
+#aes(col = c("black")),
                 linetype = 2) +
       geom_line(data = new_data2, size = 1, 
                 aes(col = c("#0072B2")), #colour = c("#E69F00"), 
