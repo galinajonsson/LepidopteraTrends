@@ -104,6 +104,11 @@ DToverlap <- function(taxon_name = taxon_name,
     
     ### Ad site:time period combination column
     occDetdata$siteTP <- paste(TP, occDetdata$site, sep = "")
+    ## If TPinterval is specified
+    if(!is.null(TPinterval)){
+      ### Ad site:time period combination column with original time period
+      occDetdata$siteTP_orig <- paste(occDetdata$TPorig, occDetdata$site, sep = "_")
+    }
     
     
     ##############################################################
@@ -221,7 +226,19 @@ DToverlap <- function(taxon_name = taxon_name,
       out$overlap["1-3", "TPs"] <- length(unique((subset(occDetdata_spp, L<22222))$TP[(subset(occDetdata_spp, L<22222))$TP %in% (subset(occDetdata_spp, L==33333))$TP]))
       out$overlap["2-3", "TPs"] <- length(unique((subset(occDetdata_spp, L==22222))$TP[(subset(occDetdata_spp, L==22222))$TP %in% (subset(occDetdata_spp, L==33333))$TP]))
       
+      # Site IDs
+      out$OverlapSiteTP_IDs$OneTwo <- unique((subset(occDetdata_spp, L<22222))$siteTP[(subset(occDetdata_spp, L<22222))$siteTP %in% (subset(occDetdata_spp, L==22222))$siteTP])
+      out$OverlapSiteTP_IDs$OneThree <- unique((subset(occDetdata_spp, L<22222))$siteTP[(subset(occDetdata_spp, L<22222))$siteTP %in% (subset(occDetdata_spp, L==33333))$siteTP])
+      out$OverlapSiteTP_IDs$TwoThree <- unique((subset(occDetdata_spp, L==22222))$siteTP[(subset(occDetdata_spp, L==22222))$siteTP %in% (subset(occDetdata_spp, L==33333))$siteTP])
       
+      ### If TPinterval is specified
+      #if(!is.null(TPinterval)){
+      #  # Find site time period combinations with original time period
+      #  out$OverlapSiteTP_IDs_Original$OneTwo <- unique((subset(occDetdata_spp, L<22222))$siteTP_orig[(subset(occDetdata_spp, L<22222))$siteTP_orig %in% (subset(occDetdata_spp, L==22222))$siteTP_orig])
+      #  out$OverlapSiteTP_IDs_Original$OneThree <- unique((subset(occDetdata_spp, L<22222))$siteTP_orig[(subset(occDetdata_spp, L<22222))$siteTP_orig %in% (subset(occDetdata_spp, L==33333))$siteTP_orig])
+      #  out$OverlapSiteTP_IDs_Original$TwoThree <- unique((subset(occDetdata_spp, L==22222))$siteTP_orig[(subset(occDetdata_spp, L==22222))$siteTP_orig %in% (subset(occDetdata_spp, L==33333))$siteTP_orig])
+      #}
+        
       
       
       
@@ -265,6 +282,14 @@ DToverlap <- function(taxon_name = taxon_name,
       out$overlap["1-3", "TPs"] <- length(unique((subset(occDetdata_spp, L == 1))$TP[(subset(occDetdata_spp, L == 1))$TP %in% (subset(occDetdata_spp, L > 3))$TP]))
       out$overlap["2-3", "TPs"] <- length(unique((subset(occDetdata_spp, L > 1 & L < 4))$TP[(subset(occDetdata_spp, L > 1 & L < 4))$TP %in% (subset(occDetdata_spp, L > 3))$TP]))
       
+      
+      ### If TPinterval is specified
+      #if(!is.null(TPinterval)){
+        # Find site time period combinations with original time period
+      #  out$OverlapSiteTP_IDs_Original$OneTwo <- unique((subset(occDetdata_spp, L == 1))$siteTP_orig[(subset(occDetdata_spp, L == 1))$siteTP_orig %in% (subset(occDetdata_spp, L > 1 & L < 4))$siteTP_orig])
+      #  out$OverlapSiteTP_IDs_Original$OneThree <- unique((subset(occDetdata_spp, L == 1))$siteTP_orig[(subset(occDetdata_spp, L == 1))$siteTP_orig %in% (subset(occDetdata_spp,  L > 3))$siteTP_orig])
+      #  out$OverlapSiteTP_IDs_Original$TwoThree <- unique((subset(occDetdata_spp, L > 1 & L < 4))$TP[(subset(occDetdata_spp, L > 1 & L < 4))$TP %in% (subset(occDetdata_spp, L > 3))$TP])
+      #}
     }
     # Return function output
     return(out)
@@ -274,6 +299,7 @@ DToverlap <- function(taxon_name = taxon_name,
     ### If TPinterval is NOT specified
     if(is.null(TPinterval)){
       outFinal <- extractData(occDetdata)
+      TP <- occDetdata$TP
     }
     
     
