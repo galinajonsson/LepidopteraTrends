@@ -20,15 +20,18 @@
 *NMRS_species(2).txt
 
 
+# Recources folder (cnatins others' code; e.g., Warton)
+Recources/*
+
 
 # Ignore text files
 *.docx
 *.rtf
 
 
-# Ignore .DS_Store files
+# Ignore .DS_Store files & *.Rproj
 *.DS_Store
-
+*.Rproj
 
 
 # Ignore html files
