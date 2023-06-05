@@ -301,6 +301,14 @@ colnames(spp_vis)[colnames(spp_vis)=="L"] <- "Source"
 # Correct time period so it starts at 1900
 spp_vis$year <- spp_vis$TP+1899
 
+### Find visits per data type
+#test <- spp_vis %>% group_by(Source) %>% tally()
+#test
+
+### Find records per data type
+#spp_vis$count.TRUE <- apply(spp_vis, 1, function(x) length(which(x=="TRUE")))
+#
+
 
 
 ########################################################################
@@ -797,6 +805,9 @@ modelVarSites_Summ <- modelVarSites %>%
 
 #### Observed vs Predicted data
 ```{r plot-obsVsPred, echo=FALSE, message=FALSE, warning=FALSE, cache=TRUE}
+require(ggtext)
+require(cowplot)
+
 modelMeanBp_Summ <- modelMeanSites %>% 
   dplyr:::group_by(Model) %>%
   dplyr:::summarise(Bp = mean(obs_meanSitesPerYear > sim_meanSitesPerYear),
@@ -809,27 +820,43 @@ modelMeanBp_Summ <- modelMeanSites %>%
 
 plot_PredPostTest <- function(data, title=NULL){
   gp <- ggplot(data = data,) +
-    geom_point(aes(x=obs, y=sim_mean, col=Model), alpha=0.7) +
+    geom_point(aes(x=obs, y=sim_mean, shape=Species, col=Model), size=3.5, alpha=0.5) +
     geom_errorbar(aes(x=obs, ymin=sim_lower, ymax=sim_upper, col=Model), 
-               alpha=0.7) +
+               alpha=0.5, size = 0.8) +
+    scale_shape_manual(values = c(1,2,3,4,5,6,60,8,18,17,16,15)) +
+    scale_colour_manual(values =c("#440154FF", "#20A387FF", "#E69F00")) +
     geom_abline(aes(intercept=0, slope=1)) + 
     scale_x_log10() + scale_y_log10() + 
     xlab("Observed from data") + ylab("Model prediction") + 
-    ggtitle(title) + theme_bw()
+    ggtitle(title) + theme_bw() +
+    theme(panel.grid.minor = element_blank()) +
+    theme(text=element_text(size=13)) + 
+    theme(legend.text = element_markdown())
   print(gp)
 }
 
+
+########################################
+### Re-plot for thesis Figure 2.5A-B
+########################################
+
+plot_PredPostTest(sppMeanSites_Summ)
+#ggsave("../figs/Fig2-5A.png")
+plot_PredPostTest(sppVarSites_Summ)
+#ggsave("../figs/Fig2-5B.png")
+
+#ggsave("../figs/Fig2-5-legend.png", get_legend(plot_PredPostTest(sppVarSites_Summ)))
   
 
-mapply(data = list(sppMeanSites_Summ, 
-                  sppVarSites_Summ), # 
+#mapply(data = list(sppMeanSites_Summ, 
+#                  sppVarSites_Summ), # 
                   #modelMeanSites_Summ,
                   #modelVarSites_Summ), 
-        title = list("Mean (across years) proportion of sites with a record - 99%CIs", 
-                  "Variance (across years) in proportion of sites per year - 99%CIs"), #, 
+#        title = list("Mean (across years) proportion of sites with a record - 95%CIs", 
+#                  "Variance (across years) in proportion of sites per year - 95%CIs"), #, 
                   #"Mean proportion of sites per year (mean across species) - 99%CIs",
                   #"Variance across years in proportion of sites per year across species - 99%CIs"),   
-       FUN = plot_PredPostTest)
+#       FUN = plot_PredPostTest)
 ```
 
 
