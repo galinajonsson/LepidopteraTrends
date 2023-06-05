@@ -23,6 +23,9 @@
 # Recources folder (cnatins others' code; e.g., Warton)
 /Resources/
 
+# Ignore png figures
+*.png
+
 
 # Ignore text files
 *.docx
