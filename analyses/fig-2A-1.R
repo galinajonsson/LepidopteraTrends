@@ -15,21 +15,37 @@ BNM <- read.delim("./data/rawData/BRCdata/BNM_butterflies/bnm_data.txt", header 
 # Make dates date class
 BNM$START_DATE <- as.Date(BNM$START_DATE, "%d/%m/%Y")
 BNM$END_DATE <- as.Date(BNM$END_DATE, "%d/%m/%Y")
-
-########################################################
-
-# Get rid of records recorded over multiple days
-#BNM <- BNM[BNM$START_DATE==BNM$END_DATE,]
-# 10627792
-
-# Get rid of locality column as grid ref at 1 km precision is provided and, END_DATE (same as START_DATE), and DATE_TYPE (all the same)
-#drops <- c("TO_LOCALITY", "END_DATE", "DATE_TYPE")
-#BNM <- BNM[ , !(names(BNM) %in% drops)]
-
-# Rename START_DATE
 colnames(BNM)[colnames(BNM)=="START_DATE"] <- "date"
 
+# Read species data
+BNMspp <- read.delim("../data/rawData/BRCdata/BNM_butterflies/bnm_species.txt", header = TRUE, sep = "\t", dec = ".")
+
+# Get rid of unnecisary columns
+drops <- c("INFORMAL_GROUP", "ADDITIONAL_GROUP", "NAME_ENGLISH", "RANK")
+BNMspp <- BNMspp[ , !(names(BNMspp) %in% drops)]
+
+# Merge the species information
+BNM <- merge(BNM, BNMspp, all.x=TRUE)
+
+# Drop unused levels
+BNM <- droplevels(BNM)
+
+# Remove records of species not of interest
+BNM<-BNM[BNM$NAME!="Vanessa atalanta",]
+BNM<-BNM[BNM$NAME!="Vanessa cardui",]
+BNM<-BNM[BNM$NAME!="Colias croceus",]
+BNM<-BNM[BNM$NAME!="Danaus plexippus",]
+BNM<-BNM[BNM$NAME!="Issoria lathonia",]
+BNM<-BNM[BNM$NAME!="Lampides boeticus",]
+BNM<-BNM[BNM$NAME!="Leptidea juvernica",]
+BNM<-BNM[BNM$NAME!="Maculinea arion",]
+BNM<-BNM[BNM$NAME!="Nymphalis antiopa",]
+BNM<-BNM[BNM$NAME!="Nymphalis polychloros",]
+BNM<-BNM[BNM$NAME!="Nymphalis xanthomelas",]
+
 ########################################################
+
+
 
 
 p <- ggplot(BNM, aes(x=as.numeric(format(BNM$date, format="%Y")))) +
