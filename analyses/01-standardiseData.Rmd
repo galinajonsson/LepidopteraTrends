@@ -1,0 +1,384 @@
+---
+title: "01-standardiseData"
+author: "Galina M. Jönsson"
+date: "07/04/2020"
+output: html_document
+---
+
+
+Here, I clean and standardise the Butterfly conservation data.
+
+## BNM data
+```{r load-BNMdata}
+# Load the dplyr package
+require("dplyr")
+
+# Read BNM data
+BNM <- read.delim("../data/rawData/BRCdata/BNM_butterflies/bnm_data.txt", header = TRUE, sep = "\t", dec = ".")
+# 11588695 Observation
+
+# Make dates date class
+BNM$START_DATE <- as.Date(BNM$START_DATE, "%d/%m/%Y")
+BNM$END_DATE <- as.Date(BNM$END_DATE, "%d/%m/%Y")
+
+# Get rid of records recorded over multiple days
+BNM <- BNM[BNM$START_DATE==BNM$END_DATE,]
+# 10627792
+
+# Get rid of locality column as grid ref at 1 km precision is provided and, END_DATE (same as START_DATE), and DATE_TYPE (all the same)
+drops <- c("TO_LOCALITY", "END_DATE", "DATE_TYPE")
+BNM <- BNM[ , !(names(BNM) %in% drops)]
+
+# Rename START_DATE
+colnames(BNM)[colnames(BNM)=="START_DATE"] <- "date"
+
+# Get rid of records before 1900
+BNM <- BNM %>% filter(date >= "1900-01-01")
+# 10627547
+
+# Read species data
+BNMspp <- read.delim("../data/rawData/BRCdata/BNM_butterflies/bnm_species.txt", header = TRUE, sep = "\t", dec = ".")
+
+# Get rid of unnecisary columns
+drops <- c("INFORMAL_GROUP", "ADDITIONAL_GROUP", "NAME_ENGLISH", "RANK")
+BNMspp <- BNMspp[ , !(names(BNMspp) %in% drops)]
+
+# Merge the species information
+BNM <- merge(BNM, BNMspp, all.x=TRUE)
+
+# Drop unused levels
+BNM <- droplevels(BNM)
+
+# Take a look at species represented
+levels(as.factor(BNM$NAME))
+```
+
+
+```{r cleanBNMspp, echo=FALSE}
+# Remove records of species not of interest
+BNM<-BNM[BNM$NAME!="Vanessa atalanta",]
+BNM<-BNM[BNM$NAME!="Vanessa cardui",]
+BNM<-BNM[BNM$NAME!="Colias croceus",]
+BNM<-BNM[BNM$NAME!="Danaus plexippus",]
+BNM<-BNM[BNM$NAME!="Issoria lathonia",]
+BNM<-BNM[BNM$NAME!="Lampides boeticus",]
+BNM<-BNM[BNM$NAME!="Leptidea juvernica",]
+BNM<-BNM[BNM$NAME!="Maculinea arion",]
+BNM<-BNM[BNM$NAME!="Nymphalis antiopa",]
+BNM<-BNM[BNM$NAME!="Nymphalis polychloros",]
+BNM<-BNM[BNM$NAME!="Nymphalis xanthomelas",]
+
+# Change 1km grid ref resolution to 10km
+require("BRCmap")
+BNM$km10grid <- reformat_gr(BNM$GRIDREF_1KM, prec_out = 10000, pad_gr = FALSE)
+
+### I will get rid of all records that are not from Great Britain
+# Load csv file specifying which country each 10x10 grid cell is in
+country_ID <- read.csv('../data/auxiliaryData/SQ_10km_CN_ID.csv', header=TRUE)
+# As country names are coded from 1 to 7, rename with informative names
+cn_names <- data.frame(CN_ID = 1:7,
+                       CN_NAME = c('ENGLAND','WALES','SCOTLAND','CHANNEL ISLES',
+                                   'NORTHERN IRELAND','REPUBLIC OF IRELAND','ISLE OF MAN'))
+country_ID <- merge(x = country_ID, y = cn_names, all.x = TRUE, all.y = FALSE)
+# Rename 10x10 grid cell column
+colnames(country_ID)[2] <- "km10grid"
+# Merge country names with BNM data indicating which country each record is from
+BNM <- merge(BNM, country_ID[, c("km10grid", "CN_NAME")], by="km10grid", all.x=TRUE)
+# Drop records that are not from Great Britain
+BNM$CN_NAME <- as.factor(BNM$CN_NAME)
+BNM <- droplevels(subset(BNM, CN_NAME != "CHANNEL ISLES"))
+BNM <- droplevels(subset(BNM, CN_NAME != "ISLE OF MAN"))
+BNM <- droplevels(subset(BNM, CN_NAME != "NORTHERN IRELAND"))
+BNM <- droplevels(subset(BNM, CN_NAME != "REPUBLIC OF IRELAND"))
+
+# Drop species concept CN_NAME and GRIDREF_1KM
+drops <- c("CONCEPT", "GRIDREF_1KM", "CN_NAME")
+BNM <- BNM[ , !(names(BNM) %in% drops)]
+# 9613772 records left
+
+##########################
+# Remove duplicate records
+#BNM <- unique(BNM)
+
+#test <- subset(BNM, date < 1980-01-01)
+##########################
+
+# Remove records from UKBMS, including WCBS (dunno why they are in this data set??)
+#BNM<-BNM[BNM$ATT_RECORDER!="BMS Site 101",]
+#BNM<-BNM[BNM$ATT_RECORDER!="BMS Site 116",]
+#BNM<-BNM[BNM$ATT_RECORDER!="BMS Site 153",]
+#BNM<-BNM[BNM$ATT_RECORDER!="BMS Site 160",]
+#BNM<-BNM[BNM$ATT_RECORDER!="BMS Site 175",]
+#BNM<-BNM[BNM$ATT_RECORDER!="BMS Site 180",]
+#BNM<-BNM[BNM$ATT_RECORDER!="BMS Site 37",]
+#BNM<-BNM[BNM$ATT_RECORDER!="BMS Transect",]
+#BNM<-BNM[BNM$ATT_RECORDER!="UKBMS Data",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Ukbms Data;;",]
+#BNM<-BNM[BNM$ATT_RECORDER!="UKBMS Data;;",]
+#BNM<-BNM[BNM$ATT_RECORDER!="UKBMS export 09-Mar-2015",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Ukbms Export 09-Mar-2015;;",]
+#BNM<-BNM[BNM$ATT_RECORDER!="UKBMS;;",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Bacon;Mike;WCBS Data",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Bannister;Ann;WCBS BTO",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Boase;Clive;WCBS summary",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Brown;Wendy;WCBS",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Brown;Wendy;WCBS BTO",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Brown;Wendy;WCBS Data",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Bufferey;Brian;WCBS",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Buffery;Brian;WCBS BTO",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Buffery;Brian;WCBS Data",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Burchnall;Ann;WCBS summary",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Crawford;Mervyn;WCBS",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Crawford;Mervyn;WCBS allocation",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Crawford;Mervyn;WCBS Square",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Dare;Peter;WCBS allocation",]
+#BNM<-BNM[BNM$ATT_RECORDER!="De Tute;Simon;WCBS allocation",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Dean;Mike;WCBS allocation",]
+##BNM<-BNM[BNM$ATT_RECORDER!="Gadney;Alex;WCBS",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Glazebrook;John;WCBS",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Glazebrook;John;WCBS BTO",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Glazebrook;John;WCBS Data",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Goddard;Steve;WCBS",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Goddard;Steve;WCBS",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Green;Joan;WCBS",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Green;Joan;WCBS Square",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Hainsworth;Chris;WCBS",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Hainsworth;Chris;WCBS Data",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Hannay;Nigel;WCBS allocation",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Hannay;Nigel;WCBS summary",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Hardingham;Joan;WCBS",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Hardingham;Joan;WCBS",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Jenner;Graham;WCBS",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Jenner;Graham;WCBS Data",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Johnson;A & B;WCBS allocation",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Johnstone;Keith;WCBS BTO",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Maddison;Peter;WCBS",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Mahler;Neil;WCBS summary",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Marginson;S;WCBS Data",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Mason;Nick;WCBS",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Mason;Nick;WCBS allocation",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Moran;Nick;WCBS",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Moran;Nick;WCBS Data",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Perkins;Gill;WCBS",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Perkins;Gill;WCBS Data",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Perkins;Gill;WCBS summary",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Saunders;Helen ;WCBS Data",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Saunders;Helen;WCBS",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Sivyer;D;WCBS BTO",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Stone;Bill;WCBS",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Toms;Mike;WCBS allocation",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Vaughn;Katie;WCBS",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Vaughn;Katie;WCBS BTO",]
+#BNM<-BNM[BNM$ATT_RECORDER!="WCBS;;",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Whybrow;Bill;WCBS",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Whybrow;Bill;WCBS BTO",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Whybrow;Bill;WCBS Data",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Wolfe;Stella;WCBS allocation",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Butterfly Conservation walk 10/5/08",]
+#BNM<-BNM[BNM$ATT_RECORDER!="BUTTERFLYSURVEY94",]
+#BNM<-BNM[BNM$ATT_RECORDER!="BUTTERFLYSURVEY95",]
+#BNM<-BNM[BNM$ATT_RECORDER!="BUTTERFLYSURVEY96",]
+#BNM<-BNM[BNM$ATT_RECORDER!="BUTTERFLYSURVEY97",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Wider Countryside Butterfly Survey",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Wider Countryside;Butterfly Survey 3;",]
+BNM<-BNM[BNM$ATT_RECORDER!="Wider Countryside;Butterfly Survey;not all data may be correct",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Wider Countryside;Butterfly Survey2;",]
+#BNM<-BNM[BNM$ATT_RECORDER!="Wider Countryside;Butterfly;Data",]
+
+# Drop unused levels
+BNM <- droplevels(BNM)
+# 8194033
+
+# Add source column
+BNM$source <- as.factor("BNM")
+
+# Rename and reorder columns
+colnames(BNM)[colnames(BNM)=="ATT_RECORDER"] <- "recorder"
+colnames(BNM)[colnames(BNM)=="NAME"] <- "species"
+BNM <- BNM[,c(4, 2, 1, 5, 3)]
+
+# Save data, have to use fwrite as file is very large
+require(data.table)
+#fwrite(BNM, "./data/cleanData/bnm_clean_w_recorder.csv", row.names=FALSE)
+
+############ PLEASE NOTE: this data also contains data from the big butterfly count, which isn't strictly "opportunistic", as recorders can go anywhere and count butterflies for 15 minutes. These records can be distinguished by having "Big Butterfly" or "Big;Butterfly" as part of their recorddernames
+
+
+# To get a clean "what, when, where" dataset, I remove the recorder column
+BNM <- BNM[ , !(names(BNM) %in% c("recorder"))]
+
+# Drop unused levels
+BNM <- droplevels(BNM)
+# 8194033
+
+# Save this data, including abundance (duplicate records of same species in same site) using fwrite
+require(data.table)
+#fwrite(BNM, "./data/cleanData/bnm_abundance_clean.csv", row.names=FALSE)
+
+# Remove duplicate records
+BNM <- unique(BNM)
+# 5095362
+
+# Drop unused levels
+BNM <- droplevels(BNM)
+
+# Add visit column
+BNM$visit <- as.character(paste(as.character(BNM$km10grid),
+                   as.character(BNM$date)))
+
+# Save data, using fwrite
+require(data.table)
+#fwrite(BNM, "./data/cleanData/bnm_occurence_clean.csv", row.names=FALSE)
+```
+
+
+
+## UKBMS data
+```{r load-BMSdata}
+# Read BMS data
+BMS <- read.csv("../data/rawData/BRCdata/UKBMS/daily_count_data.csv", header = TRUE)
+# 1964590 records
+
+### Clean BMS data set
+# Rename column indicating species, not abundance
+colnames(BMS)[colnames(BMS)=="ABUNDANCE"] <- "SPECIES_CODE"
+
+# Remove all records with species code less than 120 (other species not of interest)
+BMS <- subset(BMS, SPECIES_CODE <= 121)
+# 1935896 records
+
+# Create a date column
+BMS$date <- paste(BMS$DAY, BMS$MONTH, sep="/") 
+BMS$date <- paste(BMS$date, BMS$YEAR, sep="/")
+# Make dates date class
+BMS$date <- as.Date(BMS$date, "%d/%m/%Y")
+
+# Remove separate date component columns
+drops <- c("DAY", "MONTH", "YEAR")
+BMS <- BMS[ , !(names(BMS) %in% drops)]
+
+## read and tidy BMSsite data
+BMSsite <- read.csv("../data/rawData/BRCdata/UKBMS/site_data.csv", header = TRUE)
+# Get rid of unnecisary columns
+drops <- c("SITENAME", "EAST", "NORTH", "X", "X.1")
+BMSsite <- BMSsite[ , !(names(BMSsite) %in% drops)]
+# Rename scheme column
+colnames(BMSsite)[colnames(BMSsite)=="SCHEME"] <- "source"
+
+# Merge the BMS data with the site data
+BMS <- merge(BMS, BMSsite, all.x=TRUE)
+
+# A few records don't have site data, remove all incomplete records
+BMS <- BMS[complete.cases(BMS), ]
+# 1935725
+
+# Check that all records are specified to at least 10km grid ref precision
+require("BRCmap")
+max(det_gr_precision(BMS$GRIDREF))
+
+# Change grid ref ressolutions to 10km
+BMS$km10grid <- reformat_gr(BMS$GRIDREF, prec_out = 10000, pad_gr = FALSE)
+
+### I will get rid of all records that are not from Great Britain
+# Load csv file specifying which country each 10x10 grid cell is in
+country_ID <- read.csv('../data/auxiliaryData/SQ_10km_CN_ID.csv', header=TRUE)
+# As country names are coded from 1 to 7, rename with informative names
+cn_names <- data.frame(CN_ID = 1:7,
+                       CN_NAME = c('ENGLAND','WALES','SCOTLAND','CHANNEL ISLES',
+                                   'NORTHERN IRELAND','REPUBLIC OF IRELAND','ISLE OF MAN'))
+country_ID <- merge(x = country_ID, y = cn_names, all.x = TRUE, all.y = FALSE)
+# Rename 10x10 grid cell column
+colnames(country_ID)[2] <- "km10grid"
+# Merge country names with BMS data indicating which country each record is from
+BMS <- merge(BMS, country_ID[, c("km10grid", "CN_NAME")], by="km10grid", all.x=TRUE)
+# Drop records that are not from Great Britain
+BMS$CN_NAME <- as.factor(BMS$CN_NAME)
+BMS <- droplevels(subset(BMS, CN_NAME != "CHANNEL ISLES"))
+BMS <- droplevels(subset(BMS, CN_NAME != "ISLE OF MAN"))
+BMS <- droplevels(subset(BMS, CN_NAME != "NORTHERN IRELAND"))
+BMS <- droplevels(subset(BMS, CN_NAME != "REPUBLIC OF IRELAND"))
+# 1917838 records left
+
+# Get rid of unnecisary columns
+drops <- c("SITENO", "GRIDREF", "CN_NAME")
+BMS <- BMS[ , !(names(BMS) %in% drops)]
+
+## read and tidy BMS species data
+BMSspp <- read.csv("../data/rawData/BRCdata/UKBMS/species_data.csv", header = TRUE)
+
+# Get rid of common name column
+BMSspp <- BMSspp[ , !(names(BMSspp) %in% c("COMMON_NAME"))]
+
+# Remove species not of interest
+BMSspp<-BMSspp[BMSspp$SCI_NAME!="Vanessa atalanta",]
+BMSspp<-BMSspp[BMSspp$SCI_NAME!="Vanessa cardui",]
+BMSspp<-BMSspp[BMSspp$SCI_NAME!="Colias croceus",]
+BMSspp<-BMSspp[BMSspp$SCI_NAME!="Danaus plexippus",]
+BMSspp<-BMSspp[BMSspp$SCI_NAME!="Lampides boeticus",]
+BMSspp<-BMSspp[BMSspp$SCI_NAME!="Leptidea juvernica",]
+BMSspp<-BMSspp[BMSspp$SCI_NAME!="Maculinea arion",]
+BMSspp<-BMSspp[BMSspp$SCI_NAME!="Nymphalis antiopa",]
+BMSspp<-BMSspp[BMSspp$SCI_NAME!="Nymphalis polychloros",]
+BMSspp<-BMSspp[BMSspp$SCI_NAME!="Nymphalis xanthomelas",]
+BMSspp<-BMSspp[BMSspp$SCI_NAME!="Thymelicus lineola/sylvestris",]
+
+# Drop levels
+BMSspp <- droplevels(BMSspp)
+
+# Merge BMS with species data
+BMS <- merge(BMS, BMSspp, by="SPECIES_CODE", all.x=TRUE)
+
+# Remove all records without species name (any NAs)
+BMS <- BMS[complete.cases(BMS), ]
+# 819319 records
+
+# Drop unnessecary column (species code)
+BMS <- BMS[ , !(names(BMS) %in% c("SPECIES_CODE"))]
+
+# Rename and reorder columns
+colnames(BMS)[colnames(BMS)=="SCI_NAME"] <- "species"
+BMS <- BMS[,c(4, 2, 1, 3)]
+
+# Create a year column
+BMS$year <- as.integer(format(as.Date(BMS$date, format="%Y-%m-%d"),"%Y"))
+
+# remove BMS reords prior to 2016
+BMS <- BMS[(BMS$year<=2015),]
+
+# create a visits column
+BMS$visit <- as.character(paste(as.character(BMS$km10grid),
+                   as.character(BMS$date)))
+
+# Save data using fwrite
+require(data.table)
+#fwrite(BMS, "./data/cleanData/bms_clean.csv", row.names=FALSE)
+```
+
+
+
+## UKBMS data
+```{r load-BMSdata}
+# Copy each occDetdata dataframe
+BNM_temp <- BNM
+BMS_temp <- BMS
+
+# Find visitLL values present in BMS that are also present in BNM
+commonVisits <- merge(BMS_temp, BNM_temp, by.x = "visit", by.y = "visit") # 8523
+
+length(unique(BMS$visit)) #240060
+
+length(unique(commonVisits$visit)) # 205976
+
+BMS_clean <- BNM[(BNM$visit %in% commonVisits$visit),]
+
+length(unique(BMS_clean$visit)) #205976 ## 1333791
+
+length(unique(BNM$visit)) # 1341628
+BNM_clean <- BNM[(!BNM$visit %in% commonVisits$visit),]
+length(unique(BNM_clean$visit)) # 1135652 ## 4219404
+
+# Save data using fwrite
+require(data.table)
+#fwrite(BMS_clean, "../data/cleanData/bms_clean7April.csv", row.names=FALSE)
+#fwrite(BNM_clean, "../data/cleanData/bnm_clean7April.csv", row.names=FALSE)
+```
