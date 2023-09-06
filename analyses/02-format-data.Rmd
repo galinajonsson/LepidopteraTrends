@@ -71,7 +71,7 @@ as.character(paste(as.character(NHM$km10grid),
 #######################################
 ############### Bolton ################
 #######################################
-bolton <- read.csv("../data/cleanData/Bolton_butterflies_cleaned_final.csv", header = TRUE, na.strings=c("", " ", "NA"))
+bolton <- read.csv("../data/cleanData/Bolton_butterflies_cleaned_final.csv", header = TRUE, na.strings=c("", " ", "NA")) # 14
 
 # Remove undefined months and year
 bolton <- bolton[!is.na(bolton$year),]
@@ -95,7 +95,7 @@ bolton$source <- c("bolton")
 ################ MMUE #################
 #######################################
 MMUE <- read.csv("../data/cleanData/MMUELeps_cleaned_full_post1900.csv", header = TRUE, na.strings=c("", " ", "NA"))
-
+# 2151
 # Remove undefined months and year
 MMUE <- MMUE[!is.na(MMUE$year),]
 MMUE <- MMUE[!is.na(MMUE$month),]
@@ -128,7 +128,7 @@ MMUE$source <- c("MMUE")
 ############ NMS Edinburgh ############
 #######################################
 NMS <- read.csv("../data/cleanData/NMS_Edinburgh_cleaned_full.csv", header = TRUE, na.strings=c("", " ", "NA"))
-
+# 706
 # Remove undefined days
 NMS <- NMS[!is.na(NMS$Collection.Year),]
 NMS <- NMS[!is.na(NMS$Collection.Month),]
