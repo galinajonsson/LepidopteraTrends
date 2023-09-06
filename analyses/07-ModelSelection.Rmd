@@ -91,17 +91,17 @@ require(rmarkdown)
 
 # Create a vector with species names to name model outputs
 ModelNames <- c('Aglais_urticae',
-               'Carterocephalus_palaemon',
-               'Erebia_aethiops',
-               'Erebia_epiphron',
-               'Limenitis_camilla',
-               'Lycaena_phlaeas',
-               'Melitaea_athalia',
-               'Pararge_aegeria',
-               'Pieris_rapae',
-               'Polygonia_c.album',
-               'Polyommatus_bellargus',
-               'Thecla_betulae')
+                'Carterocephalus_palaemon',
+                'Erebia_aethiops',
+                'Erebia_epiphron',
+                'Limenitis_camilla',
+                'Lycaena_phlaeas',
+                'Melitaea_athalia',
+                'Pararge_aegeria',
+                'Pieris_rapae',
+                'Polygonia_c.album',
+                'Polyommatus_bellargus',
+                'Thecla_betulae')
 
 
 
