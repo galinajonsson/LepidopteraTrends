@@ -1,0 +1,136 @@
+---
+title: "Posterior Predictive Checks"
+author: "Nick Isaac"
+date: "09/10/2019"
+output: html_document
+---
+
+We want to
+1) look at some of Charlie's models
+2) perform a posterior predictive check
+
+In this fine I loop through all the model outputs on CIRRUS (~2000).
+I resample pY from the posterior distribution and save a summary of the output for each species.
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+charliedir <- "W:/PYWELL_SHARED/Pywell Projects/BRC/Charlie/1.c. New Model Rerun/4. Outputs"
+```
+
+```{r loadPackages}
+library(R2jags)
+library(reshape2)
+library(sparta)
+library(LearnBayes)
+library(lattice)
+library(dplyr)
+#library(jagsUI)
+#library(ggplot2)
+iter_update <- 100
+```
+
+
+
+```{r}
+require("rjags")
+require("coda")
+require("reshape2")
+require("dplyr")
+require("sparta")
+require("lattice")
+require("LearnBayes")
+require("R2jags")
+
+
+
+SpeciesNames <- c('Aglais_urticae',
+               'Carterocephalus_palaemon',
+               'Erebia_aethiops',
+               'Erebia_epiphron',
+               'Limenitis_camilla',
+               'Lycaena_phlaeas',
+               'Melitaea_athalia',
+               'Pararge_aegeria',
+               'Pieris_rapae',
+               'Polygonia_c.album',
+               'Polyommatus_bellargus',
+               'Thecla_betulae')
+
+
+ModelNames_catLL <- paste(SpeciesNames, "catLL", sep="_") # Add '_catLL' to model names
+
+input_dir_catLL <- "../outputs/catLL-outputs/"  # Define input directory
+
+output_dir <- "../outputs/posteriorPredictiveChecks-outputs/"
+  
+files_catLL <- list() # Create an empty list
+
+# List files to loop through
+files_catLL <- list.files(path = paste(input_dir_catLL), 
+                    ignore.case = TRUE, 
+                    pattern = '\\.rds$')
+
+outfilename_catLL_RR1 <- list() # Create an empty list
+outfilename_catLL_RR2 <- list() # Create an empty list
+
+# List output file names
+outfilename_catLL_RR1 <- list(file.path(output_dir, paste0(SpeciesNames, ".catLL_RR1.csv")))
+outfilename_catLL_RR2 <- list(file.path(output_dir, paste0(SpeciesNames, ".catLL_RR2.csv")))
+
+# Loop through, read the rds files, append to list and name elements
+for(i in 1:length(files_catLL)){
+  
+  # locate and load the species' model (rds file)
+  out <- readRDS(file.path(input_dir_catLL, files_catLL[i])) 
+  # name element
+  names(catLL_list)[[i]] <- paste(ModelNames_catLL[i])
+
+        
+        # recompile
+        out$model$recompile()
+        samp <- rjags:::coda.samples(model=out$model, 
+                                      parallel=TRUE, n.cores=3,
+                                     variable.names="Py", 
+                                     n.iter=100, thin=3)
+        
+        Y_rep <- lapply(samp, function(x) apply(x, 1:2, rbinom, n=1, size=1))
+        
+        Y_rep <- melt(Y_rep)
+        Y_rep$VisitID <- as.character(gsub(Y_rep$Var2, pa="Py\\[", repl=""))
+        Y_rep$VisitID <- as.numeric(gsub(Y_rep$VisitID, pa="\\]", repl=""))
+        Y_rep$iter <- with(Y_rep, Var1 + max(Var1)*(L1 - 1))
+        
+        # load the raw data
+        temp_data <- out$model$data()
+        temp_data <- as.data.frame(with(temp_data, cbind(Site, Year, y)))
+        temp_data$VisitID <- 1:nrow(temp_data)
+        
+        Y_rep <- merge(Y_rep[,-c(1,2,4)], temp_data)
+        
+        #with(Y_rep, table(y,value))
+        
+        # next calculate the reporting rate in differing ways
+        # first, for each site:year combination report the number of sites for which a positive record was made
+        RR1 <- Y_rep %>% group_by(Site, Year, iter) %>%
+          summarise(obs = max(y),
+                    sim = max(value)) %>%
+          ungroup()
+        # the data in RR1 refer to whether the species was recorded in each site in each year
+        
+        # save this file
+        write.csv(RR1, file=outfilename_catLL_RR1[[i]])
+        
+        # next, the mean of these across years 
+        RR2 <- RR1 %>% group_by(Year, iter) %>%
+          summarise(obs_meanSitesPerYear = mean(obs),
+                    sim_meanSitesPerYear = mean(sim)
+          ) %>%
+          ungroup()
+        # the data in RR2 refer to the proportion of Sites with positive records per Year
+        # save this file
+        write.csv(RR2, file=outfilename_catLL_RR2[[i]])
+        }
+
+```
+
