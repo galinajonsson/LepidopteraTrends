@@ -13,16 +13,7 @@ output:
    
    
    
-**To do list**   
-* Colour Wright residuals according to data type    
-* Plot all occupancy Wright residuals    
-
-   
-   
-   
-   
-   
-# Dunn-Smyth residuals
+# Dunn-Smyth residuals **IGNORE**
 
 Here, we plot Dunn-Smyth residuals ([Dunn & Smyth, 1997](https://www.tandfonline.com/doi/abs/10.1080/10618600.1996.10474708)) according to the methodology of [Warton *et al.* (2017)](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.12761). We only plot Dunn-Smyth (DS) residuals for one model (*A. urticae* model B) to demonstrate the plotting procedure, especially given that our data is formatted differently to that of Warton *et al.*, and we wish to plot residuals for multi-year occupancy models, whilst the authors used a single season example; hence, we had to make some alterations to the functions provided by the authors (namely residuals.occMod() and DS.resid.plot(); Supplementary Data 6 of Warton *et al.*, 2017). Dunn-Smyth residuals for all species and models can be found under 'species-wise summary'.    
  
@@ -374,8 +365,6 @@ $$[y_{iv}^{[n]}|z_{i}^{[n]} = 1] = y_{iv} - p_{iv}^{[n]}$$
    
 Calculating the residuals: 
 ```{r DSDetectionResCalc-Aurticae-ModelB, echo=TRUE, eval=FALSE, cache=TRUE}
-
-
 # The data frame 'occDS' contains all variables needed for finsing the detection probability so lets first load that data
 detDS <- read.csv("../outputs/DS_Resid/Aglais_urticae_ModelB_occDS.csv")
 
@@ -394,7 +383,7 @@ write.csv(detWright, "../outputs/DSResid/Aglais_urticae_ModelB_detDS.csv")
 ``` 
 
 
-# Wright residuals
+# **Wright residuals**
     
     
     
@@ -7329,7 +7318,7 @@ plot(range(p$xbar), range(p$ybar, p$X2se, -p$X2se, na.rm=TRUE),
 
 
 
-##  Results: *Erebia epiphron* (Mountain Ringlet) **Done**
+##  Results: *Erebia epiphron* (Mountain Ringlet) 
 
 ### Occupancy
 ```{r plot-occu-outputs-E-epiphron, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
@@ -7865,7 +7854,7 @@ psi_pp <- ggplot(data = psi_p, aes( x=xbar, y=ybar, group = Model)) +
     
     
 
-##  Results: *Lycaena phlaeas* (Small Copper) **Done**
+##  Results: *Lycaena phlaeas* (Small Copper) 
 
    
 ### Occupancy   
@@ -8395,7 +8384,7 @@ psi_pp <- ggplot(data = psi_p, aes( x=xbar, y=ybar, group = Model)) +
     
     
 
-##  Results: *Melitaea athalia* (Heath Fritillary) **Done**
+##  Results: *Melitaea athalia* (Heath Fritillary) 
    
    
    
@@ -8884,7 +8873,7 @@ psi_pp <- ggplot(data = psi_p, aes( x=xbar, y=ybar, group = Model)) +
 
 
 
-##  Results: *Pararge aegeria* (Speckled Wood) **Resids running**
+##  Results: *Pararge aegeria* (Speckled Wood) 
    
    
    
@@ -9361,7 +9350,7 @@ psi_pp
     
 
 
-##  Results: *Pieris rapae* (Small/Cabbage White) **Done**
+##  Results: *Pieris rapae* (Small/Cabbage White) 
    
    
    
@@ -9928,7 +9917,7 @@ psi_pp <- ggplot(data = temp, aes( x=xbar, y=ybar, group = Model)) +
 
 
 
-##  Results: *Polygonia c-album* (Comma) **Done**
+##  Results: *Polygonia c-album* (Comma) 
    
    
    
@@ -10499,7 +10488,7 @@ plot(range(p$xbar), range(p$ybar, p$X2se, -p$X2se, na.rm=TRUE),
 
 
 
-##  Results: *Polyommatus bellargus* (Adonis Blue) **Done**
+##  Results: *Polyommatus bellargus* (Adonis Blue) 
 ### Occupancy   
 ```{r plot-occu-outputs-P-bellargus, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
 ### Source plotting function
@@ -11036,7 +11025,7 @@ plot(range(p$xbar), range(p$ybar, p$X2se, -p$X2se, na.rm=TRUE),
 
 
 
-##  Results: *Thecla betulae* (Brown Hairstreak) **Done**
+##  Results: *Thecla betulae* (Brown Hairstreak) 
    
 ### Occupancy   
 ```{r plot-occu-outputs-T-betulae, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}

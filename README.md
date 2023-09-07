@@ -4,20 +4,18 @@ Author(s): [Galina M. Jönsson](https://github.com/galinajonsson)
 
 This repository contains all the code for:
 
->Jönsson, G. M. 2023. Chapter 2. Development and diagnosis of occupancy models for integrating historical specimens and contemporary data. *[PhD Thesis]*.
+>Jönsson, G. M. 2023. Chapter 2. Development and diagnosis of occupancy models for integrating historical specimens and contemporary data. *PhD Thesis*.
 
-I present three different occupancy model formulations (Models A-C) for integrating historical collection specimens data and contemporary observational records for producing long-term occupancy trends for British butterflies between 1900 and 2016. Moreover, in a context where the integrated data types are of different quantities and qualities, as is the case here, a key question is whether this affects model performance. I therefore select a balanced sample of twelve species for comparing the performance of Models A-C and use three separate methods to address the two related, but distinct questions of model selection (DIC) and goodness-of-fit for the data at hand (PPCs and residual-based assessment). JAGS code for the three model formulations is given below, but see my sparta fork for details on the modelling code.  
+I present three different occupancy model formulations (Models A-C) for integrating historical collection specimens data and contemporary observational records for producing long-term occupancy trends for British butterflies between 1900 and 2016. I select a balanced sample of twelve species for comparing the performance of Models A-C and use three separate methods to address questions of model selection (DIC) and goodness-of-fit for the data at hand (PPCs and residual-based assessment). JAGS code for the three model formulations is given below, but see my [sparta fork repository](https://github.com/galinajonsson/sparta) for details on the model code.  
 
 
-**Model A** specifies that list length should be considered as a categorical variable. This model formulation is equivalent to our [previous paper] (https://doi.org/10.1111/icad.12494):
+**Model A** specifies that list length should be considered as a categorical variable. This model formulation is equivalent to our [previous paper](https://doi.org/10.1111/icad.12494):
 ```
 for(j in 1:nvisit) {    
   y[j] ~ dbern(Py[j])    
   Py[j]<- z[Site[j],Year[j]]*p[j]    
   logit(p[j]) <-  alpha.p[Year[j]] + dtype2.p * DATATYPE2[j] + dtype3.p * DATATYPE3[j]    
 } }   
-Fully observed variables:   
- DATATYPE2 DATATYPE3 Site Year nsite nvisit nyear y  
 ```
 
 
@@ -27,9 +25,7 @@ for(j in 1:nvisit) {
   y[j] ~ dbern(Py[j])   
   Py[j]<- z[Site[j],Year[j]] * p[j]   
   logit(p[j]) <-  alpha.p[Year[j]] + LL.p * logL[j] + dtype2.p * DATATYPE2[j] + dtype3.p*DATATYPE3[j]   
-}   
-Fully observed variables:   
- DATATYPE2 DATATYPE3 Site Year dtype2p_max dtype2p_min logL nsite nvisit nyear y    
+}     
 ```
 
 
@@ -40,26 +36,50 @@ for(j in 1:nvisit) {
   Py[j]<- z[Site[j],Year[j]] * p[j]
   logit(p[j]) <-  alpha.p[Year[j]] * (1-DATATYPE3[j]) + LL.p * logL[j] + dtype2.p * DATATYPE2[j] + dtype3.p * DATATYPE3[j]
 } }
-Fully observed variables:
- DATATYPE2 DATATYPE3 Site Year dtype2p_max dtype2p_min logL nsite nvisit nyear y 
 ```
 
 
 ## Data
-As of 20 May 2023, I have not uploaded the expert scores for the same reason as below. 
+I  used three sources of data ('datatypes'): 1) Butterfly Conservation’s (BC) general recording scheme, Butterflies for the New Millennium (BNM), 2) the UK Butterfly Monitoring Scheme (UKBMS), and 3) digitised specimen records from four NHCs. The BNM and UKBMS data is available upon request from:
+>Biological Records Centre   
+UK Centre for Ecology & Hydrology
+Wallingford
+Oxfordshire
+OX10 8BB
+UK  
+Telephone: +44 (0) 1491 692357  
+Email: brc@ceh.ac.uk
+
+
+The georeferenced NHM dataset is available via the [NHM data portal](https://data.nhm.ac.uk). If you use them, please cite appropriately. 
+
+Note that in this repository, I have uploaded two small auxiliary datasets in the folder `/data/auxiliaryData`. Both are grid cell look-ups for the BNM and UKBMS data. 
+
+For reproducibility purposes, download these data sets into the `data/rawdata/` folder to rerun these analyses from scratch. For reproducibility purposes, format the raw data according to the code in the first two Rmd.files (details below) and place into the folder `/output/formattedData`. Place model outputs into the `/output/modelOutput` folder to rerun these analyses. 
+
 
 
 ## Analyses
-The analyses code is contained in one multiple .Rmd files that run the analyses for the chapter and associated supplementary materials. More detailed scripts for some functions used in analyses and called by the .Rmd file, and scripts for the figures found in the chapter.
+The analyses code is divided into .Rmd files that run the analyses for each section of the manuscript, more detailed scripts for some functions used in analyses and called by the .Rmd files, and scripts for the figures found in the manuscript.
 
-Note that throughout I've commented out `write.csv()` and `saveRDS()` commands in order to not clog up your machine. For code chunks that run the models, I've set `eval` to FALSE, again, to not clog up your machine as the analyses are computationally expensive and were run on high performance machines.
+Code for figures is given in .R files with names beginning with 'fig-' and the latter part matching the figure numbers of the manuscript. Code for functions is given in 'function-'.R-files. 
 
-* __00-XX.dm__ [description]. 
+Note that throughout I've commented out `write.csv` and `saveRDS` commands in order to not clog up your machine. For code chunks that run the models, I've set `eval` to FALSE, again, to not clog up your macine as the analyses are computationally expensive and were run on high performance machines.
+
+* __01-data-cleaning.Rdm__ cleans and standardises the raw occurrence records.
+* __02-format-data.Rdm__ formats the standardised records for modelling.
+* __03-models.Rdm__ fits three models to each of 54 butterfly species.
+* __04-Occupancy-Trends.Rmd__ briefly inspects and summarises the outputs.
+* __05-Model-Selection.Rmd__ computes DIC-values and PPCs.
+* __06-Residuals.Rmd__ computes residuals according to the methodology of [Wright *et al.*, (2019)](https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/ecy.2703).
+* __07-SiteYearHandover.Rmd__ 
+
 
 
 ## Other folders
+* `/figs` contains the figures with file names matching those of the manuscript
+* `/output` contains the empty subfolders `/output/formattedData` and `/output/modelOutputs`, as well as the subfolder `/output/summaryTables` that contains tables summarising both the data used in models and model outputs. 
 
-* `/plots` contains the figures with file names matching those of the manuscript
 
 
 ## Session Info
